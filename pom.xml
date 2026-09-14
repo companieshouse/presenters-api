@@ -17,7 +17,9 @@
 		<java.version>21</java.version>
 
 		<!-- Spring -->
-		<spring-boot-dependencies.version>4.1.0</spring-boot-dependencies.version>
+		<spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
+
+		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
 
 	</properties>
 	<dependencyManagement>
@@ -72,38 +74,63 @@
 			<!-- Spring Boot -->
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-actuator-autoconfigure</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-mongodb</artifactId>
-		</dependency>
+		<!--       Don't enable until we have a mongodb-->
+		<!--       <dependency>-->
+		<!--          <groupId>org.springframework.boot</groupId>-->
+		<!--          <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
+		<!--       </dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
 
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<release>${java.version}</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot-dependencies.version}</version>
+			</plugin>
+		</plugins>
+	</build>
 </project>
