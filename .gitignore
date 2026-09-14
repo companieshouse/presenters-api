@@ -23,8 +23,27 @@
 hs_err_pid*
 replay_pid*
 
-# IntelliJ IDEA
-.idea/
-
-# Build output
+# Build artifacts
 target/
+build.log
+
+# Eclipse files
+.classpath
+.project
+.settings
+bin/
+
+# IntelliJ files
+/shelf/
+/workspace.xml
+.idea/
+*.iml
+
+# Mac files
+.DS_Store
+._*
+Footer
+/.history/
+
+# terraform metadata and modules
+.terraform*
