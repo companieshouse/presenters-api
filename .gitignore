@@ -36,7 +36,7 @@ bin/
 # IntelliJ files
 /shelf/
 /workspace.xml
-
+.idea/
 *.iml
 
 # Mac files
