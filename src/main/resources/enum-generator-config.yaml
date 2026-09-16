@@ -1,0 +1,159 @@
+# YAML-driven enum and BiMap generator configuration
+#
+# This configuration drives the EnumBiMapGenerator which performs two main tasks:
+#
+# 1. ENUM GENERATION
+#    - Reads YAML dictionaries and extracts enum values from keys and/or values
+#    - Generates Java enum classes with Jackson annotations
+#    - Validates uniqueness constraints (VALUES_PER_KEY_SET vs VALUES_PER_KEY) during BiMap generation
+#
+# 2. BIMAP GENERATION
+#    - For each source with both key-enum and value-enum defined, generates a bidirectional map class
+#    - BiMaps enable constant-time lookups in both directions (key→value and value→key) with any BiMap size
+#    - Uses EnumMap<K, V> and EnumSet<V> for memory efficiency
+#    - BiMap class name follows pattern: <KeyEnumName><ValueEnumName>BiMap
+#    - Example: FormGroup + FormType → FormGroupFormTypeBiMap
+#    - Generated location: data.bimaps package (parallel to data.enums)
+#    - Imports enum classes from data.enums package for type safety
+#
+# UNIQUENESS VALIDATION CONCEPTS
+#
+# MAPPING CARDINALITY (fixed by YAML structure, never changes):
+#   Forward (key → value): ALWAYS ONE-TO-MANY
+#     - Each key maps to multiple values (guaranteed by YAML array structure)
+#     - Forward field type: EnumMap<KeyEnum, EnumSet<ValueEnum>>
+#     - Forward method: valuesSFor(key) returns EnumSet<ValueEnum>
+#     - Example: FormGroup "firm-delivery" maps to forms [AD01, CS01]
+#   Reverse (value → key): THEORETICALLY MANY-TO-ONE
+#     - Each value could potentially appear under multiple keys
+#     - Actual structure determined by uniqueness validation constraint (see below)
+#
+# UNIQUENESS VALIDATION MODE (constraint applied to the reverse mapping):
+#   Determines two things:
+#     1. Whether to VALIDATE that a value appears under at most one key or allow repetition
+#     2. The TYPE STRUCTURE of the reverse mapping (singular vs plural)
+#   
+#   VALUES_PER_KEY_SET: "Each value appears under EXACTLY ONE key (no exceptions)"
+#     - VALIDATION: Scans entire YAML file; throws IllegalStateException if any value
+#                   appears under more than one key
+#     - REVERSE MAPPING TYPE: EnumMap<ValueEnum, KeyEnum> (singular, not a set)
+#     - REVERSE METHOD: keyFor(value) returns KeyEnum (single value)
+#     - CONSTRUCTION: Uses putIfAbsent() with duplicate detection
+#     - Use case: FormType "AD01" can belong to only one FormGroup
+#   
+#   VALUES_PER_KEY: "Multiple distinct values under same key okay, but no duplicate values within same key"
+#     - VALIDATION: Scans each key's value list; throws IllegalStateException if any value
+#                   appears more than once under the same key (but allows same value across
+#                   different keys)
+#     - REVERSE MAPPING TYPE: EnumMap<ValueEnum, EnumSet<KeyEnum>> (plural, a set)
+#     - REVERSE METHOD: keysFor(value) returns EnumSet<KeyEnum> (multiple values allowed)
+#     - CONSTRUCTION: Uses computeIfAbsent() to allow value to appear in multiple keys
+#     - Use case: PresenterType "officer-employee" can serve multiple FormGroups
+#
+# Configuration Structure:
+# - output-package.enums: Package where all generated enum classes are placed
+# - output-package.bimaps: Package where all generated BiMap classes are placed
+# - sources: Map of YAML files to the enums they define
+#   - root-keys: Path through YAML structure to reach the dictionary
+#   - key-enum: Enum extracted from dictionary keys (drives BiMap generation if present)
+#   - value-enum: Enum extracted from dictionary values (drives BiMap generation if present)
+#   - enums: Map of enum names to their extraction rules
+#     - location: DICTIONARY_KEYS or DICTIONARY_VALUES
+#     - dictionary-keys-reference: Enum whose values appear as keys in this file (for validation)
+#     - validate-as-keys-in-other-sources: If true, scan all other sources for this enum used as keys
+#     - validation: Uniqueness validation constraint on reverse relationship
+#       - uniqueness: VALUES_PER_KEY or VALUES_PER_KEY_SET (see Uniqueness Validation Concepts above)
+
+
+output-package:
+  enums: uk.gov.companieshouse.idv.presenters.spikeyamlbidirectionalmapping.data.enums
+  bimaps: uk.gov.companieshouse.idv.presenters.spikeyamlbidirectionalmapping.data.bimaps
+
+sources:
+  data/form-type-by-form-group.yaml:
+    root-keys: [form-types-map, by-form-group]
+    key-enum: FormGroup
+    value-enum: FormType
+    enums:
+      FormGroup:
+        location: DICTIONARY_KEYS
+        validation:
+          uniqueness: VALUES_PER_KEY_SET
+          validate-as-keys-in-other-sources: true
+      FormType:
+        location: DICTIONARY_VALUES
+        validation:
+          uniqueness: VALUES_PER_KEY_SET
+          validate-as-keys-in-other-sources: false
+
+  data/presenter-type-by-form-group.yaml:
+    root-keys: [presenter-types-map, by-form-group]
+    key-enum: FormGroup
+    value-enum: PresenterType
+    enums:
+      PresenterType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: FormGroup
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: true
+
+  data/delivery-statement-by-form-group.yaml:
+    root-keys: [delivery-statements-map, by-form-group]
+    key-enum: FormGroup
+    value-enum: DeliveryStatementType
+    enums:
+      DeliveryStatementType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: FormGroup
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: false
+
+  data/delivery-statement-by-presenter-type.yaml:
+    root-keys: [delivery-statements-map, by-presenter-type]
+    key-enum: PresenterType
+    value-enum: DeliveryStatementType
+    enums:
+      DeliveryStatementType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: PresenterType
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: false
+
+  data/verification-statement-by-presenter-type.yaml:
+    root-keys: [verification-statements-map, by-presenter-type]
+    key-enum: PresenterType
+    value-enum: VerificationStatementType
+    enums:
+      VerificationStatementType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: PresenterType
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: false
+
+  data/association-statement-by-presenter-type.yaml:
+    root-keys: [association-statements-map, by-presenter-type]
+    key-enum: PresenterType
+    value-enum: AssociationStatementType
+    enums:
+      AssociationStatementType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: PresenterType
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: false
+
+  data/data-object-by-presenter-type.yaml:
+    root-keys: [data-objects-map, by-presenter-type]
+    key-enum: PresenterType
+    value-enum: DataObjectType
+    enums:
+      DataObjectType:
+        location: DICTIONARY_VALUES
+        dictionary-keys-reference: PresenterType
+        validation:
+          uniqueness: VALUES_PER_KEY
+          validate-as-keys-in-other-sources: false

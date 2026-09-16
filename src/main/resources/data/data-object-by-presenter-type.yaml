@@ -1,0 +1,31 @@
+data-objects-map:
+  by-presenter-type:
+    officer-employee:
+      - personal-code
+      - name
+      - date-of-birth
+    corporate-officer-employee:
+      - personal-code
+      - name
+      - date-of-birth
+    exempt-presenter:
+      - organisation-name
+      - name
+      - email
+    acsp-sole-trader:
+      - acsp-uid
+      - acsp-name
+      - email
+      - name
+    acsp-employee:
+      - acsp-uid
+      - acsp-name
+      - email
+      - name
+    individual-filing-for-self:
+      - personal-code
+      - name
+    individual-filing-for-someone-else:
+      - personal-code
+      - name
+      - date-of-birth

@@ -1,0 +1,17 @@
+form-types-map:
+  by-form-group:
+    firm-delivery:
+      - AD01
+      - CS01
+    individual-delivery:
+      - PSC01
+    multi-delivery:
+      - MR01
+    incorporation:
+      - IN01
+    acsp-only-firm-delivery:
+      - LP05
+    acsp-only-individual-delivery:
+      - LP7
+    exempt-form:
+      - WU15

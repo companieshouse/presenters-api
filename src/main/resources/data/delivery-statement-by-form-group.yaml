@@ -1,0 +1,9 @@
+delivery-statements-map:
+  by-form-group:
+    firm-delivery:
+      - delivery-on-behalf-of-firm
+    individual-delivery:
+      - delivery-on-behalf-of-individual
+    multi-delivery:
+      - delivery-on-behalf-of-firm
+      - delivery-on-behalf-of-individual
