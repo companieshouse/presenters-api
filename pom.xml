@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>uk.gov.companieshouse</groupId>
 		<artifactId>companies-house-parent</artifactId>
-		<version>2.1.12</version>
+		<version>2.1.15</version>
 		<relativePath/>
 	</parent>
 	<artifactId>presenters-api</artifactId>
@@ -18,9 +18,12 @@
 
 		<!-- Spring -->
 		<spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
+		<spring-core.version>7.0.9</spring-core.version>
+		<!-- CH-dependencies -->
+		<ch-dependency-bom.version>0.1.21</ch-dependency-bom.version>
+		<ch-test-bom.version>0.1.21</ch-test-bom.version>
 
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
-
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -29,7 +32,7 @@
 			<dependency>
 				<groupId>uk.gov.companieshouse</groupId>
 				<artifactId>ch-dependency-bom</artifactId>
-				<version>0.1.21</version>
+				<version>${ch-dependency-bom.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -37,7 +40,7 @@
 			<dependency>
 				<groupId>uk.gov.companieshouse</groupId>
 				<artifactId>ch-test-bom</artifactId>
-				<version>0.1.21</version>
+				<version>${ch-test-bom.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -46,7 +49,7 @@
 			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-core</artifactId>
-				<version>7.0.9</version>
+				<version>${spring-core.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
