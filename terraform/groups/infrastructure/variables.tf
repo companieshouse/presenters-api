@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 variable "environment" {
   type        = string
-  description = "The environment name, defined in envrionments vars."
+  description = "The environment name, defined in environments vars."
 }
 variable "aws_region" {
   default     = "eu-west-2"
@@ -48,7 +48,7 @@ variable "required_memory" {
 # ------------------------------------------------------------------------------
 variable "presenters_api_version" {
   type        = string
-  description = "The version of the presenteres api container to run."
+  description = "The version of the presenters api container to run."
 }
 
 variable "cookie_name" {

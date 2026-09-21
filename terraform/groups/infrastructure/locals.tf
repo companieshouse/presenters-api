@@ -3,7 +3,7 @@ locals {
   stack_name                = "filing-core" # this must match the stack name the service deploys into
   name_prefix               = "${local.stack_name}-${var.environment}"
   service_name              = "presenters-api" # testing service name
-  container_port            = "3000" # default node port required here until prod docker container is built allowing port change via env var
+  container_port            = "8080" # default node port required here until prod docker container is built allowing port change via env var
   docker_repo               = "presenters-api"
   lb_listener_rule_priority = 14
   lb_listener_paths         = [
@@ -14,6 +14,9 @@ locals {
 
   kms_alias       = "alias/${var.aws_profile}/environment-services-kms"
   service_secrets = jsondecode(data.vault_generic_secret.service_secrets.data_json)
+
+  application_subnet_pattern = local.stack_secrets["application_subnet_pattern"]
+  public_subnet_pattern      = local.stack_secrets["public_subnet_pattern"]
 
   vpc_name = local.service_secrets["vpc_name"]
 

@@ -1,9 +1,9 @@
-data "vault_generic_secret" "secrets" {
-  path = "applications/${var.aws_profile}/${var.environment}/${local.stack_fullname}"
+data "vault_generic_secret" "service_secrets" {
+  path = "applications/${var.aws_profile}/${var.environment}/${local.stack_name}"
 }
 
 data "aws_kms_key" "stack_configs" {
-  key_id = "alias/${var.aws_profile}/${local.kms_key_alias}"
+  key_id = local.kms_alias
 }
 
 data "aws_subnets" "application" {

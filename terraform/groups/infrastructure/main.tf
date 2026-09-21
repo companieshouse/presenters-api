@@ -39,7 +39,7 @@ module "ecs-service" {
   # Docker container details
   docker_registry   = var.docker_registry
   docker_repo       = local.docker_repo
-  container_version = var.orders_web_version
+  container_version = var.presenters_api_version
   container_port    = local.container_port
 
   # Service configuration
@@ -57,5 +57,13 @@ module "ecs-service" {
   task_environment = local.task_environment
   task_secrets     = local.task_secrets
 
-  depends_on = [module.secrets]
+}
+
+module "secrets" {
+  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/secrets?ref=1.0.296"
+
+  name_prefix = "${local.service_name}-${var.environment}"
+  environment = var.environment
+  kms_key_id  = data.aws_kms_key.kms_key.id
+  secrets     = nonsensitive(local.service_secrets)
 }
