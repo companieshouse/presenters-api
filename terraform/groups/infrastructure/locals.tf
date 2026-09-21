@@ -9,7 +9,7 @@ locals {
   lb_listener_paths         = [
     "/presenters*"
   ]
-  healthcheck_path          = "/presenters/health" # healthcheck path for presenters api
+  healthcheck_path          = "/presenters/healthcheck" # healthcheck path for presenters api
   healthcheck_matcher       = "200"
 
   kms_alias       = "alias/${var.aws_profile}/environment-services-kms"
