@@ -96,11 +96,6 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-			<version>${spring-boot-dependencies.version}</version>
-		</dependency>
 		<!--       Don't enable until we have a mongodb-->
 		<!--       <dependency>-->
 		<!--          <groupId>org.springframework.boot</groupId>-->
