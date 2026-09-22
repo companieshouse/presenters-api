@@ -5,22 +5,22 @@ provider "aws" {
 terraform {
   backend "s3" {
   }
-  required_version = "~> 1.3"
+  required_version = ">= 1.3, < 2.0.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.54.0"
+      version = ">= 4.67.0, < 4.68.0"
     }
 
     vault = {
       source  = "hashicorp/vault"
-      version = "~> 3.18.0"
+      version = ">= 3.25.0, < 3.26.0"
     }
   }
 }
 
 module "ecs-service" {
-  source = "git::git@github.com:companieshouse/terraform-library-ecs-service.git?ref=1.0.2"
+  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.427"
 
   # Environmental configuration
   environment             = var.environment

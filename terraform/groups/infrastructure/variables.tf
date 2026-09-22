@@ -50,19 +50,3 @@ variable "presenters_api_version" {
   type        = string
   description = "The version of the presenters api container to run."
 }
-
-variable "cookie_name" {
-  type = string
-}
-
-variable "default_session_expiration" {
-  type = number
-}
-
-variable "human_log" {
-  type = number
-}
-
-variable "log_level" {
-  type = string
-}
