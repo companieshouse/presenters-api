@@ -36,7 +36,7 @@ endif
 	rm -rf $(tmpdir)
 
 .PHONY: dist
-dist: clean build package
+dist: clean build package test
 
 
 .PHONY: sonar

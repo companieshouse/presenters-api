@@ -66,8 +66,8 @@
 
 
 output-package:
-  enums: uk.gov.companieshouse.idv.presenters.spikeyamlbidirectionalmapping.data.enums
-  bimaps: uk.gov.companieshouse.idv.presenters.spikeyamlbidirectionalmapping.data.bimaps
+  enums: uk.gov.companieshouse.presentersapi.data.enums
+  bimaps: uk.gov.companieshouse.presentersapi.data.bimaps
 
 sources:
   data/form-type-by-form-group.yaml:
