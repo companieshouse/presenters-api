@@ -1,0 +1,6 @@
+level1:
+  level2:
+    nestedKey1:
+      - nestedValue1
+    nestedKey2:
+      - nestedValue2

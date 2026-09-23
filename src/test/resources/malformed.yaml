@@ -1,0 +1,8 @@
+data:
+  key1:
+    - value1
+    - value2
+  key2
+  - value3
+  invalid indentation here
+broken: [unclosed list
