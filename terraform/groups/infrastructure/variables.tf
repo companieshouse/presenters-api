@@ -50,3 +50,13 @@ variable "presenters_api_version" {
   type        = string
   description = "The version of the presenters api container to run."
 }
+variable "log_level" {
+  default     = "info"
+  type        = string
+  description = "The log level for services to use: trace, debug, info or error"
+}
+variable "ssm_version_prefix" {
+  type        = string
+  description = "String to use as a prefix to the names of the variables containing variables and secrets version."
+  default     = "SSM_VERSION_"
+}
