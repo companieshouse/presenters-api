@@ -19,11 +19,6 @@ locals {
   application_subnet_pattern = local.stack_secrets["application_subnet_pattern"]
   public_subnet_pattern      = local.stack_secrets["public_subnet_pattern"]
 
-  service_secrets_arn_map = {
-    for sec in module.secrets.secrets :
-    trimprefix(sec.name, "/${local.service_name}-${var.environment}/") => sec.arn
-  }
-
   global_secret_list = flatten([for key, value in local.global_secrets_arn_map :
     { "name" = upper(key), "valueFrom" = value }
   ])
