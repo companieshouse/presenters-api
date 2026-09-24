@@ -5,6 +5,8 @@ locals {
   global_prefix             = "global-${var.environment}"
   service_name              = "presenters-api" # testing service name
   container_port            = "8080"
+  eric_port                 = 8081
+  eric_version              = "latest"
   docker_repo               = "presenters-api"
   lb_listener_rule_priority = 14
   lb_listener_paths         = [
@@ -19,7 +21,6 @@ locals {
   service_secrets = jsondecode(data.vault_generic_secret.service_secrets.data_json)
 
   application_subnet_pattern = local.stack_secrets["application_subnet_pattern"]
-  public_subnet_pattern      = local.stack_secrets["public_subnet_pattern"]
 
   global_secret_list = flatten([for key, value in local.global_secrets_arn_map :
     { name = upper(key), valueFrom = value }
@@ -66,5 +67,6 @@ locals {
     { "name" : "API_KEY", "valueFrom" : local.global_secrets_arn_map.eric_api_key },
     { "name" : "AES256_KEY", "valueFrom" : local.global_secrets_arn_map.eric_aes256_key }
   ]
+  app_environment_filename  = "presenters-api.env"
   eric_environment_filename = "eric.env"
 }

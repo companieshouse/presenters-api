@@ -27,6 +27,15 @@ data "aws_lb_listener" "service_lb_listener" {
   port              = 443
 }
 
+data "aws_lb" "internal_service_lb" {
+  name = "${var.environment}-chs-apichgovuk-private"
+}
+
+data "aws_lb_listener" "internal_service_lb_listener" {
+  load_balancer_arn = data.aws_lb.internal_service_lb.arn
+  port              = 443
+}
+
 # retrieve all global secrets for this env using the global path
 data "aws_ssm_parameters_by_path" "global_secrets" {
   path = "/${local.global_prefix}"
@@ -46,17 +55,6 @@ data "aws_subnets" "application" {
   filter {
     name   = "tag:NetworkType"
     values = ["private"]
-  }
-}
-
-data "aws_subnets" "public" {
-  filter {
-    name   = "tag:NetworkType"
-    values = ["public"]
-  }
-  filter {
-    name   = "tag:Name"
-    values = [local.public_subnet_pattern]
   }
 }
 
