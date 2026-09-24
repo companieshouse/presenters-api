@@ -6,7 +6,6 @@ locals {
   service_name              = "presenters-api" # testing service name
   container_port            = "8080"
   eric_port                 = 8081
-  eric_version              = "latest"
   docker_repo               = "presenters-api"
   lb_listener_rule_priority = 14
   lb_listener_paths         = [
@@ -15,6 +14,7 @@ locals {
   healthcheck_path          = "/presenters/healthcheck" # healthcheck path for presenters api
   healthcheck_matcher       = "200"
   vpc_name                  = local.stack_secrets["vpc_name"]
+  application_subnet_ids    = data.aws_subnets.application.ids
 
   kms_alias       = "alias/${var.aws_profile}/environment-services-kms"
   stack_secrets   = jsondecode(data.vault_generic_secret.stack_secrets.data_json)

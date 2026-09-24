@@ -35,12 +35,12 @@ variable "desired_task_count" {
 variable "required_cpus" {
   type        = number
   description = "The required cpu resource for this service. 1024 here is 1 vCPU"
-  default     = 128 # defaulted low for dev environments, override for production
+  default     = 256 # defaulted low for dev environments, override for production
 }
 variable "required_memory" {
   type        = number
   description = "The required memory for this service"
-  default     = 256 # defaulted low for node service in dev environments, override for production
+  default     = 512 # defaulted low for dev environments, override for production
 }
 
 # ------------------------------------------------------------------------------
@@ -49,6 +49,10 @@ variable "required_memory" {
 variable "presenters_api_version" {
   type        = string
   description = "The version of the presenters api container to run."
+}
+variable "eric_version" {
+  type        = string
+  description = "The version of the eric container to run."
 }
 variable "log_level" {
   default     = "info"

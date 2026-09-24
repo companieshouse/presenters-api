@@ -62,6 +62,7 @@ module "ecs_service" {
 
   # Service performance and scaling configs
   use_fargate        = true
+  fargate_subnets    = local.application_subnet_ids
   desired_task_count = var.desired_task_count
   required_cpus      = var.required_cpus
   required_memory    = var.required_memory
@@ -72,7 +73,7 @@ module "ecs_service" {
   app_environment_filename  = local.app_environment_filename
   eric_port                 = local.eric_port
   eric_secrets              = local.eric_secrets
-  eric_version              = local.eric_version
+  eric_version              = var.eric_version
   eric_environment_filename = local.eric_environment_filename
   use_eric_reverse_proxy    = true
   use_set_environment_files = true
