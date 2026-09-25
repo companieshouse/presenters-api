@@ -6,6 +6,8 @@ locals {
   service_name              = "presenters-api" # testing service name
   container_port            = "8080"
   eric_port                 = 8081
+  eric_cpus                 = 256 # combined with required_cpus must equal a valid Fargate task cpu value
+  eric_memory               = 512 # combined with required_memory must equal a valid Fargate task memory value
   docker_repo               = "presenters-api"
   lb_listener_rule_priority = 14
   lb_listener_paths         = [

@@ -72,6 +72,8 @@ module "ecs_service" {
   task_secrets              = local.task_secrets
   app_environment_filename  = local.app_environment_filename
   eric_port                 = local.eric_port
+  eric_cpus                 = local.eric_cpus
+  eric_memory               = local.eric_memory
   eric_secrets              = local.eric_secrets
   eric_version              = var.eric_version
   eric_environment_filename = local.eric_environment_filename
