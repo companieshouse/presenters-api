@@ -42,6 +42,16 @@ variable "required_memory" {
   description = "The required memory for this service"
   default     = 512 # defaulted low for dev environments, override for production
 }
+variable "eric_cpus" {
+  type        = number
+  description = "The required cpu resource for the eric reverse proxy sidecar. Combined with required_cpus this must equal a valid Fargate task cpu value"
+  default     = 256 # override for staging/live if needed to keep required_cpus + eric_cpus at a valid Fargate total
+}
+variable "eric_memory" {
+  type        = number
+  description = "The required memory for the eric reverse proxy sidecar. Combined with required_memory this must equal a valid Fargate task memory value"
+  default     = 512 # override for staging/live if needed to keep required_memory + eric_memory at a valid Fargate total
+}
 
 # ------------------------------------------------------------------------------
 # Service environment variable configs
