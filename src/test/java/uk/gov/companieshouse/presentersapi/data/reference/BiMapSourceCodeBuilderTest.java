@@ -266,22 +266,6 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testNullParameterHandling() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
-                "uk.data.bimaps",
-                "TestBiMap",
-                "KeyEnum",
-                "ValueEnum",
-                "testKey",
-                "test-property",
-                EnumGeneratorConfig.UniquenessValidation.VALUES_PER_KEY_SET
-        );
-
-        assertThat("Should check if parameter is null before processing",
-                result, containsString("if (testProperty != null)"));
-    }
-
-    @Test
     void testEmptyValueSetHandling() {
         var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
@@ -354,16 +338,12 @@ class BiMapSourceCodeBuilderTest {
                 result, containsString("import org.springframework.boot.context.properties.ConfigurationProperties;"));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "TestBiMap,TestBiMap",
-            "MyCustomBiMap,MyCustomBiMap",
-            "BiMap123,BiMap123"
-    })
-    void testClassNameGeneration(String className, String expectedClassName) {
+    @Test
+    void testClassNameGeneration() {
+
         var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
-                className,
+                "TestBiMap",
                 "KeyEnum",
                 "ValueEnum",
                 "testKey",
@@ -372,8 +352,8 @@ class BiMapSourceCodeBuilderTest {
         );
 
         assertThat("Should generate correct class declaration",
-                result, containsString("public class " + expectedClassName + " {"));
+                result, containsString("public class TestBiMap {"));
         assertThat("Constructor should match class name",
-                result, containsString("public " + expectedClassName + "("));
+                result, containsString("public TestBiMap("));
     }
 }

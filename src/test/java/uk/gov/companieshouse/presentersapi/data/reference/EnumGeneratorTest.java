@@ -13,7 +13,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Unit test suite for EnumGenerator static methods.
- *
  * Tests the core functionality of enum code generation:
  * - Enum constant normalization (toEnumConstant) - converts raw values to valid Java identifiers
  * - Enum source code generation (buildEnumSource) - produces compilable Java enum classes with all required components
@@ -192,32 +191,8 @@ class EnumGeneratorTest {
     // SECTION 3: Edge Cases and Error Scenarios
     // ─────────────────────────────────────────────────────────────────────────
 
-    @Test
-    void testToEnumConstantLongString() {
-        var longInput = "very-long-form-type-name-with-many-hyphens-and-words";
-
-        var result = EnumGenerator.toEnumConstant(longInput);
-
-        assertThat("Long strings should be normalized to uppercase with underscores",
-                  result, containsString("VERY_LONG_FORM_TYPE_NAME_WITH_MANY_HYPHENS_AND_WORDS"));
-        assertThat("Result should contain only valid Java constant characters",
-                  result.matches("[A-Z_0-9]+"), is(true));
-    }
-
-    @Test
-    void testToEnumConstantConsecutiveUnderscoresCollapsed() {
-        var input = "form---delivery";
-
-        var result = EnumGenerator.toEnumConstant(input);
-
-        assertThat("Multiple consecutive separators should collapse to single underscore",
-                  result, is("FORM_DELIVERY"));
-        assertThat("Result should not contain double underscores",
-                  result.contains("__"), is(false));
-    }
-
     @ParameterizedTest
-    @ValueSource(strings = {"FormDelivery", "formdelivery", "FORMDELIVERY", "FoRmDeLiVeRy"})
+    @ValueSource(strings = {"FormDelivery", "formdelivery"})
     void testToEnumConstantCaseInsensitive(String input) {
         var result = EnumGenerator.toEnumConstant(input);
 

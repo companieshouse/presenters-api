@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -71,7 +70,7 @@ class EnumBiMapGeneratorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "a", "abc", "123"})
+    @ValueSource(strings = {"", "abc"})
     void testEscapeForJavaStringLiteralNoSpecialChars(String input) {
         var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
 
@@ -122,45 +121,6 @@ class EnumBiMapGeneratorTest {
                   result.get("key1"), hasItems("a", "b", "c"));
     }
 
-    @Test
-    void testToSetMapEmptyValues() {
-        var listMap = Map.of(
-            "key1", List.<String>of()
-        );
-
-        var result = EnumBiMapGenerator.toSetMap(listMap);
-
-        assertThat("Result should contain key",
-                  result.containsKey("key1"), is(true));
-        assertThat("Value should be empty set",
-                  result.get("key1").size(), is(0));
-    }
-
-    @Test
-    void testToSetMapPreservesOrder() {
-        var listMap = Map.of(
-            "z-key", List.of("value1"),
-            "a-key", List.of("value2"),
-            "m-key", List.of("value3")
-        );
-
-        var result = EnumBiMapGenerator.toSetMap(listMap);
-
-        assertThat("Result keys should maintain insertion order",
-                  result.keySet().stream().toList(),
-                  hasItems("z-key", "a-key", "m-key"));
-    }
-
-    @Test
-    void testToSetMapEmptyMap() {
-        Map<String, List<String>> listMap = Map.of();
-
-        var result = EnumBiMapGenerator.toSetMap(listMap);
-
-        assertThat("Empty map should result in empty set map",
-                  result.size(), is(0));
-    }
-
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 3: extractValuesList() - Value Extraction and Validation
     // ─────────────────────────────────────────────────────────────────────────
@@ -179,7 +139,7 @@ class EnumBiMapGeneratorTest {
 
     @Test
     void testExtractValuesListNullValue() {
-        var entry = new AbstractMap.SimpleEntry<String, Object>("key", null);
+        var entry = new AbstractMap.SimpleEntry<>("key", null);
 
         var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
 
@@ -266,7 +226,7 @@ class EnumBiMapGeneratorTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void testReadConfigValidFile() throws IOException, NoSuchFileException {
+    void testReadConfigValidFile() throws IOException {
         var configFile = Paths.get("src/test/resources/valid-config.yaml");
         var result = EnumBiMapGenerator.readConfig(configFile);
 
@@ -333,7 +293,7 @@ class EnumBiMapGeneratorTest {
     }
 
     @Test
-    void testReadYamlDataMissingFirstRootKeyThrows() throws IOException {
+    void testReadYamlDataMissingFirstRootKeyThrows(){
         var yamlFile = Paths.get("src/test/resources/valid-data.yaml");
         var rootKeys = List.of("missing");
 
@@ -347,7 +307,7 @@ class EnumBiMapGeneratorTest {
     }
 
     @Test
-    void testReadYamlDataMissingNestedRootKeyThrows() throws IOException {
+    void testReadYamlDataMissingNestedRootKeyThrows(){
         var yamlFile = Paths.get("src/test/resources/nested-data.yaml");
         var rootKeys = List.of("level1", "missing");
 

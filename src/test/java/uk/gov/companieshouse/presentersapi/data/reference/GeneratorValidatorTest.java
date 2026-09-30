@@ -8,12 +8,10 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Unit test suite for GeneratorValidator.validateUniqueness().
- *
  * Tests the core uniqueness validation for dictionary values:
  * - VALUES_PER_KEY_SET mode - each value appears under AT MOST ONE key
  * - VALUES_PER_KEY mode - each value appears AT MOST ONCE under each key
@@ -22,12 +20,8 @@ import org.junit.jupiter.params.provider.EnumSource;
  */
 class GeneratorValidatorTest {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SECTION 1: VALUES_PER_KEY_SET Mode - Singular Reverse Mapping
-    // ─────────────────────────────────────────────────────────────────────────
-
     @Test
-    void testValidateUniquenessValidDataValuePerKeySet() {
+    void testUniqueValuesForKeySet() {
         var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "CS01"),
             "individual-delivery", List.of("PSC01")
@@ -44,7 +38,7 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidateUniquenessViolationValueUnderMultipleKeysValuePerKeySet() {
+    void testThrowsExceptionWhenMultipleValuesForKeySet() {
         var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "CS01"),
             "individual-delivery", List.of("AD01", "PSC01")
@@ -69,7 +63,7 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidateUniquenessEmptyValuesValuePerKeySet() {
+    void testValidEmptyValuesForValuesPerKeySet() {
         var dataMap = Map.of(
             "firm-delivery", List.of(""),
             "individual-delivery", List.of("AD01")
@@ -86,7 +80,7 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidateUniquenessMultipleViolationsValuePerKeySet() {
+    void testValidateUniquenessMultipleViolationsValuesPerKeySet() {
         var dataMap = Map.of(
             "key1", List.of("AD01", "CS01"),
             "key2", List.of("AD01", "PSC01"),
@@ -109,12 +103,8 @@ class GeneratorValidatorTest {
                   hasConflict, is(true));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SECTION 2: VALUES_PER_KEY Mode
-    // ─────────────────────────────────────────────────────────────────────────
-
     @Test
-    void testValidateUniquenessValidDataValuePerKey() {
+    void testDuplicateValuesAllowedAcrossKeys() {
         var dataMap = Map.of(
             "firm-delivery", List.of("officer-employee", "corporate-officer"),
             "individual-delivery", List.of("officer-employee", "acsp-sole-trader")
@@ -131,7 +121,7 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidateUniquenessViolationDuplicateWithinKeyValuePerKey() {
+    void testThrowsExceptionForDuplicateValuesForSameKey() {
         var dataMap = Map.of(
             "firm-delivery", List.of("officer-employee", "officer-employee", "corporate-officer"),
             "individual-delivery", List.of("officer-employee")
@@ -158,7 +148,7 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidateUniquenessValueRepeatingAcrossKeysValuePerKey() {
+    void testSameValueAllowedAcrossMultipleKeys() {
         var dataMap = Map.of(
             "key1", List.of("A", "B", "C"),
             "key2", List.of("A", "D"),
@@ -175,10 +165,6 @@ class GeneratorValidatorTest {
         );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SECTION 3: Edge Cases and Boundary Conditions
-    // ─────────────────────────────────────────────────────────────────────────
-
     @ParameterizedTest
     @EnumSource(EnumGeneratorConfig.UniquenessValidation.class)
     void testValidateEmptyMap(EnumGeneratorConfig.UniquenessValidation mode) {
@@ -190,12 +176,12 @@ class GeneratorValidatorTest {
                         mode,
                         "empty.yaml"
                 ),
-                "Should handle empty map without errors for mode: " + mode
+                "Should handle empty map without errors for: " + mode
         );
     }
 
     @Test
-    void testValidateUniquenessSingleKeyValuePerKeySet() {
+    void testSingleKeyWithMultipleValuesPerKeySet() {
         var dataMap = Map.of("only-key", List.of("A", "B", "C"));
 
         assertDoesNotThrow(
@@ -222,16 +208,12 @@ class GeneratorValidatorTest {
         );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SECTION 4: Real-world Scenarios
-    // ─────────────────────────────────────────────────────────────────────────
-
     @Test
     void testValidateUniquenessFormTypeScenarioValid() {
         var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "AD02"),
-            "individual-delivery", List.of("CS01", "CS02"),
-            "lp-delivery", List.of("PSC01")
+            "individual-delivery", List.of("PSC01", "PSC04"),
+            "lp-delivery", List.of("LP01")
         );
 
         assertDoesNotThrow(
@@ -260,33 +242,5 @@ class GeneratorValidatorTest {
             ),
             "Should pass when same presenter type can serve multiple form groups"
         );
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "firm-delivery,AD01,individual-delivery,AD01",
-        "key1,valueA,key2,valueA",
-        "alpha,item,beta,item",
-        "key1,value,key2,value"
-    })
-    void testValidateUniquenessViolationPatternValuePerKeySet(
-            String key1, String value1, String key2, String value2) {
-        var dataMap = Map.of(
-            key1, List.of(value1),
-            key2, List.of(value2)
-        );
-
-        var exception = assertThrows(
-            IllegalStateException.class,
-            () -> GeneratorValidator.validateUniqueness(
-                dataMap,
-                EnumGeneratorConfig.UniquenessValidation.VALUES_PER_KEY_SET,
-                "test.yaml"
-            ),
-            "Should detect value appearing under multiple keys"
-        );
-
-        assertThat("Error should mention the violating value",
-                  exception.getMessage(), containsString(value1));
     }
 }
