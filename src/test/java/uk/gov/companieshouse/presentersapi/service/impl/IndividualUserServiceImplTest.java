@@ -62,7 +62,18 @@ class IndividualUserServiceImplTest {
 
     @Test
     void rejectsNonOAuth2Requests() {
+        when(request.getHeader(ERIC_IDENTITY)).thenReturn(USER_ID);
         when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("key");
+
+        assertThatThrownBy(() -> service.getIdentityVerificationDetails(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("An OAuth2 user is required");
+    }
+
+    @Test
+    void rejectsOAuth2RequestsWithBlankUserId() {
+        when(request.getHeader(ERIC_IDENTITY)).thenReturn(" ");
+        when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
 
         assertThatThrownBy(() -> service.getIdentityVerificationDetails(request))
                 .isInstanceOf(ResponseStatusException.class)

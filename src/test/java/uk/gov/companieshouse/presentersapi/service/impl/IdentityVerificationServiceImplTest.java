@@ -1,16 +1,23 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpResponseException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.InternalApiClient;
+import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.identityverification.PrivateIdentityVerificationResourceHandler;
 import uk.gov.companieshouse.api.handler.identityverification.request.PrivateFindUvidsByIdentityIdGet;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
@@ -56,6 +63,48 @@ class IdentityVerificationServiceImplTest {
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
             verify(handler).findUvidsByIdentityId(
                     "/verification/identities/identity-123/uvids", true);
+        }
+    }
+
+    @Test
+    void mapsTransportFailuresToBadGateway() throws Exception {
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenThrow(new IOException("Connection timed out"));
+            IdentityVerificationServiceImpl service =
+                    new IdentityVerificationServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+        }
+    }
+
+    @Test
+    void preservesDownstreamHttpStatus() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindUvidsByIdentityIdGet request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        ApiErrorResponseException downstreamException = new ApiErrorResponseException(
+                new HttpResponseException.Builder(401, "Unauthorized", new HttpHeaders()));
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenThrow(downstreamException);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+            IdentityVerificationServiceImpl service =
+                    new IdentityVerificationServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
         }
     }
 }

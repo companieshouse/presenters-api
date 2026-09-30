@@ -8,7 +8,6 @@ import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.util.security.AuthorisationUtil;
-import uk.gov.companieshouse.api.util.security.EricConstants;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.service.IdentityVerificationService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
@@ -45,10 +44,9 @@ public class IndividualUserServiceImpl implements IndividualUserService {
     }
 
     private String getChsUserId(HttpServletRequest request) {
-        String identityType = request.getHeader(EricConstants.ERIC_IDENTITY_TYPE);
         String userId = AuthorisationUtil.getAuthorisedIdentity(request);
 
-        if (!"oauth2".equals(identityType) || userId == null || userId.isBlank()) {
+        if (!AuthorisationUtil.isOauth2User(request) || userId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "An OAuth2 user is required");
         }
 

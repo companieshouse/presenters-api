@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.InternalApiClient;
+import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
@@ -45,11 +47,17 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
         } catch (URIValidationException exception) {
             logger.errorContext(userId, "Invalid identity-verification URI", exception, logMap);
             throw exception;
+        } catch (ApiErrorResponseException exception) {
+            logger.errorContext(userId, "Identity-verification API returned an error", exception, logMap);
+            throw new ResponseStatusException(
+                    HttpStatusCode.valueOf(exception.getStatusCode()),
+                    "Identity-verification API request failed",
+                    exception);
         } catch (IOException exception) {
             logger.errorContext(userId, "Unable to retrieve identity-verification details",
                     exception, logMap);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Unable to authenticate the identity-verification request", exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Identity-verification API is unavailable", exception);
         }
     }
 
@@ -81,10 +89,16 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
         } catch (URIValidationException exception) {
             logger.errorContext(identityId, "Invalid UVID lookup URI", exception, logMap);
             throw exception;
+        } catch (ApiErrorResponseException exception) {
+            logger.errorContext(identityId, "Identity-verification API returned an error", exception, logMap);
+            throw new ResponseStatusException(
+                    HttpStatusCode.valueOf(exception.getStatusCode()),
+                    "Identity-verification API request failed",
+                    exception);
         } catch (IOException exception) {
             logger.errorContext(identityId, "Unable to retrieve active UVID", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Unable to authenticate the identity-verification request", exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Identity-verification API is unavailable", exception);
         }
     }
 
