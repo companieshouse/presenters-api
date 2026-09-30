@@ -24,6 +24,7 @@
 		<ch-test-bom.version>0.1.21</ch-test-bom.version>
 
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
