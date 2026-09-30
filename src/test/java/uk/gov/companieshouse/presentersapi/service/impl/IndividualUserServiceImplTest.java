@@ -21,6 +21,7 @@ import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.identityverification.PrivateIdentityVerificationResourceHandler;
 import uk.gov.companieshouse.api.handler.identityverification.request.PrivateFindIdentityByUserIdGet;
 import uk.gov.companieshouse.api.handler.identityverification.request.PrivateFindUvidsByIdentityIdGet;
+import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.api.model.ApiResponse;
@@ -104,6 +105,30 @@ class IndividualUserServiceImplTest {
     }
 
     @Test
+    void propagatesIdentityUriValidationFailures() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindIdentityByUserIdGet request = mock(PrivateFindIdentityByUserIdGet.class);
+        URIValidationException uriException = mock(URIValidationException.class);
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findIdentityByUserId("/verification/identities", "user-123"))
+                .thenReturn(request);
+        when(request.execute()).thenThrow(uriException);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            assertThatThrownBy(() -> service.getIdentityByUserId("user-123", PASSTHROUGH_TOKEN))
+                    .isSameAs(uriException);
+        }
+    }
+
+    @Test
     void getsTheActiveUvidByIdentityId() throws Exception {
         InternalApiClient apiClient = mock(InternalApiClient.class);
         PrivateIdentityVerificationResourceHandler handler =
@@ -176,6 +201,74 @@ class IndividualUserServiceImplTest {
                     "identity-123", PASSTHROUGH_TOKEN))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                             assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
+        }
+    }
+
+    @Test
+    void returnsNotFoundWhenActiveUvidListIsNull() throws Exception {
+        assertActiveUvidListReturnsStatus(null, HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void returnsNotFoundWhenActiveUvidListIsEmpty() throws Exception {
+        assertActiveUvidListReturnsStatus(List.of(), HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void returnsInternalServerErrorWhenMultipleActiveUvidsAreFound() throws Exception {
+        assertActiveUvidListReturnsStatus(
+                List.of(new Uvid(), new Uvid()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void propagatesUvidUriValidationFailures() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindUvidsByIdentityIdGet request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        URIValidationException uriException = mock(URIValidationException.class);
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenThrow(uriException);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isSameAs(uriException);
+        }
+    }
+
+    private void assertActiveUvidListReturnsStatus(List<Uvid> activeUvids, HttpStatus expectedStatus)
+            throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindUvidsByIdentityIdGet request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        ApiResponse<PrivateUvidListApi> response = new ApiResponse<>(
+                200, Map.of(), new PrivateUvidListApi(activeUvids));
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenReturn(response);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                            assertThat(exception.getStatusCode()).isEqualTo(expectedStatus));
         }
     }
 }
