@@ -2,92 +2,109 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.companieshouse.api.util.security.EricConstants.ERIC_IDENTITY;
-import static uk.gov.companieshouse.api.util.security.EricConstants.ERIC_IDENTITY_TYPE;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpResponseException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedStatic;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
-import uk.gov.companieshouse.api.handler.exception.URIValidationException;
-import uk.gov.companieshouse.api.identityverification.model.Identity;
+import uk.gov.companieshouse.api.InternalApiClient;
+import uk.gov.companieshouse.api.error.ApiErrorResponseException;
+import uk.gov.companieshouse.api.handler.identityverification.PrivateIdentityVerificationResourceHandler;
+import uk.gov.companieshouse.api.handler.identityverification.request.PrivateFindUvidsByIdentityIdGet;
+import uk.gov.companieshouse.api.identityverification.model.Uvid;
+import uk.gov.companieshouse.api.model.ApiResponse;
+import uk.gov.companieshouse.api.model.identityverification.PrivateUvidListApi;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.service.IdentityVerificationService;
+import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 
-@ExtendWith(MockitoExtension.class)
 class IndividualUserServiceImplTest {
 
-    private static final String USER_ID = "user-123";
+    private static final String INTERNAL_API_URL = "http://api.chs.local:4001";
     private static final String PASSTHROUGH_TOKEN =
             "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
-    @Mock
-    private HttpServletRequest request;
+    @Test
+    void getsTheActiveUvidByIdentityId() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindUvidsByIdentityIdGet request = mock(PrivateFindUvidsByIdentityIdGet.class);
 
-    @Mock
-    private IdentityVerificationService identityVerificationService;
-    @Mock
-    private Logger logger;
+        Uvid expectedUvid = new Uvid();
+        expectedUvid.setUvid("11111-111");
+        ApiResponse<PrivateUvidListApi> response = new ApiResponse<>(
+                200, Map.of(), new PrivateUvidListApi(List.of(expectedUvid)));
 
-    private IndividualUserServiceImpl service;
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenReturn(response);
 
-    @BeforeEach
-    void setUp() {
-        service = new IndividualUserServiceImpl(identityVerificationService, logger);
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
+
+            Uvid uvid = service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN);
+
+            assertThat(uvid).isSameAs(expectedUvid);
+            verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
+            verify(handler).findUvidsByIdentityId(
+                    "/verification/identities/identity-123/uvids", true);
+        }
     }
 
     @Test
-    void getsIdentityVerificationDetailsForTheSignedInUser() throws URIValidationException {
-        when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
-        when(request.getHeader(ERIC_IDENTITY)).thenReturn(USER_ID);
-        when(request.getHeader("ERIC-Access-Token")).thenReturn(PASSTHROUGH_TOKEN);
+    void mapsTransportFailuresToBadGateway() {
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenThrow(new IOException("Connection timed out"));
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
 
-        Identity expectedIdentity = new Identity();
-        expectedIdentity.setId("identity-123");
-        expectedIdentity.setEmail("presenter@example.com");
-        expectedIdentity.setUserId(USER_ID);
-        when(identityVerificationService.getIdentityByUserId(USER_ID, PASSTHROUGH_TOKEN))
-                .thenReturn(expectedIdentity);
-
-        Identity identity = service.getIdentityVerificationDetails(request);
-
-        assertThat(identity.getId()).isEqualTo("identity-123");
-        assertThat(identity.getEmail()).isEqualTo("presenter@example.com");
-        assertThat(identity.getUserId()).isEqualTo(USER_ID);
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+        }
     }
 
     @Test
-    void rejectsNonOAuth2Requests() {
-        when(request.getHeader(ERIC_IDENTITY)).thenReturn(USER_ID);
-        when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("key");
+    void preservesDownstreamHttpStatus() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+        PrivateIdentityVerificationResourceHandler handler =
+                mock(PrivateIdentityVerificationResourceHandler.class);
+        PrivateFindUvidsByIdentityIdGet request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        ApiErrorResponseException downstreamException = new ApiErrorResponseException(
+                new HttpResponseException.Builder(401, "Unauthorized", new HttpHeaders()));
 
-        assertThatThrownBy(() -> service.getIdentityVerificationDetails(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("An OAuth2 user is required");
-    }
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenThrow(downstreamException);
 
-    @Test
-    void rejectsOAuth2RequestsWithBlankUserId() {
-        when(request.getHeader(ERIC_IDENTITY)).thenReturn(" ");
-        when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+                    .thenReturn(apiClient);
+            IndividualUserServiceImpl service =
+                    new IndividualUserServiceImpl(INTERNAL_API_URL, mock(Logger.class));
 
-        assertThatThrownBy(() -> service.getIdentityVerificationDetails(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("An OAuth2 user is required");
-    }
-
-    @Test
-    void rejectsRequestsMissingTheAccessTokenHeader() {
-        when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
-        when(request.getHeader(ERIC_IDENTITY)).thenReturn(USER_ID);
-        when(request.getHeader("ERIC-Access-Token")).thenReturn(null);
-
-        assertThatThrownBy(() -> service.getIdentityVerificationDetails(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("ERIC-Access-Token");
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
+                    "identity-123", PASSTHROUGH_TOKEN))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
+        }
     }
 }

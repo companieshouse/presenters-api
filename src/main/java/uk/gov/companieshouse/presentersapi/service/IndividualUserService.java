@@ -1,13 +1,15 @@
 package uk.gov.companieshouse.presentersapi.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
+import uk.gov.companieshouse.api.identityverification.model.Uvid;
 
 /**
- * Retrieves identity-verification details for the signed-in CHS user.
+ * Retrieves verified identity details through the private API SDK.
  */
 public interface IndividualUserService {
 
-    Identity getIdentityVerificationDetails(HttpServletRequest request) throws URIValidationException;
+    Identity getIdentityByUserId(String userId, String passthroughToken) throws URIValidationException;
+
+    Uvid getActiveUvidByIdentityId(String identityId, String passthroughToken) throws URIValidationException;
 }
