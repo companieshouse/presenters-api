@@ -13,6 +13,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.dataformat.yaml.JacksonYAMLParseException;
 
 /**
  * Unit test suite for EnumBiMapGenerator utility methods.
@@ -158,13 +159,15 @@ class EnumBiMapGeneratorTest {
     }
 
     @Test
-    void testExtractValuesListStringValueIgnored() {
+    void testExtractValuesListStringValueThrows() {
         var entry = new AbstractMap.SimpleEntry<String, Object>("key", "string-value");
 
-        var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
-
-        assertThat("String value should return empty list",
-                  result.size(), is(0));
+        var exception = assertThrows(
+                IllegalStateException.class,
+                () -> EnumBiMapGenerator.extractValuesList(entry, "key1", "test.yaml"),
+                "Should throw on invalid structure"
+        );
+        assertThat(exception.getMessage(), containsString("expected a list of strings or null/empty value"));
     }
 
     @Test
@@ -248,14 +251,14 @@ class EnumBiMapGeneratorTest {
 
     @Test
     void testReadConfigMalformedYamlException() {
-        var configFile = Paths.get("src/test/resources/malformed-config.yaml");
+        var configFile = Paths.get("src/test/resources/malformed.yaml");
         var exception = assertThrows(
-                Exception.class,
+                JacksonYAMLParseException.class,
                 () -> EnumBiMapGenerator.readConfig(configFile),
                 "Should throw when config file is malformed"
         );
-        assertThat("Error message should contain path to file",
-                exception.getMessage(), containsString("src/test/resources/malformed-config.yaml"));
+        assertThat("Error message should be informative",
+                exception.getMessage(), containsString("could not find expected ':'"));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

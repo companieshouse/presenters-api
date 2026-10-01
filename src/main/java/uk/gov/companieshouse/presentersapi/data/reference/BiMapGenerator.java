@@ -1,7 +1,5 @@
 package uk.gov.companieshouse.presentersapi.data.reference;
 
-import static uk.gov.companieshouse.presentersapi.PresentersApiApplication.APP_NAMESPACE;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +17,7 @@ import uk.gov.companieshouse.logging.LoggerFactory;
  * </ul>
  */
 class BiMapGenerator {
+    private static final String APP_NAMESPACE = "presenters-api";
     private static final Logger logger = LoggerFactory.getLogger(APP_NAMESPACE);
 
     private final EnumGeneratorConfig config;

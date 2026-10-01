@@ -152,10 +152,6 @@ public class EnumBiMapGenerator {
                 .toList();
         }
 
-        if (entry.getValue() instanceof final String ignored) {
-            return new ArrayList<>();
-        }
-
         throw new IllegalStateException("Data structure error in " + sourceFile + " at key '" + keyName
                 + "': expected a list of strings or null/empty value. Found " + entry.getValue().getClass().getSimpleName()
                 + ". Check YAML syntax (should be a list with '- item' format or empty).");

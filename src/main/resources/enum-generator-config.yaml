@@ -66,8 +66,8 @@
 
 
 output-package:
-  enums: uk.gov.companieshouse.presenters.yamlmapping.data.enums
-  bimaps: uk.gov.companieshouse.presenters.yamlmapping.data.bimaps
+  enums: uk.gov.companieshouse.presenters.api.yamlmapping.data.enums
+  bimaps: uk.gov.companieshouse.presenters.api.yamlmapping.data.bimaps
 
 sources:
   data/form-type-by-form-group.yaml:
