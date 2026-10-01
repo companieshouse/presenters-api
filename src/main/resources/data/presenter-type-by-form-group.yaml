@@ -26,6 +26,12 @@ presenter-types-map:
     acsp-only-individual-delivery:
       - acsp-sole-trader
       - acsp-employee
+    incorporation:
+      - ascp-sole-trader
+      - ascp-employee
+      - individual-filing-for-self
+    official-receiver:
+      - exempt-presenter
     exempt-form:
       - exempt-presenter
 

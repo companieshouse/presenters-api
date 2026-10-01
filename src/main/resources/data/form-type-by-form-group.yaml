@@ -7,11 +7,12 @@ form-types-map:
       - PSC01
     multi-delivery:
       - MR01
-    incorporation:
-      - IN01
     acsp-only-firm-delivery:
       - LP05
     acsp-only-individual-delivery:
       - LP7
+    incorporation:
+      - IN01
+    official-receiver:
     exempt-form:
       - WU15
