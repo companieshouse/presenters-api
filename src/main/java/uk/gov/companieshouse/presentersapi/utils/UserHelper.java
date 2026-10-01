@@ -10,6 +10,17 @@ public final class UserHelper {
     private UserHelper() {
     }
 
+    /**
+     * NOTE: This helper is intended to allow the CHS User ID to be retrieved from the request.
+     * Currently, the CHS User ID is passed in as a query parameter, but is it more secure to
+     * retrieve it from the OAuth2 token instead?
+     * Example used would be:
+     * <pre>{@code
+     * String userId = UserHelper.getChsUserId(request);
+     * String passthroughToken = UserHelper.requireHeader(request, ERIC_ACCESS_TOKEN_HEADER);
+     * Identity identity = identityVerificationService.getIdentityByUserId(userId, passthroughToken);
+     * }</pre>
+     */
     public static String getChsUserId(HttpServletRequest request) {
         String userId = AuthorisationUtil.getAuthorisedIdentity(request);
 
