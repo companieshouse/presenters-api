@@ -11,7 +11,7 @@ public final class UserHelper {
     }
 
     /**
-     * NOTE: This helper is intended to allow the CHS User ID to be retrieved from the request.
+     * TODO: This helper is intended to allow the CHS User ID to be retrieved from the request.
      * Currently, the CHS User ID is passed in as a query parameter, but is it more secure to
      * retrieve it from the OAuth2 token instead?
      * Example used would be:
