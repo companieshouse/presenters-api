@@ -7,7 +7,7 @@ import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 
 @Service
-public class PresenterTypesServiceImpl implements PresenterTypesService
+public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     @Override
     public PresenterTypes getPresenterTypes(String userId, String formType) {
