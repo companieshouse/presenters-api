@@ -26,6 +26,16 @@
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
 		<exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
 		<build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+
+		<!--sonar configuration-->
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<!--suppress UnresolvedMavenProperty -->
+		<sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
+		<sonar.projectKey>uk.gov.companieshouse:presenters-api</sonar.projectKey>
+		<sonar.projectName>presenters-api</sonar.projectName>
+		<sonar.dependencyCheck.htmlReportPath>
+			${project.basedir}/target/dependency-check-report.html
+		</sonar.dependencyCheck.htmlReportPath>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -243,6 +253,10 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
