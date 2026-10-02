@@ -40,13 +40,13 @@ endif
 	rm -rf $(tmpdir)
 
 .PHONY: dist
-dist: clean build package
+dist: clean build package test
 
 
 .PHONY: sonar
 sonar:
-	mvn sonar:sonar
+	mvn sonar:sonar -P sonar-pr-analysis
 
 .PHONY: sonar-pr-analysis
 sonar-pr-analysis:
-	mvn sonar:sonar	-P sonar-pr-analysis
+	mvn verify sonar:sonar	-P sonar-pr-analysis

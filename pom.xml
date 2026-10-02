@@ -24,6 +24,19 @@
 		<ch-test-bom.version>0.1.21</ch-test-bom.version>
 
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+		<exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+		<build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+		<common-text.version>1.15.0</common-text.version>
+
+		<!--sonar configuration-->
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<!--suppress UnresolvedMavenProperty -->
+		<sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
+		<sonar.projectKey>uk.gov.companieshouse:presenters-api</sonar.projectKey>
+		<sonar.projectName>presenters-api</sonar.projectName>
+		<sonar.dependencyCheck.htmlReportPath>
+			${project.basedir}/target/dependency-check-report.html
+		</sonar.dependencyCheck.htmlReportPath>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -89,6 +102,11 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 			<version>${spring-boot-dependencies.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<version>${spring-boot-dependencies.version}</version>
+		</dependency>
 		<!--       Don't enable until we have a mongodb-->
 		<!--       <dependency>-->
 		<!--          <groupId>org.springframework.boot</groupId>-->
@@ -118,6 +136,33 @@
 			<version>${spring-boot-dependencies.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>uk.gov.companieshouse</groupId>
+			<artifactId>structured-logging</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>tools.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>${common-text.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -128,6 +173,75 @@
 				<configuration>
 					<release>${java.version}</release>
 				</configuration>
+				<executions>
+					<!-- 0) Compile generator sources before running the generator -->
+					<execution>
+						<id>compile-generator</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<release>${java.version}</release>
+							<includes>
+								<include>uk/gov/companieshouse/presentersapi/data/reference/*.java</include>
+							</includes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>default-compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<release>${java.version}</release>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- 1) Run Java generator during generate-sources -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>${exec-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>generate-enum-bimaps</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>uk.gov.companieshouse.presentersapi.data.reference.EnumBiMapGenerator</mainClass>
+							<arguments>
+								<argument>${project.basedir}/src/main/resources/enum-generator-config.yaml</argument>
+								<argument>${project.build.directory}/generated-sources/java</argument>
+							</arguments>
+							<classpathScope>compile</classpathScope>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- 2) Register generated directory as source -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>${build-helper-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>add-generated-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -140,6 +254,10 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
