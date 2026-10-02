@@ -2,12 +2,12 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 
-@RestController
-public class PresenterTypesServiceImpl implements PresenterTypesService {
+@Service
+public class PresenterTypesServiceImpl implements PresenterTypesService
 
     @Override
     public PresenterTypes getPresenterTypes(String userId, String formType) {
