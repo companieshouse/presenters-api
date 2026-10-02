@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Start script for psc-verification-api
+# Start script for presenters-api
 
 PORT=8080
 
