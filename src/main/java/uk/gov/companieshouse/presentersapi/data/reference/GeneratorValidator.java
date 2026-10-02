@@ -357,9 +357,12 @@ class GeneratorValidator {
             final Map<String, String> valueToOwnerEnum, final Set<String> allowedEnums) {
         final var ownerEnum = valueToOwnerEnum.get(token);
         if (ownerEnum == null) {
-            // Token is not found in any generated enum; this is a separate validation error
-            // (e.g., typo in YAML, or truly foreign data). Optionally strict or warn.
-            return;
+            throw new IllegalStateException(
+                "Data validation error in " + sourceFile + ": unknown enum token in " + role + ".\n"
+                + "  Token '" + token + "' does not belong to any known enum type.\n"
+                + "  This role ('" + role + "') expects tokens from enums: " + allowedEnums + ".\n"
+                + "  To fix: Verify '" + token + "' is defined in the correct source YAML file."
+            );
         }
         if (!allowedEnums.contains(ownerEnum)) {
             reportForeignEnumToken(sourceFile, role, token, ownerEnum, allowedEnums);
