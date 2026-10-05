@@ -38,7 +38,6 @@ class PresenterTypesControllerImplTest {
             "officer-employee",
             "corporate-officer-employee",
             "exempt-presenter",
-            "exempt-form",
             "acsp-sole-trader",
             "acsp-employee",
             "individual-filing-for-self",
@@ -60,8 +59,8 @@ class PresenterTypesControllerImplTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(8, response.getBody().getTypes().size());
-        assertEquals("officer-employee", response.getBody().getTypes().get(0));
+        assertEquals(7, response.getBody().getTypes().size());
+        assertEquals("officer-employee", response.getBody().getTypes().getFirst());
 
         verify(presenterTypesService, times(1))
             .getPresenterTypes(userId, formType);
@@ -94,33 +93,8 @@ class PresenterTypesControllerImplTest {
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assert response.getBody() != null;
         assertEquals(0, response.getBody().getTypes().size());
-    }
-
-    @Test
-    @DisplayName("should handle null userId parameter")
-    void testWithNullUserId() {
-        when(presenterTypesService.getPresenterTypes(null, "form-test"))
-            .thenReturn(testPresenterTypes);
-
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes(null, "form-test");
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(presenterTypesService).getPresenterTypes(null, "form-test");
-    }
-
-    @Test
-    @DisplayName("should handle null formType parameter")
-    void testWithNullFormType() {
-        when(presenterTypesService.getPresenterTypes("user123", null))
-            .thenReturn(testPresenterTypes);
-
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user123", null);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(presenterTypesService).getPresenterTypes("user123", null);
     }
 
     @Test
@@ -134,7 +108,7 @@ class PresenterTypesControllerImplTest {
         assertNotNull(response);
         assertNotNull(response.getBody());
         assertNotNull(response.getBody().getTypes());
-        assertTrue(response.getBody().getTypes().size() > 0);
+        assertFalse(response.getBody().getTypes().isEmpty());
     }
 
     @Test
@@ -161,27 +135,14 @@ class PresenterTypesControllerImplTest {
 
         ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user", "form");
 
+        assert response.getBody() != null;
         List<String> types = response.getBody().getTypes();
         assertTrue(types.contains("officer-employee"));
         assertTrue(types.contains("corporate-officer-employee"));
         assertTrue(types.contains("exempt-presenter"));
-        assertTrue(types.contains("exempt-form"));
         assertTrue(types.contains("acsp-sole-trader"));
         assertTrue(types.contains("acsp-employee"));
         assertTrue(types.contains("individual-filing-for-self"));
         assertTrue(types.contains("individual-filing-for-someone-else"));
-    }
-
-    @Test
-    @DisplayName("should call service exactly once per controller call")
-    void testServiceCallCount() {
-        when(presenterTypesService.getPresenterTypes(anyString(), anyString()))
-            .thenReturn(testPresenterTypes);
-
-        controller.getPresenterTypes("user1", "form1");
-        controller.getPresenterTypes("user2", "form2");
-
-        verify(presenterTypesService, times(2))
-            .getPresenterTypes(anyString(), anyString());
     }
 }

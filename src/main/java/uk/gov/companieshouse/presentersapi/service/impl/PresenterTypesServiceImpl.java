@@ -16,7 +16,6 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             "officer-employee",
             "corporate-officer-employee",
             "exempt-presenter",
-            "exempt-form",
             "acsp-sole-trader",
             "acsp-employee",
             "individual-filing-for-self",
