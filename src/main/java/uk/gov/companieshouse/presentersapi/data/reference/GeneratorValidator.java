@@ -26,6 +26,7 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 class GeneratorValidator {
     private static final String APP_NAMESPACE = "presenters-api";
     private static final Logger logger = LoggerFactory.getLogger(APP_NAMESPACE);
+    public static final String DATA_VALIDATION_ERROR_IN = "Data validation error in ";
 
     private final EnumGeneratorConfig config;
     private final Path configDir;
@@ -68,7 +69,7 @@ class GeneratorValidator {
 
     private void reportConflict(final String sourceFile, final String conflictingValue) {
         throw new IllegalStateException(
-            "Data validation error in " + sourceFile + ": conflicting data.\n"
+            DATA_VALIDATION_ERROR_IN + sourceFile + ": conflicting data.\n"
             + "  '" + conflictingValue + "' is used as both a mapping key and a mapping value.\n"
             + "  Mapping keys and values must be different — each value should have one role.\n"
             + "  To fix: Remove '" + conflictingValue + "' from either the keys or values, or rename it to resolve the conflict."
@@ -212,7 +213,7 @@ class GeneratorValidator {
                 : "";
             
             throw new IllegalStateException(
-                "Data validation error in " + sourceFile + ": invalid " + itemType + "(s) — not valid " + enumName + ".\n"
+                DATA_VALIDATION_ERROR_IN + sourceFile + ": invalid " + itemType + "(s) — not valid " + enumName + ".\n"
                 + "  Invalid: " + invalidItems + "\n"
                 + "  Valid " + enumName + " values: " + validEnumValues + hint + "\n"
                 + "  To fix: Replace with valid values from the list above."
@@ -342,7 +343,7 @@ class GeneratorValidator {
         generatedEnums.forEach((enumName, enumDef) ->
             enumDef.values().forEach(value -> {
                 final var existingOwner = valueToOwnerEnum.put(value, enumName);
-                if (existingOwner != null && !existingOwner.equals(enumName)) {
+                if (existingOwner != null) {
                     reportDuplicateValueOwner(value, existingOwner, enumName);
                 }
             })
@@ -358,7 +359,7 @@ class GeneratorValidator {
         final var ownerEnum = valueToOwnerEnum.get(token);
         if (ownerEnum == null) {
             throw new IllegalStateException(
-                "Data validation error in " + sourceFile + ": unknown enum token in " + role + ".\n"
+                DATA_VALIDATION_ERROR_IN + sourceFile + ": unknown enum token in " + role + ".\n"
                 + "  Token '" + token + "' does not belong to any known enum type.\n"
                 + "  This role ('" + role + "') expects tokens from enums: " + allowedEnums + ".\n"
                 + "  To fix: Verify '" + token + "' is defined in the correct source YAML file."
@@ -375,7 +376,7 @@ class GeneratorValidator {
             final String sourceFile, final String role, final String token,
             final String detectedOwnerEnum, final Set<String> allowedEnums) {
         throw new IllegalStateException(
-            "Data validation error in " + sourceFile + ": foreign enum token in " + role + ".\n"
+            DATA_VALIDATION_ERROR_IN + sourceFile + ": foreign enum token in " + role + ".\n"
             + "  Token '" + token + "' belongs to enum '" + detectedOwnerEnum + "'.\n"
             + "  This role ('" + role + "') only allows enums: " + allowedEnums + ".\n"
             + "  To fix: Verify '" + token + "' is the correct value; or move it to a source where "

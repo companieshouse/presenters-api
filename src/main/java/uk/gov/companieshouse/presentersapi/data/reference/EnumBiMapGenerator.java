@@ -106,9 +106,9 @@ public class EnumBiMapGenerator {
         final Map<String, Object> root = mapper.readValue(Files.readString(yamlFile), new TypeReference<>() {});
 
         @SuppressWarnings("unchecked")
-        var level = (Map<String, Object>) root.get(rootKeys.get(0));
+        var level = (Map<String, Object>) root.get(rootKeys.getFirst());
         if (level == null) {
-            throw new IllegalStateException("Configuration error in " + yamlFile + ": missing root-key '" + rootKeys.get(0)
+            throw new IllegalStateException("Configuration error in " + yamlFile + ": missing root-key '" + rootKeys.getFirst()
                     + "'. Check enum-generator-config.yaml root-keys path for this source.");
         }
 
@@ -123,14 +123,11 @@ public class EnumBiMapGenerator {
             level = next;
         }
 
-        return level.entrySet().stream()
-            // Map each key to its extracted value list; preserve insertion order and duplicates
-            .collect(java.util.stream.Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> extractValuesList(entry, entry.getKey(), yamlFile.toString()),
-                (v1, v2) -> v1,
-                LinkedHashMap::new
-            ));
+        // Preserve insertion order and duplicates
+        final var result = new LinkedHashMap<String, List<String>>();
+        level.entrySet().forEach(entry ->
+            result.put(entry.getKey(), extractValuesList(entry, entry.getKey(), yamlFile.toString())));
+        return result;
     }
 
     @SuppressWarnings("java:S1481") // Suppress Sonar warning about unused variable; used for pattern matching type check
@@ -152,20 +149,19 @@ public class EnumBiMapGenerator {
                 .toList();
         }
 
+        // Deliberately strict: a single scalar (e.g. "key: item") is not accepted as shorthand for a one-item list,
+        // as it usually indicates a typo or a missing '-' in the YAML.
         throw new IllegalStateException("Data structure error in " + sourceFile + " at key '" + keyName
                 + "': expected a list of strings or null/empty value. Found " + entry.getValue().getClass().getSimpleName()
                 + ". Check YAML syntax (should be a list with '- item' format or empty).");
     }
 
-    // Convert list-based data to set-based for downstream use (deduplicates after validation)
+    // Converts each value list to an insertion-ordered set, dropping duplicate values within a key.
+    // Any check that needs the duplicates (e.g. uniqueness validation) must run on the lists before calling this.
     static Map<String, Set<String>> toSetMap(final Map<String, List<String>> listMap) {
-        return listMap.entrySet().stream()
-            .collect(java.util.stream.Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> new LinkedHashSet<>(entry.getValue()),
-                (v1, v2) -> v1,
-                LinkedHashMap::new
-            ));
+        final var result = new LinkedHashMap<String, Set<String>>();
+        listMap.forEach((key, values) -> result.put(key, new LinkedHashSet<>(values)));
+        return result;
     }
 
     static String escapeForJavaStringLiteral(final String s) {

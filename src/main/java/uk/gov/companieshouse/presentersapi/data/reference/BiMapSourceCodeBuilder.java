@@ -5,6 +5,9 @@ import org.apache.commons.text.CaseUtils;
 
 public class BiMapSourceCodeBuilder {
 
+    // Interface implemented by every generated BiMap so the application can report on them generically
+    static final String REFERENCE_BIMAP_TYPE = "uk.gov.companieshouse.presentersapi.data.ReferenceBiMap";
+
     private BiMapSourceCodeBuilder() {
         // Utility class
     }
@@ -76,10 +79,11 @@ public class BiMapSourceCodeBuilder {
             + "import java.util.Set;\n"
             + "import org.springframework.boot.context.properties.ConfigurationProperties;\n"
             + "import java.util.Map;\n"
+            + "import " + REFERENCE_BIMAP_TYPE + ";\n"
             + "import " + enumPkg + "." + keyEnumName + ";\n"
             + "import " + enumPkg + "." + valueEnumName + ";\n\n"
             + "@ConfigurationProperties(prefix = \"" + configKeyName + "\")\n"
-            + "public class " + className + " {\n"
+            + "public class " + className + " implements ReferenceBiMap {\n"
             + "    private final EnumMap<" + keyEnumName + ", EnumSet<" + valueEnumName + ">> by" + keyEnumName + ";\n"
             + "    private final EnumMap<" + valueEnumName + ", " + keyEnumName + "> by" + valueEnumName + ";\n\n"
             + "    public " + className + "(final Map<" + keyEnumName + ", Set<" + valueEnumName + ">> " + propertyParamName + ") {\n"
@@ -109,7 +113,8 @@ public class BiMapSourceCodeBuilder {
             + "    }\n\n"
            + "    public " + keyEnumName + " " + StringUtils.uncapitalize(keyEnumName) + "For(final " + valueEnumName + " value) {\n"
             + "        return by" + valueEnumName + ".get(value);\n"
-            + "    }\n"
+            + "    }\n\n"
+            + sizeAccessors(keyEnumName, valueEnumName)
             + "}\n";
     }
 
@@ -137,10 +142,11 @@ public class BiMapSourceCodeBuilder {
             + "import java.util.Set;\n"
             + "import org.springframework.boot.context.properties.ConfigurationProperties;\n"
             + "import java.util.Map;\n"
+            + "import " + REFERENCE_BIMAP_TYPE + ";\n"
             + "import " + enumPkg + "." + keyEnumName + ";\n"
             + "import " + enumPkg + "." + valueEnumName + ";\n\n"
             + "@ConfigurationProperties(prefix = \"" + configKeyName + "\")\n"
-            + "public class " + className + " {\n"
+            + "public class " + className + " implements ReferenceBiMap {\n"
             + "    private final EnumMap<" + keyEnumName + ", EnumSet<" + valueEnumName + ">> by" + keyEnumName + ";\n"
             + "    private final EnumMap<" + valueEnumName + ", EnumSet<" + keyEnumName + ">> by" + valueEnumName + ";\n\n"
             + "    public " + className + "(final Map<" + keyEnumName + ", Set<" + valueEnumName + ">> " + propertyParamName + ") {\n"
@@ -165,7 +171,19 @@ public class BiMapSourceCodeBuilder {
             + "    }\n\n"
            + "    public EnumSet<" + keyEnumName + "> " + StringUtils.uncapitalize(keyEnumName) + "sFor(final " + valueEnumName + " value) {\n"
             + "        return by" + valueEnumName + ".getOrDefault(value, EnumSet.noneOf(" + keyEnumName + ".class));\n"
-            + "    }\n"
+            + "    }\n\n"
+            + sizeAccessors(keyEnumName, valueEnumName)
             + "}\n";
+    }
+
+    private static String sizeAccessors(final String keyEnumName, final String valueEnumName) {
+        return "    @Override\n"
+            + "    public int forwardEntryCount() {\n"
+            + "        return by" + keyEnumName + ".size();\n"
+            + "    }\n\n"
+            + "    @Override\n"
+            + "    public int reverseEntryCount() {\n"
+            + "        return by" + valueEnumName + ".size();\n"
+            + "    }\n";
     }
 }

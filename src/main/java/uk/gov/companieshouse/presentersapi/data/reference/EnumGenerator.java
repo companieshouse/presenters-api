@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
  */
 class EnumGenerator {
     private final Map<String, GeneratedEnumDef> generatedEnums = new LinkedHashMap<>();
+    private final Map<String, Set<String>> enumSourceFiles = new LinkedHashMap<>();
     private final EnumGeneratorConfig config;
     private final Path configDir;
     private final Path outputDir;
@@ -84,7 +85,7 @@ class EnumGenerator {
 
     private void mergeMultiSourceEnum(
             final String enumName, final EnumGeneratorConfig.EnumDefinition enumDef,
-            final String sourceFile, final Map<String, List<String>> yamlDataList) {
+            final String sourceFile, final Map<String, List<String>> yamlDataList) throws IOException {
         // Validate uniqueness even for merged enums (each source independently)
         if (enumDef.validation() != null && enumDef.validation().uniquenessValidation() != null) {
             GeneratorValidator.validateUniqueness(yamlDataList, enumDef.validation().uniquenessValidation(), sourceFile);
@@ -94,6 +95,11 @@ class EnumGenerator {
         final var existingValues = generatedEnums.get(enumName).values();
         final var sourceValues = extractValuesFromYaml(yamlData, enumDef.location());
         existingValues.addAll(sourceValues);
+
+        // Rewrite the enum file so the generated class includes values from this source
+        final var sourceFiles = enumSourceFiles.get(enumName);
+        sourceFiles.add(sourceFile);
+        writeEnumFile(outputDir, generatedEnums.get(enumName), sourceFiles);
     }
 
     private void createAndRegisterEnum(
@@ -107,7 +113,10 @@ class EnumGenerator {
         final var enumValues = extractValuesFromYaml(yamlData, enumDef.location());
         final var generatedEnum = new GeneratedEnumDef(enumName, enumValues, config.outputPackage().enumPackage());
         generatedEnums.put(enumName, generatedEnum);
-        writeEnumFile(outputDir, generatedEnum, Set.of(sourceFile));
+        final var sourceFiles = new LinkedHashSet<String>();
+        sourceFiles.add(sourceFile);
+        enumSourceFiles.put(enumName, sourceFiles);
+        writeEnumFile(outputDir, generatedEnum, sourceFiles);
     }
 
     // Extract enum values based on location (DICTIONARY_KEYS or DICTIONARY_VALUES)
@@ -140,13 +149,11 @@ class EnumGenerator {
             .collect(java.util.stream.Collectors.toMap(
                 EnumGenerator::toEnumConstant,
                 code -> code,
+                // The codes form a Set, so a key collision always means two distinct codes normalise to one constant
                 (existing, code) -> {
-                    if (!existing.equals(code)) {
-                        throw new IllegalStateException("Generation error in enum '" + enumName + "' from [" + String.join(", ", sourceFiles)
-                                + "]: normalization collision. Values '" + existing + "' and '" + code + "' both normalize to constant '" + toEnumConstant(existing)
-                                + "'. Java enum constant names must be unique. Use different source values in YAML (e.g., rename one to distinguish them).");
-                    }
-                    return existing;
+                    throw new IllegalStateException("Generation error in enum '" + enumName + "' from [" + String.join(", ", sourceFiles)
+                            + "]: normalization collision. Values '" + existing + "' and '" + code + "' both normalize to constant '" + toEnumConstant(existing)
+                            + "'. Java enum constant names must be unique. Use different source values in YAML (e.g., rename one to distinguish them).");
                 },
                 LinkedHashMap::new
             ));

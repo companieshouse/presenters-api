@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.presentersapi.data.reference;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeySetGeneratesCorrectFieldDeclarations() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.gov.companieshouse.data.bimaps",
                 "TestFormGroupFormTypeBiMap",
                 "FormGroup",
@@ -32,7 +33,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeySetConstructorParameterFromYamlProperty() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.gov.companieshouse.data.bimaps",
                 "TestFormGroupFormTypeBiMap",
                 "FormGroup",
@@ -49,7 +50,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeySetUsesPutIfAbsentForDuplicateDetection() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.gov.companieshouse.data.bimaps",
                 "TestFormGroupFormTypeBiMap",
                 "FormGroup",
@@ -72,7 +73,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeySetReverseMethodIsSingular() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.gov.companieshouse.data.bimaps",
                 "TestFormGroupFormTypeBiMap",
                 "FormGroup",
@@ -93,7 +94,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeyGeneratesCorrectFieldDeclarations() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestKeyEnumValueEnumBiMap",
                 "KeyEnum",
@@ -114,7 +115,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeyConstructorParameterFromYamlProperty() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestKeyEnumValueEnumBiMap",
                 "KeyEnum",
@@ -131,7 +132,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeyUsesComputeIfAbsentForAccumulation() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestKeyEnumValueEnumBiMap",
                 "KeyEnum",
@@ -156,7 +157,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testValuesPerKeyReverseMethodIsPlural() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestKeyEnumValueEnumBiMap",
                 "KeyEnum",
@@ -177,7 +178,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testBothVariantsHaveSameForwardMethod() {
-        var resultSingular = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var resultSingular = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -187,7 +188,7 @@ class BiMapSourceCodeBuilderTest {
                 EnumGeneratorConfig.UniquenessValidation.VALUES_PER_KEY_SET
         );
 
-        var resultPlural = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var resultPlural = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -211,8 +212,8 @@ class BiMapSourceCodeBuilderTest {
             "presenter-type,presenterType",
             "single,single"
     })
-    void testYamlPropertyConvertedToCamelCase(String yamlProperty, String expectedCamelCase) {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testYamlPropertyConvertedToCamelCase(final String yamlProperty, final String expectedCamelCase) {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -232,8 +233,8 @@ class BiMapSourceCodeBuilderTest {
             "uk.data.bimaps,uk.data.enums",
             "com.example.api.bimap,com.example.api.enums"
     })
-    void testEnumPackageTransformation(String biMapPackage, String expectedEnumPackage) {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testEnumPackageTransformation(final String biMapPackage, final String expectedEnumPackage) {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 biMapPackage,
                 "TestBiMap",
                 "KeyEnum",
@@ -250,8 +251,8 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testConfigurationPropertiesAnnotation() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testBuildBiMapSourceConfigurationPropertiesPrefix() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -266,8 +267,8 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testEmptyValueSetHandling() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testBuildBiMapSourceEmptyValueSetUsesNoneOf() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -283,8 +284,8 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testGetterMethodsSafeReturn() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testBuildBiMapSourceGettersDefaultToEmptySet() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -301,7 +302,7 @@ class BiMapSourceCodeBuilderTest {
 
     @Test
     void testNullUniquenessValidationDefaultsToValuesPerKey() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -319,8 +320,8 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testRequiredImports() {
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+    void testBuildBiMapSourceIncludesRequiredImports() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -339,9 +340,9 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
-    void testClassNameGeneration() {
+    void testBuildBiMapSourceClassAndConstructorNames() {
 
-        var result = BiMapSourceCodeBuilder.buildBiMapSource(
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",
                 "TestBiMap",
                 "KeyEnum",
@@ -352,8 +353,22 @@ class BiMapSourceCodeBuilderTest {
         );
 
         assertThat("Should generate correct class declaration",
-                result, containsString("public class TestBiMap {"));
+                result, containsString("public class TestBiMap implements ReferenceBiMap {"));
         assertThat("Constructor should match class name",
                 result, containsString("public TestBiMap("));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"VALUES_PER_KEY_SET", "VALUES_PER_KEY"})
+    void testGeneratedBiMapReportsEntryCountsInBothDirections(final EnumGeneratorConfig.UniquenessValidation mode) {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
+                "com.example.bimaps", "TestBiMap", "KeyEnum", "ValueEnum", "myPrefix", "by-key", mode);
+
+        assertThat("Should import the ReferenceBiMap interface",
+                result, containsString("import uk.gov.companieshouse.presentersapi.data.ReferenceBiMap;"));
+        assertThat("Forward count should come from the key map",
+                result, containsString("public int forwardEntryCount() {\n        return byKeyEnum.size();"));
+        assertThat("Reverse count should come from the value map",
+                result, containsString("public int reverseEntryCount() {\n        return byValueEnum.size();"));
     }
 }

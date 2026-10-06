@@ -1,8 +1,10 @@
 package uk.gov.companieshouse.presentersapi.data.reference;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
@@ -18,11 +20,11 @@ import org.junit.jupiter.params.provider.EnumSource;
  * - Valid data that passes both constraints
  * - Invalid data detecting violations with clear error messages
  */
-class GeneratorValidatorTest {
+class GeneratorValidatorUniquenessTest {
 
     @Test
-    void testUniqueValuesForKeySet() {
-        var dataMap = Map.of(
+    void testValidateUniquenessValuesPerKeySetAcceptsUniqueValues() {
+        final var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "CS01"),
             "individual-delivery", List.of("PSC01")
         );
@@ -39,12 +41,12 @@ class GeneratorValidatorTest {
 
     @Test
     void testThrowsExceptionWhenMultipleValuesForKeySet() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "CS01"),
             "individual-delivery", List.of("AD01", "PSC01")
         );
 
-        var exception = assertThrows(
+        final var exception = assertThrows(
             IllegalStateException.class,
             () -> GeneratorValidator.validateUniqueness(
                 dataMap,
@@ -63,8 +65,8 @@ class GeneratorValidatorTest {
     }
 
     @Test
-    void testValidEmptyValuesForValuesPerKeySet() {
-        var dataMap = Map.of(
+    void testValidateUniquenessValuesPerKeySetAcceptsEmptyValue() {
+        final var dataMap = Map.of(
             "firm-delivery", List.of(""),
             "individual-delivery", List.of("AD01")
         );
@@ -81,13 +83,13 @@ class GeneratorValidatorTest {
 
     @Test
     void testValidateUniquenessMultipleViolationsValuesPerKeySet() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "key1", List.of("AD01", "CS01"),
             "key2", List.of("AD01", "PSC01"),
             "key3", List.of("CS01")
         );
 
-        var exception = assertThrows(
+        final var exception = assertThrows(
             IllegalStateException.class,
             () -> GeneratorValidator.validateUniqueness(
                 dataMap,
@@ -97,15 +99,15 @@ class GeneratorValidatorTest {
             "Should throw on first violation found"
         );
 
-        var message = exception.getMessage();
-        var hasConflict = message.contains("AD01") || message.contains("CS01");
+        final var message = exception.getMessage();
+        final var hasConflict = message.contains("AD01") || message.contains("CS01");
         assertThat("Error should identify a conflicting value",
                   hasConflict, is(true));
     }
 
     @Test
     void testDuplicateValuesAllowedAcrossKeys() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "firm-delivery", List.of("officer-employee", "corporate-officer"),
             "individual-delivery", List.of("officer-employee", "acsp-sole-trader")
         );
@@ -122,12 +124,12 @@ class GeneratorValidatorTest {
 
     @Test
     void testThrowsExceptionForDuplicateValuesForSameKey() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "firm-delivery", List.of("officer-employee", "officer-employee", "corporate-officer"),
             "individual-delivery", List.of("officer-employee")
         );
 
-        var exception = assertThrows(
+        final var exception = assertThrows(
             IllegalStateException.class,
             () -> GeneratorValidator.validateUniqueness(
                 dataMap,
@@ -149,7 +151,7 @@ class GeneratorValidatorTest {
 
     @Test
     void testSameValueAllowedAcrossMultipleKeys() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "key1", List.of("A", "B", "C"),
             "key2", List.of("A", "D"),
             "key3", List.of("A", "B")
@@ -167,7 +169,7 @@ class GeneratorValidatorTest {
 
     @ParameterizedTest
     @EnumSource(EnumGeneratorConfig.UniquenessValidation.class)
-    void testValidateEmptyMap(EnumGeneratorConfig.UniquenessValidation mode) {
+    void testValidateEmptyMap(final EnumGeneratorConfig.UniquenessValidation mode) {
         Map<String, List<String>> dataMap = Map.of();
 
         assertDoesNotThrow(
@@ -182,7 +184,7 @@ class GeneratorValidatorTest {
 
     @Test
     void testSingleKeyWithMultipleValuesPerKeySet() {
-        var dataMap = Map.of("only-key", List.of("A", "B", "C"));
+        final var dataMap = Map.of("only-key", List.of("A", "B", "C"));
 
         assertDoesNotThrow(
             () -> GeneratorValidator.validateUniqueness(
@@ -196,7 +198,7 @@ class GeneratorValidatorTest {
 
     @Test
     void testValidateUniquenessNullValidationParameter() {
-        var dataMap = Map.of("key", List.of("value"));
+        final var dataMap = Map.of("key", List.of("value"));
 
         assertDoesNotThrow(
             () -> GeneratorValidator.validateUniqueness(
@@ -210,7 +212,7 @@ class GeneratorValidatorTest {
 
     @Test
     void testValidateUniquenessFormTypeScenarioValid() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "firm-delivery", List.of("AD01", "AD02"),
             "individual-delivery", List.of("PSC01", "PSC04"),
             "lp-delivery", List.of("LP01")
@@ -228,7 +230,7 @@ class GeneratorValidatorTest {
 
     @Test
     void testValidateUniquenessPresenterTypeScenarioValid() {
-        var dataMap = Map.of(
+        final var dataMap = Map.of(
             "firm-delivery", List.of("officer-employee", "corporate-officer-employee", "acsp-sole-trader"),
             "individual-delivery", List.of("officer-employee", "acsp-sole-trader"),
             "lp-delivery", List.of("corporate-officer-employee")
