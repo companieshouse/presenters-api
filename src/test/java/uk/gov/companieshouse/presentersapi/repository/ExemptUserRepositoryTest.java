@@ -7,9 +7,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import uk.gov.companieshouse.presentersapi.PresentersApiApplication;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
-import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
 
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
