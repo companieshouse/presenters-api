@@ -183,6 +183,12 @@
 			<version>1.19.8</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-core</artifactId>
+			<version>4.9.1</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
