@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-
 import org.springframework.stereotype.Service;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
