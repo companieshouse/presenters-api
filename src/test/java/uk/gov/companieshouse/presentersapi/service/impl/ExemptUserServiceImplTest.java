@@ -10,9 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
 import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
-import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.*;
@@ -20,14 +17,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ExemptUserServiceImplTest {
 
-    public static final String EMAIL = "demo1@companieshouse.gov.uk";
-
     @Mock
     private ExemptUserRepository repository;
     @InjectMocks
     private ExemptUserServiceImpl service;
 
-    private ExemptUserDao exemptUserDao;
 
     @BeforeEach
     void setUp(){
@@ -77,8 +71,6 @@ public class ExemptUserServiceImplTest {
 
     @Test
     void isNotExemptUserByEmail(){
-        ExemptUserDao mockUser = new ExemptUserDao();
-
         when(repository.findByEmail("test@example.com")).thenReturn(null);
         Boolean result = service.isExemptUserByEmail("test@example.com");
 
@@ -100,8 +92,6 @@ public class ExemptUserServiceImplTest {
 
     @Test
     void isNotExemptUserById(){
-        ExemptUserDao mockUser = new ExemptUserDao();
-
         when(repository.findByObjectId("id")).thenReturn(null);
         Boolean result = service.isExemptUserById("id");
 
