@@ -25,7 +25,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should return 7 presenter types")
-    void testGetPresenterTypesReturnsEightTypes() {
+    void testGetPresenterTypesReturnsSevenTypes() {
         PresenterTypes result = service.getPresenterTypes("user123", "form-abc");
 
         assertEquals(7, result.getTypes().size());
