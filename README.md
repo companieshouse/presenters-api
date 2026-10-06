@@ -11,3 +11,4 @@ Certain form types will be sent by efs-submission-api to FES while other form ty
 ----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|--------|
  CHS_API_KEY                     | The internal api key for calling internal services                                                            | dummy-key                                  |always
  INTERNAL_CHS_API_KEY                        | An api key for calling services without an internal privilege constraint                                                       | dummy-internal-key                                  |always
+
