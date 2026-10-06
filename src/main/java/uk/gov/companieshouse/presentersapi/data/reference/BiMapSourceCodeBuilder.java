@@ -109,7 +109,7 @@ public class BiMapSourceCodeBuilder {
             + "        this.by" + valueEnumName + " = reverseMapping;\n"
             + "    }\n\n"
             + "    public EnumSet<" + valueEnumName + "> " + valueParamName + "sFor(final " + keyEnumName + " key) {\n"
-            + "        return by" + keyEnumName + ".getOrDefault(key, EnumSet.noneOf(" + valueEnumName + ".class));\n"
+            + "        return EnumSet.copyOf(by" + keyEnumName + ".getOrDefault(key, EnumSet.noneOf(" + valueEnumName + ".class)));\n"
             + "    }\n\n"
            + "    public " + keyEnumName + " " + StringUtils.uncapitalize(keyEnumName) + "For(final " + valueEnumName + " value) {\n"
             + "        return by" + valueEnumName + ".get(value);\n"
@@ -167,10 +167,10 @@ public class BiMapSourceCodeBuilder {
             + "        this.by" + valueEnumName + " = reverseMapping;\n"
             + "    }\n\n"
             + "    public EnumSet<" + valueEnumName + "> " + valueParamName + "sFor(final " + keyEnumName + " key) {\n"
-            + "        return by" + keyEnumName + ".getOrDefault(key, EnumSet.noneOf(" + valueEnumName + ".class));\n"
+            + "        return EnumSet.copyOf(by" + keyEnumName + ".getOrDefault(key, EnumSet.noneOf(" + valueEnumName + ".class)));\n"
             + "    }\n\n"
            + "    public EnumSet<" + keyEnumName + "> " + StringUtils.uncapitalize(keyEnumName) + "sFor(final " + valueEnumName + " value) {\n"
-            + "        return by" + valueEnumName + ".getOrDefault(value, EnumSet.noneOf(" + keyEnumName + ".class));\n"
+            + "        return EnumSet.copyOf(by" + valueEnumName + ".getOrDefault(value, EnumSet.noneOf(" + keyEnumName + ".class)));\n"
             + "    }\n\n"
             + sizeAccessors(keyEnumName, valueEnumName)
             + "}\n";

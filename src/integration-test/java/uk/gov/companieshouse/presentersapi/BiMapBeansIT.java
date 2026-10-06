@@ -117,6 +117,21 @@ class BiMapBeansIT {
     }
 
     @Test
+    void shouldNotExposeInternalSetsWhenCallersMutateReturnedSets() {
+        final var firmDelivery = FormGroup.from("firm-delivery");
+        final var exemptPresenter = PresenterType.from("exempt-presenter");
+
+        formGroupFormType.formTypesFor(firmDelivery).clear();
+        formGroupPresenterType.presenterTypesFor(firmDelivery).clear();
+        formGroupPresenterType.formGroupsFor(exemptPresenter).clear();
+
+        assertThat(formGroupFormType.formTypesFor(firmDelivery),
+            containsInAnyOrder(FormType.from("AD01"), FormType.from("CS01")));
+        assertThat(formGroupPresenterType.presenterTypesFor(firmDelivery).isEmpty(), is(false));
+        assertThat(formGroupPresenterType.formGroupsFor(exemptPresenter).isEmpty(), is(false));
+    }
+
+    @Test
     void shouldReportEveryBiMapWithPopulatedEntryCountsWhenContextStarts() {
         final var lines = summaryLogger.summaryLines();
 

@@ -301,6 +301,40 @@ class BiMapSourceCodeBuilderTest {
     }
 
     @Test
+    void testBuildBiMapSourceValuesPerKeySetGetterReturnsDefensiveCopy() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
+                "uk.data.bimaps",
+                "TestBiMap",
+                "KeyEnum",
+                "ValueEnum",
+                "testKey",
+                "test-property",
+                EnumGeneratorConfig.UniquenessValidation.VALUES_PER_KEY_SET
+        );
+
+        assertThat("Forward getter should return a copy of the stored set",
+                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(key, EnumSet.noneOf(ValueEnum.class)));"));
+    }
+
+    @Test
+    void testBuildBiMapSourceValuesPerKeyGettersReturnDefensiveCopies() {
+        final var result = BiMapSourceCodeBuilder.buildBiMapSource(
+                "uk.data.bimaps",
+                "TestBiMap",
+                "KeyEnum",
+                "ValueEnum",
+                "testKey",
+                "test-property",
+                EnumGeneratorConfig.UniquenessValidation.VALUES_PER_KEY
+        );
+
+        assertThat("Forward getter should return a copy of the stored set",
+                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(key, EnumSet.noneOf(ValueEnum.class)));"));
+        assertThat("Reverse getter should return a copy of the stored set",
+                result, containsString("return EnumSet.copyOf(byValueEnum.getOrDefault(value, EnumSet.noneOf(KeyEnum.class)));"));
+    }
+
+    @Test
     void testNullUniquenessValidationDefaultsToValuesPerKey() {
         final var result = BiMapSourceCodeBuilder.buildBiMapSource(
                 "uk.data.bimaps",

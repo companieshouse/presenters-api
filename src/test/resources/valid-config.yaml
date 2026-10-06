@@ -3,7 +3,7 @@ output-package:
   bimaps: uk.gov.companieshouse.presentersapi.data.bimaps
 sources:
   test-source.yaml:
-    rootKeys:
+    root-keys:
       - data
-    keyEnum: TestKeyEnum
-    valueEnum: TestValueEnum
+    key-enum: TestKeyEnum
+    value-enum: TestValueEnum
