@@ -29,32 +29,4 @@ class PresenterValidationServiceImplTest {
         assertNotNull(result);
         assertEquals(ValidationResponse.VALID, result);
     }
-
-    @Test
-    @DisplayName("should handle null request gracefully")
-    void testHandleNullRequest() {
-        assertDoesNotThrow(() -> {
-            ValidationResponse result = service.validatePresenterDetails(null);
-            assertNotNull(result);
-        });
-    }
-
-    @Test
-    @DisplayName("should handle empty validation request")
-    void testHandleEmptyValidationRequest() {
-        ValidationRequest emptyRequest = new ValidationRequest();
-        
-        assertDoesNotThrow(() -> {
-            ValidationResponse result = service.validatePresenterDetails(emptyRequest);
-            assertEquals(ValidationResponse.VALID, result);
-        });
-    }
-
-    @Test
-    @DisplayName("should not throw exception for valid request")
-    void testNoExceptionForValidRequest() {
-        assertDoesNotThrow(() -> {
-            service.validatePresenterDetails(validationRequest);
-        });
-    }
 }

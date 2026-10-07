@@ -52,6 +52,7 @@ class PresenterValidationControllerImplTest {
 
         verify(presenterValidationService, times(1))
             .validatePresenterDetails(testValidationRequest);
+        verifyNoMoreInteractions(presenterValidationService);
     }
 
     @Test
