@@ -1,7 +1,7 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -53,58 +53,5 @@ class PresenterValidationControllerImplTest {
         verify(presenterValidationService, times(1))
             .validatePresenterDetails(testValidationRequest);
         verifyNoMoreInteractions(presenterValidationService);
-    }
-
-    @Test
-    @DisplayName("should pass validation request to service")
-    void testParametersPassedToService() {
-        ValidationRequest request = new ValidationRequest();
-
-        when(presenterValidationService.validatePresenterDetails(request))
-            .thenReturn(testValidationResponse);
-
-        controller.validatePresenterDetails(request);
-
-        verify(presenterValidationService).validatePresenterDetails(request);
-    }
-
-    @Test
-    @DisplayName("should return response entity with validation response")
-    void testResponseEntityStructure() {
-        when(presenterValidationService.validatePresenterDetails(any()))
-            .thenReturn(testValidationResponse);
-
-        ResponseEntity<ValidationResponse> response = controller.validatePresenterDetails(testValidationRequest);
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("should verify controller delegates to service")
-    void testControllerDelegation() {
-        ValidationRequest request = new ValidationRequest();
-
-        when(presenterValidationService.validatePresenterDetails(request))
-            .thenReturn(testValidationResponse);
-
-        controller.validatePresenterDetails(request);
-
-        verify(presenterValidationService, times(1))
-            .validatePresenterDetails(request);
-        verifyNoMoreInteractions(presenterValidationService);
-    }
-
-    @Test
-    @DisplayName("should return response body is not null")
-    void testResponseBodyNotNull() {
-        when(presenterValidationService.validatePresenterDetails(any()))
-            .thenReturn(testValidationResponse);
-
-        ResponseEntity<ValidationResponse> response = controller.validatePresenterDetails(testValidationRequest);
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
     }
 }
