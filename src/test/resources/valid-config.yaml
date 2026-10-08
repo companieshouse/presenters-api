@@ -1,0 +1,9 @@
+output-package:
+  enums: uk.gov.companieshouse.presentersapi.data.enums
+  bimaps: uk.gov.companieshouse.presentersapi.data.bimaps
+sources:
+  test-source.yaml:
+    root-keys:
+      - data
+    key-enum: TestKeyEnum
+    value-enum: TestValueEnum

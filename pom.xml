@@ -1,61 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>uk.gov.companieshouse</groupId>
-		<artifactId>companies-house-parent</artifactId>
-		<version>2.1.20</version>
-		<relativePath/>
-	</parent>
-	<artifactId>presenters-api</artifactId>
-	<version>unversioned</version>
-	<name>presenters-api</name>
-	<description/>
-	<properties>
-		<java.version>21</java.version>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>uk.gov.companieshouse</groupId>
+        <artifactId>companies-house-parent</artifactId>
+        <version>2.1.20</version>
+        <relativePath/>
+    </parent>
+    <artifactId>presenters-api</artifactId>
+    <version>unversioned</version>
+    <name>presenters-api</name>
+    <description/>
+    <properties>
+        <java.version>21</java.version>
+        <!-- Ensures @{argLine} resolves for surefire/failsafe even when JaCoCo's prepare-agent doesn't set it
+             (otherwise the literal "@{argLine}" is passed to the forked VM and crashes it) -->
+        <argLine/>
 
-		<!-- CH -->
-		<private-api-sdk-java.version>7.2.32</private-api-sdk-java.version>
+        <!-- CH -->
+        <private-api-sdk-java.version>7.2.31</private-api-sdk-java.version>
 
-		<!-- Spring -->
-		<spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
-		<spring-core.version>7.0.9</spring-core.version>
-		<!-- CH-dependencies -->
-		<ch-dependency-bom.version>0.1.21</ch-dependency-bom.version>
-		<ch-test-bom.version>0.1.21</ch-test-bom.version>
+        <!-- Spring -->
+        <spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
+        <spring-core.version>7.0.9</spring-core.version>
+        <!-- CH-dependencies -->
+        <ch-dependency-bom.version>0.1.21</ch-dependency-bom.version>
+        <ch-test-bom.version>0.1.21</ch-test-bom.version>
 
-		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
-		<!--sonar configuration-->
-		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-		<!--suppress UnresolvedMavenProperty -->
-		<sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
-		<sonar.projectKey>uk.gov.companieshouse:presenters-api</sonar.projectKey>
-		<sonar.projectName>presenters-api</sonar.projectName>
-		<sonar.dependencyCheck.htmlReportPath>
-			${project.basedir}/target/dependency-check-report.html
-		</sonar.dependencyCheck.htmlReportPath>
-	</properties>
-	<dependencyManagement>
-		<dependencies>
+        <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+        <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
+        <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+        <common-text.version>1.15.0</common-text.version>
+        <!--sonar configuration-->
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <!--suppress UnresolvedMavenProperty -->
+        <sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
+        <sonar.projectKey>uk.gov.companieshouse:presenters-api</sonar.projectKey>
+        <sonar.projectName>presenters-api</sonar.projectName>
+        <sonar.dependencyCheck.htmlReportPath>
+            ${project.basedir}/target/dependency-check-report.html
+        </sonar.dependencyCheck.htmlReportPath>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
 
-			<!-- CH-dependencies -->
-			<dependency>
-				<groupId>uk.gov.companieshouse</groupId>
-				<artifactId>ch-dependency-bom</artifactId>
-				<version>${ch-dependency-bom.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
+            <!-- CH-dependencies -->
+            <dependency>
+                <groupId>uk.gov.companieshouse</groupId>
+                <artifactId>ch-dependency-bom</artifactId>
+                <version>${ch-dependency-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
-			<dependency>
-				<groupId>uk.gov.companieshouse</groupId>
-				<artifactId>ch-test-bom</artifactId>
-				<version>${ch-test-bom.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
+            <dependency>
+                <groupId>uk.gov.companieshouse</groupId>
+                <artifactId>ch-test-bom</artifactId>
+                <version>${ch-test-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
 			<!--Spring dependencies-->
 			<dependency>

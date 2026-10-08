@@ -1,0 +1,13 @@
+verification-statements-map:
+  by-presenter-type:
+    officer-employee:
+      - verified-statement
+    corporate-officer-employee:
+      - verified-statement
+    individual-filing-for-self:
+      - verified-statement
+    individual-filing-for-someone-else:
+      - verified-statement
+    exempt-presenter:
+    acsp-sole-trader:
+    acsp-employee:
