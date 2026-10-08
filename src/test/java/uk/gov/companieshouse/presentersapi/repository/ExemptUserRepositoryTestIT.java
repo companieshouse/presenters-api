@@ -16,13 +16,14 @@ import uk.gov.companieshouse.presentersapi.TestUtils.ExemptUserTestObjects;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 @DataMongoTest
 @Testcontainers
-class ExemptUserRepositoryTest {
+class ExemptUserRepositoryTestIT {
 
     @Container
     static MongoDBContainer mongoDBContainer = new MongoDBContainer(
@@ -54,31 +55,31 @@ class ExemptUserRepositoryTest {
     @Test
     void getsExemptUserByEmail() {
         String exemptUserTestEmail = savedExemptUsers.getFirst().getEmail();
-        ExemptUserDao exemptUser = repository.findByEmail(exemptUserTestEmail);
+        Optional<ExemptUserDao> exemptUser = repository.findByEmail(exemptUserTestEmail);
 
         assertThat(exemptUser).isNotNull();
-        assertThat(exemptUser.getEmail()).isEqualTo(exemptUserTestEmail);
+        assertThat(exemptUser.get().getEmail()).isEqualTo(exemptUserTestEmail);
     }
 
     @Test
     void getsExemptUserById() {
         String objectId = savedExemptUsers.getFirst().getId();
-        ExemptUserDao exemptUser = repository.findByObjectId(objectId);
+        Optional<ExemptUserDao> exemptUser = repository.findById(objectId);
         assertThat(exemptUser).isNotNull();
-        assertThat(exemptUser.getId()).isEqualTo(objectId);
+        assertThat(exemptUser.get().getId()).isEqualTo(objectId);
     }
 
     @Test
     void noSuchExemptUserByEmail() {
         String email = "";
-        ExemptUserDao result = repository.findByEmail(email);
-        assertThat(result).isNull();
+        Optional<ExemptUserDao> result = repository.findByEmail(email);
+        assertThat(result).isEmpty();
     }
 
     @Test
     void noSuchExemptUserById() {
         String objectId = "";
-        ExemptUserDao result = repository.findByObjectId(objectId);
-        assertThat(result).isNull();
+        Optional<ExemptUserDao> result = repository.findById(objectId);
+        assertThat(result).isEmpty();
     }
 }
