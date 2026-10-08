@@ -73,6 +73,13 @@
                 <version>${spring-core.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-bom</artifactId>
+                <version>5.12.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot-dependencies.version}</version>
@@ -126,15 +133,20 @@
             <artifactId>spring-boot-devtools</artifactId>
             <version>${spring-boot-dependencies.version}</version>
         </dependency>
-        <!--       Don't enable until we have a mongodb-->
-        <!--       <dependency>-->
-        <!--          <groupId>org.springframework.boot</groupId>-->
-        <!--          <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
-        <!--       </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            <version>${spring-boot-dependencies.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
             <version>${spring-boot-dependencies.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test-autoconfigure</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -176,6 +188,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-mongodb-test</artifactId>
+            <version>${spring-boot-dependencies.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
             <scope>test</scope>
@@ -200,6 +217,24 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>2.0.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.19.8</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mongodb</artifactId>
+            <version>1.19.8</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -237,9 +272,9 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
-                <configuration>
-                    <release>${java.version}</release>
-                </configuration>
+                        <configuration>
+                            <release>${java.version}</release>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -298,7 +333,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Mitigate "Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK.
+            <!-- Mitigate Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK.
             Please add Mockito as an agent to your build as described in Mockito's documentation:
             https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3 -->
             <plugin>
@@ -318,6 +353,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
+					<!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>
@@ -341,6 +377,7 @@
                 <configuration>
                     <!-- spring-boot repackage replaces the main jar with a fat jar (classes under BOOT-INF) before this runs -->
                     <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+					<!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
                 <executions>
