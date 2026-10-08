@@ -7,6 +7,7 @@ import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ExemptUserServiceImpl implements ExemptUserService {
@@ -19,44 +20,38 @@ public class ExemptUserServiceImpl implements ExemptUserService {
     }
 
     @Override
-    public ExemptUserDao getExemptUserByEmail(String email) {
+    public Optional<ExemptUserDao> getExemptUserByEmail(String email) {
         Map<String, Object> logMap = Map.of("email", email);
-        ExemptUserDao exemptUserDao = repository.findByEmail(email);
-        if (exemptUserDao != null) {
+        Optional<ExemptUserDao> exemptUserDao = repository.findByEmail(email);
+        if (exemptUserDao.isPresent()) {
             logger.infoContext(email, "Retrieved exempt user by email: ", logMap);
-            return exemptUserDao;
-        }  else {
+        } else {
             logger.infoContext(email, "No Such exempt user with email: ", logMap);
-            return null;
         }
+        return exemptUserDao;
     }
     @Override
-    public ExemptUserDao getExemptUserById(String id) {
+    public Optional<ExemptUserDao> getExemptUserById(String id) {
         Map<String, Object> logMap = Map.of("id", id);
-        ExemptUserDao exemptUserDao = repository.findByObjectId(id);
-        if (exemptUserDao != null) {
+        Optional<ExemptUserDao> exemptUserDao = repository.findById(id);
+        if (exemptUserDao.isPresent()) {
             logger.infoContext(id, "Retrieved exempt user by id: ", logMap);
-            return exemptUserDao;
         }  else {
             logger.infoContext(id, "No Such exempt user with id: ", logMap);
-            return null;
         }
+        return exemptUserDao;
     }
 
     @Override
-    public Boolean isExemptUserByEmail(String email) {
-        return repository.findByEmail(email) != null;
+    public boolean isExemptUserByEmail(String email) {
+        return repository.existsByEmail(email);
     }
 
     @Override
-    public Boolean isExemptUserById(String id) {
-        return repository.findByObjectId(id) != null;
+    public boolean isExemptUserById(String id) {
+        return repository.existsById(id);
     }
 
-    @Override
-    public String getExemptUserStatement(ExemptUserDao exemptUserDao) {
-        return exemptUserDao.getExemptPresenterStatement();
-    }
 
 
 }
