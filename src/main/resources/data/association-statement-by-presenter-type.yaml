@@ -1,0 +1,14 @@
+association-statements-map:
+  by-presenter-type:
+    officer-employee:
+      - officer-employee-statement
+    corporate-officer-employee:
+      - corporate-director-employee-statement
+    exempt-presenter:
+      - exempt-statement
+    acsp-sole-trader:
+      - acsp-sole-trader-statement
+    acsp-employee:
+      - acsp-sole-trader-statement
+    individual-filing-for-self:
+    individual-filing-for-someone-else:
