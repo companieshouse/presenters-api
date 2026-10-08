@@ -10,6 +10,8 @@ import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
 import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -32,13 +34,13 @@ public class ExemptUserServiceImplTest {
         // Arrange
         ExemptUserDao mockUser = new ExemptUserDao();
         mockUser.setEmail("test@example.com");
-        when(repository.findByEmail("test@example.com")).thenReturn(mockUser);
+        when(repository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
 
         // Act
-        ExemptUserDao result = service.getExemptUserByEmail("test@example.com");
+        Optional<ExemptUserDao> result = service.getExemptUserByEmail("test@example.com");
 
         // Assert
-        assertThat(result.getEmail()).isEqualTo("test@example.com");
+        assertThat(result.get().getEmail().equals("test@example.com"));
         verify(repository).findByEmail("test@example.com");
     }
 
@@ -47,56 +49,48 @@ public class ExemptUserServiceImplTest {
         ExemptUserDao mockUser = new ExemptUserDao();
         mockUser.setId("6ba129e2939hf");
 
-        when(repository.findByObjectId("id")).thenReturn(mockUser);
-        ExemptUserDao result = service.getExemptUserById("id");
+        when(repository.findById("id")).thenReturn(Optional.of(mockUser));
+        Optional<ExemptUserDao> result = service.getExemptUserById("id");
 
-        assertThat(result.getId()).isEqualTo("6ba129e2939hf");
-        verify(repository).findByObjectId("id");
+        assertThat(result.get().getId().equals("6ba129e2939hf"));
+        verify(repository).findById("id");
     }
 
 
     @Test
     void isExemptUserByEmail(){
-        ExemptUserDao mockUser = new ExemptUserDao();
-        mockUser.setEmail("test@example.com");
-
-        when(repository.findByEmail("test@example.com")).thenReturn(mockUser);
+        when(repository.existsByEmail("test@example.com")).thenReturn(true);
         Boolean result = service.isExemptUserByEmail("test@example.com");
 
         assertThat(result).isTrue();
 
-        verify(repository).findByEmail("test@example.com");
+        verify(repository).existsByEmail("test@example.com");
     }
 
     @Test
     void isNotExemptUserByEmail(){
-        when(repository.findByEmail("test@example.com")).thenReturn(null);
-        Boolean result = service.isExemptUserByEmail("test@example.com");
+        when(repository.existsByEmail("test@example.com")).thenReturn(false);
+        boolean result = service.isExemptUserByEmail("test@example.com");
 
         assertThat(result).isFalse();
-        verify(repository).findByEmail("test@example.com");
+        verify(repository).existsByEmail("test@example.com");
     }
 
     @Test
     void isExemptUserById(){
-        ExemptUserDao mockUser = new ExemptUserDao();
-        mockUser.setId("6ba129e2939hf");
-
-        when(repository.findByObjectId("id")).thenReturn(mockUser);
-        Boolean result = service.isExemptUserById("id");
+        when(repository.existsById("id")).thenReturn(true);
+        boolean result = service.isExemptUserById("id");
 
         assertThat(result).isTrue();
-        verify(repository).findByObjectId("id");
+        verify(repository).existsById("id");
     }
 
     @Test
     void isNotExemptUserById(){
-        when(repository.findByObjectId("id")).thenReturn(null);
-        Boolean result = service.isExemptUserById("id");
+        when(repository.existsById("id")).thenReturn(false);
+        boolean result = service.isExemptUserById("id");
 
         assertThat(result).isFalse();
-        verify(repository).findByObjectId("id");
+        verify(repository).existsById("id");
     }
-
-
 }
