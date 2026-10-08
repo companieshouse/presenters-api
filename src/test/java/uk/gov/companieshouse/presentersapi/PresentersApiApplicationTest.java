@@ -17,7 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.interceptor.RequestLoggingInterceptor;
 
-@SpringBootTest(properties = "internal.api.url=http://localhost")
+@SpringBootTest
 class PresentersApiApplicationTest {
 
     @Autowired

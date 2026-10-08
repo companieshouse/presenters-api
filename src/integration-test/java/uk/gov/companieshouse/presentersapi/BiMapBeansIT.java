@@ -28,8 +28,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
  * Verifies the generated BiMap beans are created by @ConfigurationPropertiesScan and populated
  * from the reference data YAML files imported via spring.config.import.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        properties = "internal.api.url=http://localhost")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class BiMapBeansIT {
 
     @Autowired
