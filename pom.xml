@@ -211,11 +211,9 @@
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <release>${java.version}</release>
-                    <!-- TODO: companies-house-parent (2.1.15) does not configure maven-compiler-plugin, so
-                         Spring Boot's default of -parameters is not inherited. Without it, @ConfigurationProperties
-                         constructor binding fails at startup. Feedback for the parent's maintainers: either set
-                         <parameters>true</parameters> in its pluginManagement for maven-compiler-plugin, or document
-                         that Spring Boot consumers must set it. Remove this override if the parent adds it. -->
+                    <!-- NOTE: companies-house-parent does not inherit from spring-boot-starter-parent, so
+                         Spring Boot's default setting of -parameters is not inherited here. Without it, @ConfigurationProperties
+                         constructor binding fails at startup. Remove this override if the parent adds it. -->
                     <parameters>true</parameters>
                 </configuration>
                 <executions>
