@@ -64,6 +64,13 @@
 				<version>${spring-core.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.mongodb</groupId>
+				<artifactId>mongodb-driver-bom</artifactId>
+				<version>5.12.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>${spring-boot-dependencies.version}</version>
@@ -79,11 +86,6 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-devtools</artifactId>
 				<version>${spring-boot-dependencies.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.mongodb</groupId>
-				<artifactId>mongodb-driver-bom</artifactId>
-				<version>5.12.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -213,6 +215,22 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<classesDirectory>${project.build.outputDirectory}</classesDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
