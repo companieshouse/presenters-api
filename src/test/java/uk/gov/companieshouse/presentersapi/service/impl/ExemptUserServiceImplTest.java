@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
 import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
-
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
