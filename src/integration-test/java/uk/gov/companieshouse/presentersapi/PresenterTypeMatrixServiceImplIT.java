@@ -16,8 +16,7 @@ import uk.gov.companieshouse.presentersapi.service.impl.PresenterTypeMatrixServi
 /**
  * Verifies PresenterTypeMatrixServiceImpl is wired with the BiMap beans populated from the reference data YAML files.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        properties = "internal.api.url=http://localhost")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class PresenterTypeMatrixServiceImplIT {
 
     @Autowired
