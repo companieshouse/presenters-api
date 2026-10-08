@@ -3,7 +3,6 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.logging.Logger;
@@ -19,13 +18,14 @@ public class ExemptUserServiceImplTest {
 
     @Mock
     private ExemptUserRepository repository;
-    @InjectMocks
+    @Mock
     private ExemptUserServiceImpl service;
-
+    @Mock
+    private Logger logger;
 
     @BeforeEach
     void setUp(){
-        this.service = new ExemptUserServiceImpl(repository, mock(Logger.class));
+        this.service = new ExemptUserServiceImpl(repository, logger);
     }
 
     @Test
