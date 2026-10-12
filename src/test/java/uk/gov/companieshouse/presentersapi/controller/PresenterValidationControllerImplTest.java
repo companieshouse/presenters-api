@@ -34,7 +34,8 @@ class PresenterValidationControllerImplTest {
     @BeforeEach
     void setUp() {
         testValidationRequest = new ValidationRequest();
-        testValidationResponse = ValidationResponse.VALID;
+        testValidationResponse = new ValidationResponse();
+        testValidationResponse.setResult(ValidationResponse.ResultEnum.VALID);
     }
 
     @Test
@@ -48,7 +49,7 @@ class PresenterValidationControllerImplTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(ValidationResponse.VALID, response.getBody());
+        assertEquals(ValidationResponse.ResultEnum.VALID, response.getBody().getResult());
 
         verify(presenterValidationService, times(1))
             .validatePresenterDetails(testValidationRequest);

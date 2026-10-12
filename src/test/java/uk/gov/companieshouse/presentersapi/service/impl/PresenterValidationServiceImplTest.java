@@ -20,6 +20,7 @@ class PresenterValidationServiceImplTest {
     void setUp() {
         service = new PresenterValidationServiceImpl();
         validationRequest = new ValidationRequest();
+        validationRequest.setFormType("AD01");
     }
 
     @Test
@@ -28,6 +29,6 @@ class PresenterValidationServiceImplTest {
         ValidationResponse result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertEquals(ValidationResponse.VALID, result);
+        assertEquals(ValidationResponse.ResultEnum.VALID, result.getResult());
     }
 }

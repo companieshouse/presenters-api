@@ -20,7 +20,7 @@
         <argLine/>
 
         <!-- CH -->
-        <private-api-sdk-java.version>7.2.31</private-api-sdk-java.version>
+        <private-api-sdk-java.version>7.2.34</private-api-sdk-java.version>
 
         <!-- Spring -->
         <spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>

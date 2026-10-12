@@ -11,6 +11,15 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
     @Override
     public ValidationResponse validatePresenterDetails(ValidationRequest validationRequest) {
 
-        return ValidationResponse.VALID;
+        ValidationResponse validationResponse = new ValidationResponse();
+
+        if (validationRequest.getFormType().equals("AD01")) {
+            validationResponse.setResult(ValidationResponse.ResultEnum.VALID);
+        } else {
+            validationResponse.setResult(ValidationResponse.ResultEnum.INVALID);
+            validationResponse.setReason("Statement form type mismatch");
+        }
+
+        return validationResponse;
     }
 }

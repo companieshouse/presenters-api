@@ -23,6 +23,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
         PresenterDetails presenterDetails = new PresenterDetails();
         presenterDetails.setStatements(statements);
+        presenterDetails.setUserId(userId);
         presenterDetails.setExempt(exempt);
 
         return presenterDetails;
