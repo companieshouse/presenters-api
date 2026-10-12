@@ -13,7 +13,7 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
 
         ValidationResponse validationResponse = new ValidationResponse();
 
-        if (validationRequest.getFormType().equals("AD01")) {
+        if ("AD01".equals(validationRequest.getFormType())) {
             validationResponse.setResult(ValidationResponse.ResultEnum.VALID);
         } else {
             validationResponse.setResult(ValidationResponse.ResultEnum.INVALID);
