@@ -19,6 +19,7 @@ class PresenterDetailsServiceImplTest {
         PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
 
         assertNotNull(result);
+        assertNotNull(result.getUserId());
         assertNotNull(result.getStatements());
         assertNotNull(result.getExempt());
     }
@@ -86,7 +87,7 @@ class PresenterDetailsServiceImplTest {
     void testExemptEmail() {
         PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
 
-        assert result.getExempt() != null;
+        assertNotNull(result.getExempt());
         assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
     }
 }

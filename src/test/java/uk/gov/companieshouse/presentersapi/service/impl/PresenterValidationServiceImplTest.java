@@ -20,6 +20,7 @@ class PresenterValidationServiceImplTest {
     void setUp() {
         service = new PresenterValidationServiceImpl();
         validationRequest = new ValidationRequest();
+        validationRequest.setFormType("AD01");
     }
 
     @Test
@@ -28,6 +29,18 @@ class PresenterValidationServiceImplTest {
         ValidationResponse result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertEquals(ValidationResponse.VALID, result);
+        assertEquals(ValidationResponse.ResultEnum.VALID, result.getResult());
+    }
+
+    @Test
+    @DisplayName("should return invalid response when formType is not AD01")
+    void testValidatePresenterDetailsReturnsInvalidForNonAd01() {
+        validationRequest.setFormType("LLP01");
+
+        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+
+        assertNotNull(result);
+        assertEquals(ValidationResponse.ResultEnum.INVALID, result.getResult());
+        assertEquals("Statement form type mismatch", result.getReason());
     }
 }
