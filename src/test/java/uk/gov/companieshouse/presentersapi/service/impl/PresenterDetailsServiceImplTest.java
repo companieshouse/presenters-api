@@ -66,7 +66,7 @@ class PresenterDetailsServiceImplTest {
     @Test
     @DisplayName("should return exempt presenter details")
     void shouldReturnExemptPresenterDetails() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "exempt-presenter");
+        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "official-receiver");
 
         assertNotNull(result);
         assertEquals(2, result.getStatements().size());
