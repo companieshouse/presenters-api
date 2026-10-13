@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
 import java.util.EnumSet;
+import org.springframework.stereotype.Service;
 import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupDeliveryStatementTypeBiMap;
 import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
 import uk.gov.companieshouse.presentersapi.data.bimaps.PresenterTypeAssociationStatementTypeBiMap;
@@ -12,6 +13,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
 
+@Service
 public class StatementTypeMatrixServiceImpl implements StatementTypeMatrixService {
     private final PresenterTypeAssociationStatementTypeBiMap presenterTypeAssociationStatementTypeBiMap;
     private final PresenterTypeDeliveryStatementTypeBiMap presenterTypeDeliveryStatementTypeBiMap;
