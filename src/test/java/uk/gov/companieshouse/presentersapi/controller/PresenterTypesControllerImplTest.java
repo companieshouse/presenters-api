@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
+import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,20 +31,11 @@ class PresenterTypesControllerImplTest {
     @InjectMocks
     private PresenterTypesControllerImpl controller;
 
-    private PresenterTypes testPresenterTypes;
+    private EnumSet<PresenterType> testPresenterTypes;
 
     @BeforeEach
     void setUp() {
-        testPresenterTypes = new PresenterTypes();
-        testPresenterTypes.setTypes(List.of(
-            "officer-employee",
-            "corporate-officer-employee",
-            "exempt-presenter",
-            "acsp-sole-trader",
-            "acsp-employee",
-            "individual-filing-for-self",
-            "individual-filing-for-someone-else"
-        ));
+        testPresenterTypes = EnumSet.allOf(PresenterType.class);
     }
 
     @Test
@@ -59,8 +52,8 @@ class PresenterTypesControllerImplTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(7, response.getBody().getTypes().size());
-        assertEquals("officer-employee", response.getBody().getTypes().getFirst());
+        assertEquals(PresenterType.values().length, response.getBody().getTypes().size());
+        assertEquals(PresenterType.values()[0].code(), response.getBody().getTypes().getFirst());
 
         verify(presenterTypesService, times(1))
             .getPresenterTypes(userId, formType);
@@ -83,11 +76,8 @@ class PresenterTypesControllerImplTest {
     @Test
     @DisplayName("should return empty list when service returns empty types")
     void testEmptyPresenterTypes() {
-        PresenterTypes emptyTypes = new PresenterTypes();
-        emptyTypes.setTypes(List.of());
-
         when(presenterTypesService.getPresenterTypes(anyString(), anyString()))
-            .thenReturn(emptyTypes);
+            .thenReturn(EnumSet.noneOf(PresenterType.class));
 
         ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user789", "form-empty");
 
@@ -137,12 +127,6 @@ class PresenterTypesControllerImplTest {
 
         assert response.getBody() != null;
         List<String> types = response.getBody().getTypes();
-        assertTrue(types.contains("officer-employee"));
-        assertTrue(types.contains("corporate-officer-employee"));
-        assertTrue(types.contains("exempt-presenter"));
-        assertTrue(types.contains("acsp-sole-trader"));
-        assertTrue(types.contains("acsp-employee"));
-        assertTrue(types.contains("individual-filing-for-self"));
-        assertTrue(types.contains("individual-filing-for-someone-else"));
+        assertEquals(EnumSet.allOf(PresenterType.class).stream().map(PresenterType::code).toList(), types);
     }
 }
