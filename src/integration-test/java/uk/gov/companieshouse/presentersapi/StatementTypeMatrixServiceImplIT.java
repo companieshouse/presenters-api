@@ -3,6 +3,7 @@ package uk.gov.companieshouse.presentersapi;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
@@ -57,11 +58,8 @@ class StatementTypeMatrixServiceImplIT {
     }
 
     @Test
-    void shouldOnlyUsePresenterTypeDeliveryStatementsWhenFormTypeIsNull() {
-        final var statements = service.statementTypesFor(
-                PresenterType.INDIVIDUAL_FILING_FOR_SOMEONE_ELSE, null);
-
-        assertThat(statements.deliveryStatements(),
-                is(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL)));
+    void shouldRejectNullFormTypeWhenResolvingFormGroupDeliveryStatements() {
+        assertThrows(NullPointerException.class, () -> service.statementTypesFor(
+            PresenterType.INDIVIDUAL_FILING_FOR_SOMEONE_ELSE, null));
     }
 }

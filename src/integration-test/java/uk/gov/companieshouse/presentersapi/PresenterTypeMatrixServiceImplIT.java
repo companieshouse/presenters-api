@@ -2,8 +2,8 @@ package uk.gov.companieshouse.presentersapi;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class PresenterTypeMatrixServiceImplIT {
     }
 
     @Test
-    void shouldReturnEmptySetForFormTypeWithoutFormGroup() {
-        assertThat(service.presenterTypesFor(null), is(empty()));
+    void shouldRejectNullFormType() {
+        assertThrows(NullPointerException.class, () -> service.presenterTypesFor(null));
     }
 }

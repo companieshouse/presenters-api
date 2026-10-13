@@ -76,6 +76,7 @@ public class BiMapSourceCodeBuilder {
         return "package " + biMapPkg + ";\n\n"
             + "import java.util.EnumMap;\n"
             + "import java.util.EnumSet;\n"
+            + "import java.util.Objects;\n"
             + "import java.util.Set;\n"
             + "import org.springframework.boot.context.properties.ConfigurationProperties;\n"
             + "import java.util.Map;\n"
@@ -111,8 +112,8 @@ public class BiMapSourceCodeBuilder {
             + "    public EnumSet<" + valueEnumName + "> " + valueParamName + "sFor(final " + keyEnumName + " key) {\n"
             + "        return EnumSet.copyOf(by" + keyEnumName + ".getOrDefault(key, EnumSet.noneOf(" + valueEnumName + ".class)));\n"
             + "    }\n\n"
-           + "    public " + keyEnumName + " " + StringUtils.uncapitalize(keyEnumName) + "For(final " + valueEnumName + " value) {\n"
-            + "        return by" + valueEnumName + ".get(value);\n"
+            + "    public " + keyEnumName + " " + StringUtils.uncapitalize(keyEnumName) + "For(final " + valueEnumName + " value) {\n"
+            + "        return by" + valueEnumName + ".get(Objects.requireNonNull(value, \"value\"));\n"
             + "    }\n\n"
             + sizeAccessors(keyEnumName, valueEnumName)
             + "}\n";

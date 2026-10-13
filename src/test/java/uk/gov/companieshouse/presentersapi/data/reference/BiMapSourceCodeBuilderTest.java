@@ -86,6 +86,10 @@ class BiMapSourceCodeBuilderTest {
         // Reverse method should be singular: formGroupFor(value) returns FormGroup
         assertThat("Reverse method should be singular (formGroupFor)",
                 result, containsString("public FormGroup formGroupFor(final FormType value)"));
+        assertThat("Reverse method should reject a null lookup value",
+                result, containsString("return byFormType.get(Objects.requireNonNull(value, \"value\"));"));
+        assertThat("Generated source should import Objects for the null guard",
+                result, containsString("import java.util.Objects;"));
 
         // Should not have plural version
         assertThat("Should not have plural reverse method",

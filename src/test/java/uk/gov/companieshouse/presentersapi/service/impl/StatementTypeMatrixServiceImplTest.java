@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -137,17 +138,13 @@ class StatementTypeMatrixServiceImplTest {
     }
 
     @Test
-    void shouldReturnPresenterStatementsWhenFormTypeHasNoFormGroup() {
+    void shouldRejectNullFormType() {
         when(associationStatementBiMap.associationStatementTypesFor(PresenterType.ACSP))
             .thenReturn(EnumSet.of(AssociationStatementType.ACSP_STATEMENT));
         stubEmptyDeliveryAndVerification(PresenterType.ACSP);
-        when(formTypeBiMap.formGroupFor(null)).thenReturn(null);
+        when(formTypeBiMap.formGroupFor(null)).thenThrow(new NullPointerException("value"));
 
-        final var statements = service.statementTypesFor(PresenterType.ACSP, null);
-
-        assertThat(statements.associationStatements(), contains(AssociationStatementType.ACSP_STATEMENT));
-        assertThat(statements.deliveryStatements(), empty());
-        assertThat(statements.verificationStatements(), empty());
+        assertThrows(NullPointerException.class, () -> service.statementTypesFor(PresenterType.ACSP, null));
         verifyNoInteractions(formGroupDeliveryStatementBiMap);
     }
 
