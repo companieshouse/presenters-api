@@ -20,6 +20,7 @@ data-objects-map:
       - organisation-name
       - name
       - email
+    exempt-presenter:
     acsp:
       - acsp-uid
       - acsp-name
