@@ -56,7 +56,7 @@ class StatementTypeMatrixServiceImplTest {
     }
 
     @Test
-    void shouldResolveStatementsForPresenterOtherThanAcspOrExemptPresenter() {
+    void shouldResolveStatementsForOfficerEmployee() {
         when(associationStatementBiMap.associationStatementTypesFor(PresenterType.OFFICER_EMPLOYEE))
             .thenReturn(EnumSet.of(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT));
         when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.OFFICER_EMPLOYEE))
@@ -91,16 +91,16 @@ class StatementTypeMatrixServiceImplTest {
 
     @ParameterizedTest
     @MethodSource("singleDeliveryFormGroups")
-    void shouldResolveExemptPresenterDeliveryStatementFromFormGroup(
+    void shouldResolveOfficialReceiverDeliveryStatementFromFormGroup(
         final FormType formType, final FormGroup formGroup, final DeliveryStatementType deliveryStatement) {
-        when(associationStatementBiMap.associationStatementTypesFor(PresenterType.EXEMPT_PRESENTER))
-            .thenReturn(EnumSet.noneOf(AssociationStatementType.class));
-        stubEmptyDeliveryAndVerification(PresenterType.EXEMPT_PRESENTER);
+        when(associationStatementBiMap.associationStatementTypesFor(PresenterType.OFFICIAL_RECEIVER))
+            .thenReturn(EnumSet.of(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT));
+        stubEmptyDeliveryAndVerification(PresenterType.OFFICIAL_RECEIVER);
         stubFormGroup(formType, formGroup, deliveryStatement);
 
-        final var statements = service.statementTypesFor(PresenterType.EXEMPT_PRESENTER, formType);
+        final var statements = service.statementTypesFor(PresenterType.OFFICIAL_RECEIVER, formType);
 
-        assertThat(statements.associationStatements(), empty());
+        assertThat(statements.associationStatements(), contains(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(deliveryStatement));
         assertThat(statements.verificationStatements(), empty());
         verify(formGroupDeliveryStatementBiMap).deliveryStatementTypesFor(formGroup);

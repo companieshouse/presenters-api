@@ -33,6 +33,5 @@ presenter-types-map:
       - acsp
       - official-receiver
     exempt-form:
-      - exempt-presenter
-
+      - official-receiver
 

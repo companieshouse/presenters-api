@@ -60,8 +60,10 @@ class BiMapBeansIT {
     void shouldPopulateFormGroupPresenterTypeInBothDirectionsWhenContextStarts() {
         assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("acsp-only-firm-delivery")),
             containsInAnyOrder(PresenterType.from("acsp")));
-        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.from("exempt-presenter")),
-            containsInAnyOrder(FormGroup.from("exempt-form")));
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("exempt-form")),
+            containsInAnyOrder(PresenterType.from("official-receiver")));
+        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.from("official-receiver")),
+            containsInAnyOrder(FormGroup.from("official-receiver-forms"), FormGroup.from("exempt-form")));
         assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("official-receiver-forms")),
             containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
                 PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
@@ -134,16 +136,17 @@ class BiMapBeansIT {
     @Test
     void shouldNotExposeInternalSetsWhenCallersMutateReturnedSets() {
         final var firmDelivery = FormGroup.from("firm-delivery");
-        final var exemptPresenter = PresenterType.from("exempt-presenter");
+        final var officialReceiver = PresenterType.from("official-receiver");
 
         formGroupFormType.formTypesFor(firmDelivery).clear();
         formGroupPresenterType.presenterTypesFor(firmDelivery).clear();
-        formGroupPresenterType.formGroupsFor(exemptPresenter).clear();
+        formGroupPresenterType.formGroupsFor(officialReceiver).clear();
 
         assertThat(formGroupFormType.formTypesFor(firmDelivery),
             containsInAnyOrder(FormType.from("AD01"), FormType.from("CS01")));
         assertThat(formGroupPresenterType.presenterTypesFor(firmDelivery).isEmpty(), is(false));
-        assertThat(formGroupPresenterType.formGroupsFor(exemptPresenter).isEmpty(), is(false));
+        assertThat(formGroupPresenterType.formGroupsFor(officialReceiver),
+            containsInAnyOrder(FormGroup.from("official-receiver-forms"), FormGroup.from("exempt-form")));
     }
 
     @Test
