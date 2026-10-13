@@ -26,7 +26,7 @@ class PresenterTypeMatrixServiceImplIT {
     void shouldResolvePresenterTypesForFormType() {
         assertThat(service.presenterTypesFor(FormType.AD01),
                 containsInAnyOrder(PresenterType.OFFICER_EMPLOYEE, PresenterType.CORPORATE_OFFICER_EMPLOYEE,
-                        PresenterType.EXEMPT_PRESENTER, PresenterType.ACSP_SOLE_TRADER, PresenterType.ACSP_EMPLOYEE));
+                        PresenterType.JUDICIAL_FACTOR, PresenterType.OFFICER_EMPLOYEE_SAME_GROUP, PresenterType.ACSP));
         assertThat(service.presenterTypesFor(FormType.WU15), is(EnumSet.of(PresenterType.EXEMPT_PRESENTER)));
     }
 

@@ -18,7 +18,7 @@ import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.interceptor.RequestLoggingInterceptor;
 
 @SpringBootTest
-class PresentersApiApplicationTest {
+class PresentersApiApplicationIT {
 
     @Autowired
     private RequestLoggingInterceptor requestLoggingInterceptor;

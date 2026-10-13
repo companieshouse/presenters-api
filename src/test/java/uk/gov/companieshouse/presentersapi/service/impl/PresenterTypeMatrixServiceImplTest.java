@@ -37,7 +37,7 @@ class PresenterTypeMatrixServiceImplTest {
     @Test
     @DisplayName("presenterTypesFor(FormType) resolves the FormGroup, then its PresenterTypes set")
     void presenterTypesForFormTypeResolvesViaFormGroup() {
-        final var expected = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP_SOLE_TRADER);
+        final var expected = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP);
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AD01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(formGroupPresenterTypeBiMap.presenterTypesFor(FormGroup.FIRM_DELIVERY)).thenReturn(expected);
 

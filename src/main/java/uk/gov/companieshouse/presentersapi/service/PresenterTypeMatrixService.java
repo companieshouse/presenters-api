@@ -5,5 +5,5 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 
 public interface PresenterTypeMatrixService {
-    EnumSet<PresenterType> presenterTypesFor(final FormType formType);
+    EnumSet<PresenterType> presenterTypesFor(FormType formType);
 }

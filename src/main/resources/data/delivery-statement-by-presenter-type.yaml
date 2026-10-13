@@ -4,6 +4,10 @@ delivery-statements-map:
       - delivery-on-behalf-of-firm
     corporate-officer-employee:
       - delivery-on-behalf-of-firm
+    judicial-factor:
+      - delivery-on-behalf-of-firm
+    officer-employee-same-group:
+      - delivery-on-behalf-of-firm
     individual-filing-for-self:
     individual-filing-for-someone-else:
       - delivery-on-behalf-of-individual
