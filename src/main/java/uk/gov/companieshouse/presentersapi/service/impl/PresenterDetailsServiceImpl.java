@@ -23,7 +23,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
             case "individual-filing-for-self" -> {
 
                 List<String> statements = List.of("officer-employee-statement",
-                    "delivery-on-behalf-of-firm",
+                    "delivery-on-behalf-of-individual",
                     "verified-statement");
 
                 Individual individual = new Individual();
@@ -43,7 +43,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
                 Individual individual = new Individual();
                 individual.setPersonalCode("123456");
-                individual.setName(new PersonName(List.of("John"), "Smith"));
+                individual.setName(new PersonName(List.of("John"), "Scott"));
                 individual.setDateOfBirth(new DateOfBirth(1, 1, 1980));
                 individual.setVerificationId("1234");
 
@@ -60,7 +60,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 acsp.setAcspCode("123456-123456");
                 acsp.setAcspName("Mr ACSP Ltd");
                 acsp.setAcspEmployeeEmail("me@myacsp.co.uk");
-                acsp.setPersonName(new PersonName(List.of("John"), "Smith"));
+                acsp.setPersonName(new PersonName(List.of("John"), "SmithAcsp"));
 
                 presenterDetails.setUserId(userId);
                 presenterDetails.setStatements(statements);
@@ -78,6 +78,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setStatements(statements);
                 presenterDetails.setExempt(exempt);
             }
+            default -> throw new IllegalStateException("Unexpected value: " + presenterType);
         }
 
         return presenterDetails;
