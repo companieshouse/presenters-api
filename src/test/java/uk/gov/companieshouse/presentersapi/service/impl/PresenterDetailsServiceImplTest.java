@@ -21,7 +21,7 @@ class PresenterDetailsServiceImplTest {
         assertEquals("user123", result.getUserId());
         assertEquals(3, result.getStatements().size());
         assertEquals("officer-employee-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
+        assertEquals("delivery-on-behalf-of-individual", result.getStatements().get(1));
         assertEquals("verified-statement", result.getStatements().get(2));
         assertNotNull(result.getIndividual());
         assertEquals("123456", result.getIndividual().getPersonalCode());
