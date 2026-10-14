@@ -4,11 +4,13 @@ association-statements-map:
       - officer-employee-statement
     corporate-officer-employee:
       - corporate-director-employee-statement
-    exempt-presenter:
-      - exempt-statement
-    acsp-sole-trader:
-      - acsp-sole-trader-statement
-    acsp-employee:
-      - acsp-sole-trader-statement
+    judicial-factor:
+      - judicial-factor-statement
+    officer-employee-same-group:
+      - officer-employee-same-group-statement
+    official-receiver:
+      - official-receiver-statement
+    acsp:
+      - acsp-statement
     individual-filing-for-self:
     individual-filing-for-someone-else:

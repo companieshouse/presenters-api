@@ -2,8 +2,8 @@ package uk.gov.companieshouse.presentersapi;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
@@ -26,12 +26,12 @@ class PresenterTypeMatrixServiceImplIT {
     void shouldResolvePresenterTypesForFormType() {
         assertThat(service.presenterTypesFor(FormType.AD01),
                 containsInAnyOrder(PresenterType.OFFICER_EMPLOYEE, PresenterType.CORPORATE_OFFICER_EMPLOYEE,
-                        PresenterType.EXEMPT_PRESENTER, PresenterType.ACSP_SOLE_TRADER, PresenterType.ACSP_EMPLOYEE));
-        assertThat(service.presenterTypesFor(FormType.WU15), is(EnumSet.of(PresenterType.EXEMPT_PRESENTER)));
+                        PresenterType.JUDICIAL_FACTOR, PresenterType.OFFICER_EMPLOYEE_SAME_GROUP, PresenterType.ACSP));
+        assertThat(service.presenterTypesFor(FormType.WU15), is(EnumSet.of(PresenterType.OFFICIAL_RECEIVER)));
     }
 
     @Test
-    void shouldReturnEmptySetForFormTypeWithoutFormGroup() {
-        assertThat(service.presenterTypesFor(null), is(empty()));
+    void shouldRejectNullFormType() {
+        assertThrows(NullPointerException.class, () -> service.presenterTypesFor(null));
     }
 }

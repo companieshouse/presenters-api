@@ -50,6 +50,13 @@ class GeneratedBiMapsTest {
     }
 
     @Test
+    void shouldRejectNullFormTypeLookup() {
+        final var biMap = new FormGroupFormTypeBiMap(null);
+
+        assertThrows(NullPointerException.class, () -> biMap.formGroupFor(null));
+    }
+
+    @Test
     void shouldReturnNoFormTypesWhenFormGroupHasEmptySet() {
         final var biMap = new FormGroupFormTypeBiMap(Map.of(GROUP_1, Set.of()));
 

@@ -8,16 +8,19 @@ data-objects-map:
       - personal-code
       - name
       - date-of-birth
-    exempt-presenter:
+    judicial-factor:
+      - personal-code
+      - name
+      - date-of-birth
+    officer-employee-same-group:
+      - personal-code
+      - name
+      - date-of-birth
+    official-receiver:
       - organisation-name
       - name
       - email
-    acsp-sole-trader:
-      - acsp-uid
-      - acsp-name
-      - email
-      - name
-    acsp-employee:
+    acsp:
       - acsp-uid
       - acsp-name
       - email

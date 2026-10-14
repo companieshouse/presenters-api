@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,7 @@ class PresenterTypeMatrixServiceImplTest {
     @Test
     @DisplayName("presenterTypesFor(FormType) resolves the FormGroup, then its PresenterTypes set")
     void presenterTypesForFormTypeResolvesViaFormGroup() {
-        final var expected = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP_SOLE_TRADER);
+        final var expected = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP);
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AD01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(formGroupPresenterTypeBiMap.presenterTypesFor(FormGroup.FIRM_DELIVERY)).thenReturn(expected);
 
@@ -56,9 +57,11 @@ class PresenterTypeMatrixServiceImplTest {
     }
 
     @Test
-    @DisplayName("presenterTypesFor(FormType) returns an empty set when the FormType is null")
-    void shouldReturnEmptySetWhenFormTypeIsNull() {
-        assertThat(service.presenterTypesFor(null)).isEmpty();
+    @DisplayName("presenterTypesFor(FormType) rejects a null FormType")
+    void shouldRejectNullFormType() {
+        when(formGroupFormTypeBiMap.formGroupFor(null)).thenThrow(new NullPointerException("value"));
+
+        assertThrows(NullPointerException.class, () -> service.presenterTypesFor(null));
         verifyNoInteractions(formGroupPresenterTypeBiMap);
     }
 }

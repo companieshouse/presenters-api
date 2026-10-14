@@ -26,8 +26,8 @@
         <spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
         <spring-core.version>7.0.9</spring-core.version>
         <!-- CH-dependencies -->
-        <ch-dependency-bom.version>0.1.21</ch-dependency-bom.version>
-        <ch-test-bom.version>0.1.21</ch-test-bom.version>
+        <ch-dependency-bom.version>0.1.28</ch-dependency-bom.version>
+        <ch-test-bom.version>0.1.28</ch-test-bom.version>
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
@@ -353,6 +353,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
 					<!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>

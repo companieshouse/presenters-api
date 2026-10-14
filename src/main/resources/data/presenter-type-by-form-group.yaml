@@ -3,36 +3,33 @@ presenter-types-map:
     firm-delivery:
       - officer-employee
       - corporate-officer-employee
-      - exempt-presenter
-      - acsp-sole-trader
-      - acsp-employee
+      - judicial-factor
+      - officer-employee-same-group
+      - acsp
     individual-delivery:
-      - acsp-sole-trader
-      - acsp-employee
-      - exempt-presenter
+      - acsp
       - individual-filing-for-self
       - individual-filing-for-someone-else
     multi-delivery:
       - officer-employee
       - corporate-officer-employee
-      - exempt-presenter
-      - acsp-sole-trader
-      - acsp-employee
+      - judicial-factor
+      - officer-employee-same-group
+      - acsp
       - individual-filing-for-self
       - individual-filing-for-someone-else
     acsp-only-firm-delivery:
-      - acsp-sole-trader
-      - acsp-employee
+      - acsp
     acsp-only-individual-delivery:
-      - acsp-sole-trader
-      - acsp-employee
+      - acsp
     incorporation:
-      - acsp-sole-trader
-      - acsp-employee
+      - acsp
       - individual-filing-for-self
-    official-receiver:
-      - exempt-presenter
+    official-receiver-forms:
+      - officer-employee
+      - corporate-officer-employee
+      - judicial-factor
+      - officer-employee-same-group
+      - acsp
+      - official-receiver
     exempt-form:
-      - exempt-presenter
-
-
