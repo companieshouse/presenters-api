@@ -66,8 +66,9 @@ class PresenterDetailsServiceImplTest {
         PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "official-receiver");
 
         assertNotNull(result);
-        assertEquals(1, result.getStatements().size());
-        assertEquals("official-receiver-statement", result.getStatements().getFirst());
+        assertEquals(2, result.getStatements().size());
+        assertEquals("official-receiver-statement", result.getStatements().get(0));
+        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
         assertNotNull(result.getExempt());
         assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
         assertEquals("Exemption LTD", result.getExempt().getOrganisationName());

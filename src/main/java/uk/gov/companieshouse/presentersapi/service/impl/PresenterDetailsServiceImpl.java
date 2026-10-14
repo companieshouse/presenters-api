@@ -64,7 +64,8 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setAcsp(acsp);
             }
             case "official-receiver" -> {
-                List<String> statements = List.of("official-receiver-statement");
+                List<String> statements = List.of("official-receiver-statement",
+                    "delivery-on-behalf-of-firm");
 
                 Exempt exempt = new Exempt();
                 exempt.setOrganisationName("Exemption LTD");
