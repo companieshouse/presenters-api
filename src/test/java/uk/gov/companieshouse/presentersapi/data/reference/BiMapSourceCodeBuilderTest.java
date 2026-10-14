@@ -25,6 +25,8 @@ class BiMapSourceCodeBuilderTest {
         // Forward mapping: ONE-TO-MANY
         assertThat("Should have forward mapping (FormGroup -> EnumSet<FormType>)",
                 result, containsString("private final EnumMap<FormGroup, EnumSet<FormType>> byFormGroup;"));
+        assertThat("Forward method should reject a null lookup key",
+                result, containsString("getOrDefault(Objects.requireNonNull(key, \"key\"), EnumSet.noneOf(FormType.class))"));
 
         // Reverse mapping: SINGULAR (not a set)
         assertThat("Should have singular reverse mapping (FormType -> FormGroup)",
@@ -111,6 +113,8 @@ class BiMapSourceCodeBuilderTest {
         // Forward mapping: ONE-TO-MANY
         assertThat("Should have forward mapping (KeyEnum -> EnumSet<ValueEnum>)",
                 result, containsString("private final EnumMap<KeyEnum, EnumSet<ValueEnum>> byKeyEnum;"));
+        assertThat("Forward method should reject a null lookup key",
+                result, containsString("getOrDefault(Objects.requireNonNull(key, \"key\"), EnumSet.noneOf(ValueEnum.class))"));
 
         // Reverse mapping: PLURAL (is a set)
         assertThat("Should have plural reverse mapping (ValueEnum -> EnumSet<KeyEnum>)",
@@ -174,6 +178,10 @@ class BiMapSourceCodeBuilderTest {
         // Reverse method should be plural: keyEnumsFor(value) returns EnumSet
         assertThat("Reverse method should be plural (keyEnumsFor)",
                 result, containsString("public EnumSet<KeyEnum> keyEnumsFor(final ValueEnum value)"));
+        assertThat("Reverse method should reject a null lookup value",
+                result, containsString("getOrDefault(Objects.requireNonNull(value, \"value\"), EnumSet.noneOf(KeyEnum.class))"));
+        assertThat("Generated source should import Objects for the null guard",
+                result, containsString("import java.util.Objects;"));
 
         // Should not have singular version
         assertThat("Should not have singular reverse method",
@@ -301,7 +309,7 @@ class BiMapSourceCodeBuilderTest {
 
         // Getter methods should use getOrDefault() to avoid nulls
         assertThat("Forward getter should use getOrDefault for safe retrieval",
-                result, containsString(".getOrDefault(key, EnumSet.noneOf(ValueEnum.class))"));
+                result, containsString(".getOrDefault(Objects.requireNonNull(key, \"key\"), EnumSet.noneOf(ValueEnum.class))"));
     }
 
     @Test
@@ -317,7 +325,7 @@ class BiMapSourceCodeBuilderTest {
         );
 
         assertThat("Forward getter should return a copy of the stored set",
-                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(key, EnumSet.noneOf(ValueEnum.class)));"));
+                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(Objects.requireNonNull(key, \"key\"), EnumSet.noneOf(ValueEnum.class)));"));
     }
 
     @Test
@@ -333,9 +341,9 @@ class BiMapSourceCodeBuilderTest {
         );
 
         assertThat("Forward getter should return a copy of the stored set",
-                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(key, EnumSet.noneOf(ValueEnum.class)));"));
+                result, containsString("return EnumSet.copyOf(byKeyEnum.getOrDefault(Objects.requireNonNull(key, \"key\"), EnumSet.noneOf(ValueEnum.class)));"));
         assertThat("Reverse getter should return a copy of the stored set",
-                result, containsString("return EnumSet.copyOf(byValueEnum.getOrDefault(value, EnumSet.noneOf(KeyEnum.class)));"));
+                result, containsString("return EnumSet.copyOf(byValueEnum.getOrDefault(Objects.requireNonNull(value, \"value\"), EnumSet.noneOf(KeyEnum.class)));"));
     }
 
     @Test
