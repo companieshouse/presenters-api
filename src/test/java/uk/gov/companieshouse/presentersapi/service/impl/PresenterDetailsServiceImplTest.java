@@ -2,7 +2,6 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -14,80 +13,73 @@ class PresenterDetailsServiceImplTest {
     private final PresenterDetailsServiceImpl service = new PresenterDetailsServiceImpl();
 
     @Test
-    @DisplayName("should return presenter details")
-    void testGetPresenterDetailsReturnsPresenterDetails() {
+    @DisplayName("should return individual details")
+    void shouldReturnIndividualPresenterDetails() {
+        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "individual-filing-for-self");
+
+        assertNotNull(result);
+        assertEquals("user123", result.getUserId());
+        assertEquals(1, result.getStatements().size());
+        assertEquals("verified-statement", result.getStatements().getFirst());
+        assertNotNull(result.getIndividual());
+        assertEquals("123456", result.getIndividual().getPersonalCode());
+        assertEquals("1234", result.getIndividual().getVerificationId());
+    }
+
+    @Test
+    @DisplayName("should return individual details no DOB")
+    void shouldReturnIndividualPresenterDetailsNoDOB() {
         PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
 
         assertNotNull(result);
-        assertNotNull(result.getUserId());
-        assertNotNull(result.getStatements());
-        assertNotNull(result.getExempt());
+        assertEquals("user123", result.getUserId());
+        assertEquals(3, result.getStatements().size());
+        assertEquals("officer-employee-statement", result.getStatements().get(0));
+        assertEquals("verified-statement", result.getStatements().get(1));
+        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(2));
+        assertNotNull(result.getIndividual());
+        assertEquals("123456", result.getIndividual().getPersonalCode());
+        assertEquals("1234", result.getIndividual().getVerificationId());
+        assertEquals(1, result.getIndividual().getDateOfBirth().getDay());
+        assertEquals(1, result.getIndividual().getDateOfBirth().getMonth());
+        assertEquals(1980, result.getIndividual().getDateOfBirth().getYear());
     }
 
     @Test
-    @DisplayName("should return exactly two statements")
-    void testGetPresenterDetailsReturnsTwoStatements() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
+    @DisplayName("should return acsp presenter details")
+    void shouldReturnAcspPresenterDetails() {
+        PresenterDetails result = service.getPresenterDetails("user456", "form-abc", "acsp");
 
+        assertNotNull(result);
+        assertEquals("user456", result.getUserId());
+        assertEquals(1, result.getStatements().size());
+        assertEquals("acsp-statement", result.getStatements().getFirst());
+        assertNotNull(result.getAcsp());
+        assertEquals("123456-123456", result.getAcsp().getAcspCode());
+        assertEquals("Mr ACSP Ltd", result.getAcsp().getAcspName());
+        assertEquals("me@myacsp.co.uk", result.getAcsp().getAcspEmployeeEmail());
+    }
+
+    @Test
+    @DisplayName("should return exempt presenter details")
+    void shouldReturnExemptPresenterDetails() {
+        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "official-receiver");
+
+        assertNotNull(result);
         assertEquals(2, result.getStatements().size());
-    }
-
-    @Test
-    @DisplayName("should contain all expected statements")
-    void testContainsExpectedStatements() {
-        List<String> expectedStatements = List.of(
-            "exempt-statement",
-            "delivery-on-behalf-of-firm"
-        );
-
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-
-        assertTrue(result.getStatements().containsAll(expectedStatements),
-            "Expected statements not found");
-    }
-
-    @Test
-    @DisplayName("should return immutable statements list for thread-safety")
-    void testReturnedStatementsListIsImmutable() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-        List<String> statements = result.getStatements();
-
-        assertThrows(UnsupportedOperationException.class, () -> statements.add("new-statement"));
-    }
-
-    @Test
-    @DisplayName("should not return null statements list")
-    void testStatementsNotNull() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-
-        assertNotNull(result.getStatements());
-    }
-
-    @Test
-    @DisplayName("should return non-empty statements")
-    void testStatementsNotEmpty() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-
-        assertFalse(result.getStatements().isEmpty());
-    }
-
-    @Test
-    @DisplayName("should have no duplicate statements")
-    void testNoDuplicateStatements() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-
-        List<String> statements = result.getStatements();
-        long uniqueCount = statements.stream().distinct().count();
-
-        assertEquals(statements.size(), uniqueCount);
-    }
-
-    @Test
-    @DisplayName("should set correct email address")
-    void testExemptEmail() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
-
+        assertEquals("official-receiver-statement", result.getStatements().get(0));
+        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
         assertNotNull(result.getExempt());
         assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
+        assertEquals("Exemption LTD", result.getExempt().getOrganisationName());
+        assertEquals("Mr Test Exemption", result.getExempt().getName());
+    }
+
+    @Test
+    @DisplayName("should throw exception for unknown presenter type")
+    void shouldThrowForUnknownPresenterType() {
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> service.getPresenterDetails("user123", "form-abc", "unknown-type"));
+        assertEquals("Unexpected value: unknown-type", exception.getMessage());
     }
 }
