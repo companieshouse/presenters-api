@@ -19,10 +19,8 @@ class PresenterDetailsServiceImplTest {
 
         assertNotNull(result);
         assertEquals("user123", result.getUserId());
-        assertEquals(3, result.getStatements().size());
-        assertEquals("officer-employee-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-individual", result.getStatements().get(1));
-        assertEquals("verified-statement", result.getStatements().get(2));
+        assertEquals(1, result.getStatements().size());
+        assertEquals("verified-statement", result.getStatements().getFirst());
         assertNotNull(result.getIndividual());
         assertEquals("123456", result.getIndividual().getPersonalCode());
         assertEquals("1234", result.getIndividual().getVerificationId());
@@ -37,8 +35,8 @@ class PresenterDetailsServiceImplTest {
         assertEquals("user123", result.getUserId());
         assertEquals(3, result.getStatements().size());
         assertEquals("officer-employee-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
-        assertEquals("verified-statement", result.getStatements().get(2));
+        assertEquals("verified-statement", result.getStatements().get(1));
+        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(2));
         assertNotNull(result.getIndividual());
         assertEquals("123456", result.getIndividual().getPersonalCode());
         assertEquals("1234", result.getIndividual().getVerificationId());
@@ -50,13 +48,12 @@ class PresenterDetailsServiceImplTest {
     @Test
     @DisplayName("should return acsp presenter details")
     void shouldReturnAcspPresenterDetails() {
-        PresenterDetails result = service.getPresenterDetails("user456", "form-abc", "acsp-employee");
+        PresenterDetails result = service.getPresenterDetails("user456", "form-abc", "acsp");
 
         assertNotNull(result);
         assertEquals("user456", result.getUserId());
-        assertEquals(2, result.getStatements().size());
-        assertEquals("ascp-employee-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
+        assertEquals(1, result.getStatements().size());
+        assertEquals("acsp-statement", result.getStatements().getFirst());
         assertNotNull(result.getAcsp());
         assertEquals("123456-123456", result.getAcsp().getAcspCode());
         assertEquals("Mr ACSP Ltd", result.getAcsp().getAcspName());
@@ -69,9 +66,8 @@ class PresenterDetailsServiceImplTest {
         PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "official-receiver");
 
         assertNotNull(result);
-        assertEquals(2, result.getStatements().size());
-        assertEquals("exempt-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
+        assertEquals(1, result.getStatements().size());
+        assertEquals("official-receiver-statement", result.getStatements().getFirst());
         assertNotNull(result.getExempt());
         assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
         assertEquals("Exemption LTD", result.getExempt().getOrganisationName());

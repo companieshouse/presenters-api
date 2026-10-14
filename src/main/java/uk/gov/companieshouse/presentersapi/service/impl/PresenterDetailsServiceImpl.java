@@ -22,9 +22,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         switch (presenterType) {
             case "individual-filing-for-self" -> {
 
-                List<String> statements = List.of("officer-employee-statement",
-                    "delivery-on-behalf-of-individual",
-                    "verified-statement");
+                List<String> statements = List.of("verified-statement");
 
                 Individual individual = new Individual();
                 individual.setPersonalCode("123456");
@@ -38,8 +36,8 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
             case "officer-employee" -> {
 
                 List<String> statements = List.of("officer-employee-statement",
-                    "delivery-on-behalf-of-firm",
-                    "verified-statement");
+                    "verified-statement",
+                    "delivery-on-behalf-of-firm");
 
                 Individual individual = new Individual();
                 individual.setPersonalCode("123456");
@@ -51,10 +49,9 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setStatements(statements);
                 presenterDetails.setIndividual(individual);
             }
-            case "acsp-employee" -> {
+            case "acsp" -> {
 
-                List<String> statements = List.of("ascp-employee-statement",
-                    "delivery-on-behalf-of-firm");
+                List<String> statements = List.of("acsp-statement");
 
                 Acsp acsp = new Acsp();
                 acsp.setAcspCode("123456-123456");
@@ -67,8 +64,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setAcsp(acsp);
             }
             case "official-receiver" -> {
-                List<String> statements = List.of("exempt-statement",
-                    "delivery-on-behalf-of-firm");
+                List<String> statements = List.of("official-receiver-statement");
 
                 Exempt exempt = new Exempt();
                 exempt.setOrganisationName("Exemption LTD");
