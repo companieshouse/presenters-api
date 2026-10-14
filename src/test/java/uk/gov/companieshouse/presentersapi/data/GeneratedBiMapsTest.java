@@ -39,25 +39,48 @@ class GeneratedBiMapsTest {
     private static final FormGroup GROUP_2 = FormGroup.values()[1];
     private static final PresenterType PRESENTER = PresenterType.values()[0];
 
+    private final FormGroupFormTypeBiMap unboundFormGroupFormTypeBiMap = new FormGroupFormTypeBiMap(null);
+    private final FormGroupPresenterTypeBiMap unboundFormGroupPresenterTypeBiMap = new FormGroupPresenterTypeBiMap(null);
+    private final FormGroupDeliveryStatementTypeBiMap unboundFormGroupDeliveryStatementTypeBiMap =
+        new FormGroupDeliveryStatementTypeBiMap(null);
+    private final PresenterTypeDeliveryStatementTypeBiMap unboundPresenterTypeDeliveryStatementTypeBiMap =
+        new PresenterTypeDeliveryStatementTypeBiMap(null);
+    private final PresenterTypeVerificationStatementTypeBiMap unboundPresenterTypeVerificationStatementTypeBiMap =
+        new PresenterTypeVerificationStatementTypeBiMap(null);
+    private final PresenterTypeAssociationStatementTypeBiMap unboundPresenterTypeAssociationStatementTypeBiMap =
+        new PresenterTypeAssociationStatementTypeBiMap(null);
+    private final PresenterTypeDataObjectTypeBiMap unboundPresenterTypeDataObjectTypeBiMap =
+        new PresenterTypeDataObjectTypeBiMap(null);
+
     // ── VALUES_PER_KEY_SET (singular reverse mapping) ──
 
     @Test
-    void shouldReturnEmptyLookupsWhenFormGroupFormTypeHasNoBoundMap() {
-        final var biMap = new FormGroupFormTypeBiMap(null);
-
-        assertThat(biMap.formTypesFor(GROUP_1), empty());
-        assertThat(biMap.formGroupFor(FormType.values()[0]), is(nullValue()));
+    void shouldReturnEmptyResultsForNonNullLookupsWhenFormGroupFormTypeHasNoBoundMap() {
+        assertThat(unboundFormGroupFormTypeBiMap.formTypesFor(GROUP_1), empty());
+        assertThat(unboundFormGroupFormTypeBiMap.formGroupFor(FormType.values()[0]), is(nullValue()));
     }
 
     @Test
     void shouldRejectNullFormTypeLookup() {
-        final var biMap = new FormGroupFormTypeBiMap(null);
-
-        assertThrows(NullPointerException.class, () -> biMap.formGroupFor(null));
+        assertThrows(NullPointerException.class, () -> unboundFormGroupFormTypeBiMap.formGroupFor(null));
     }
 
     @Test
-    void shouldReturnNoFormTypesWhenFormGroupHasEmptySet() {
+    void shouldRejectNullKeysInForwardLookups() {
+        assertThrows(NullPointerException.class, () -> unboundFormGroupFormTypeBiMap.formTypesFor(null));
+        assertThrows(NullPointerException.class, () -> unboundFormGroupPresenterTypeBiMap.presenterTypesFor(null));
+        assertThrows(NullPointerException.class, () -> unboundFormGroupDeliveryStatementTypeBiMap.deliveryStatementTypesFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeDeliveryStatementTypeBiMap.deliveryStatementTypesFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeVerificationStatementTypeBiMap.verificationStatementTypesFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeAssociationStatementTypeBiMap.associationStatementTypesFor(null));
+        assertThrows(NullPointerException.class, () -> unboundPresenterTypeDataObjectTypeBiMap.dataObjectTypesFor(null));
+    }
+
+    @Test
+    void shouldReturnNoFormTypesForFormGroupWithEmptySet() {
         final var biMap = new FormGroupFormTypeBiMap(Map.of(GROUP_1, Set.of()));
 
         assertThat(biMap.formTypesFor(GROUP_1), empty());
@@ -90,11 +113,24 @@ class GeneratedBiMapsTest {
     // ── VALUES_PER_KEY (plural reverse mapping) ──
 
     @Test
-    void shouldReturnEmptyResultsWhenFormGroupPresenterTypeMapIsNullOrEmpty() {
-        assertThat(new FormGroupPresenterTypeBiMap(null).presenterTypesFor(GROUP_1), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenFormGroupPresenterTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundFormGroupPresenterTypeBiMap.presenterTypesFor(GROUP_1), empty());
         final var withEmpty = new FormGroupPresenterTypeBiMap(Map.of(GROUP_1, Set.of()));
         assertThat(withEmpty.presenterTypesFor(GROUP_1), empty());
         assertThat(withEmpty.formGroupsFor(PRESENTER), empty());
+    }
+
+    @Test
+    void shouldRejectNullValuesInPluralReverseLookups() {
+        assertThrows(NullPointerException.class, () -> unboundFormGroupPresenterTypeBiMap.formGroupsFor(null));
+        assertThrows(NullPointerException.class, () -> unboundFormGroupDeliveryStatementTypeBiMap.formGroupsFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeDeliveryStatementTypeBiMap.presenterTypesFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeVerificationStatementTypeBiMap.presenterTypesFor(null));
+        assertThrows(NullPointerException.class,
+            () -> unboundPresenterTypeAssociationStatementTypeBiMap.presenterTypesFor(null));
+        assertThrows(NullPointerException.class, () -> unboundPresenterTypeDataObjectTypeBiMap.presenterTypesFor(null));
     }
 
     @Test
@@ -109,40 +145,40 @@ class GeneratedBiMapsTest {
     }
 
     @Test
-    void shouldReturnEmptyResultsWhenFormGroupDeliveryStatementTypeMapIsNullOrEmpty() {
-        assertThat(new FormGroupDeliveryStatementTypeBiMap(null).deliveryStatementTypesFor(GROUP_1), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenFormGroupDeliveryStatementTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundFormGroupDeliveryStatementTypeBiMap.deliveryStatementTypesFor(GROUP_1), empty());
         final var withEmpty = new FormGroupDeliveryStatementTypeBiMap(Map.of(GROUP_1, Set.of()));
         assertThat(withEmpty.deliveryStatementTypesFor(GROUP_1), empty());
         assertThat(withEmpty.formGroupsFor(DeliveryStatementType.values()[0]), empty());
     }
 
     @Test
-    void shouldReturnEmptyResultsWhenPresenterTypeDeliveryStatementTypeMapIsNullOrEmpty() {
-        assertThat(new PresenterTypeDeliveryStatementTypeBiMap(null).deliveryStatementTypesFor(PRESENTER), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenPresenterTypeDeliveryStatementTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundPresenterTypeDeliveryStatementTypeBiMap.deliveryStatementTypesFor(PRESENTER), empty());
         final var withEmpty = new PresenterTypeDeliveryStatementTypeBiMap(Map.of(PRESENTER, Set.of()));
         assertThat(withEmpty.deliveryStatementTypesFor(PRESENTER), empty());
         assertThat(withEmpty.presenterTypesFor(DeliveryStatementType.values()[0]), empty());
     }
 
     @Test
-    void shouldReturnEmptyResultsWhenPresenterTypeVerificationStatementTypeMapIsNullOrEmpty() {
-        assertThat(new PresenterTypeVerificationStatementTypeBiMap(null).verificationStatementTypesFor(PRESENTER), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenPresenterTypeVerificationStatementTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundPresenterTypeVerificationStatementTypeBiMap.verificationStatementTypesFor(PRESENTER), empty());
         final var withEmpty = new PresenterTypeVerificationStatementTypeBiMap(Map.of(PRESENTER, Set.of()));
         assertThat(withEmpty.verificationStatementTypesFor(PRESENTER), empty());
         assertThat(withEmpty.presenterTypesFor(VerificationStatementType.values()[0]), empty());
     }
 
     @Test
-    void shouldReturnEmptyResultsWhenPresenterTypeAssociationStatementTypeMapIsNullOrEmpty() {
-        assertThat(new PresenterTypeAssociationStatementTypeBiMap(null).associationStatementTypesFor(PRESENTER), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenPresenterTypeAssociationStatementTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundPresenterTypeAssociationStatementTypeBiMap.associationStatementTypesFor(PRESENTER), empty());
         final var withEmpty = new PresenterTypeAssociationStatementTypeBiMap(Map.of(PRESENTER, Set.of()));
         assertThat(withEmpty.associationStatementTypesFor(PRESENTER), empty());
         assertThat(withEmpty.presenterTypesFor(AssociationStatementType.values()[0]), empty());
     }
 
     @Test
-    void shouldReturnEmptyResultsWhenPresenterTypeDataObjectTypeMapIsNullOrEmpty() {
-        assertThat(new PresenterTypeDataObjectTypeBiMap(null).dataObjectTypesFor(PRESENTER), empty());
+    void shouldReturnEmptyResultsForNonNullLookupsWhenPresenterTypeDataObjectTypeMapIsUnboundOrEmpty() {
+        assertThat(unboundPresenterTypeDataObjectTypeBiMap.dataObjectTypesFor(PRESENTER), empty());
         final var withEmpty = new PresenterTypeDataObjectTypeBiMap(Map.of(PRESENTER, Set.of()));
         assertThat(withEmpty.dataObjectTypesFor(PRESENTER), empty());
         assertThat(withEmpty.presenterTypesFor(DataObjectType.values()[0]), empty());

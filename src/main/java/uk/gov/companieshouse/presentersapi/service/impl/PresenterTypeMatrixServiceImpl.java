@@ -20,13 +20,12 @@ public class PresenterTypeMatrixServiceImpl implements PresenterTypeMatrixServic
     }
 
     /**
-     * Resolves the FormType's FormGroup, then the PresenterTypes for that FormGroup. Should only return an empty set if
-     * the FormType has no FormGroup; since FormType is an enum whose values are generated from reference data YAML, in
-     * practice this should never happen for non-null FormType values.
+     * Resolves the FormType's FormGroup, then the PresenterTypes for that FormGroup.
      *
-     * @param formType the FormType constant to lookup
-     * @return the set of PresenterType constants for the FormType's FormGroup, empty if the FormType has no FormGroup
-     *     or is null.
+     * @param formType the non-null FormType constant to look up
+     * @return the PresenterType constants for the FormType's FormGroup, or an empty set if that group has no
+     *     associated presenter types
+     * @throws NullPointerException if formType is null
      */
     @Override
     public EnumSet<PresenterType> presenterTypesFor(final FormType formType) {

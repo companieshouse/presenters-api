@@ -35,9 +35,11 @@ public class StatementTypeMatrixServiceImpl implements StatementTypeMatrixServic
     }
 
     /**
-     * @param presenterType the PresenterType constant to lookup
-     * @param formType      the FormType constant to lookup
+     * @param presenterType the non-null PresenterType constant to look up
+     * @param formType the non-null FormType constant to look up
      * @return the PresenterStatements for the given presenterType and formType
+     * @throws NullPointerException if formType is null and presenterType is not
+     *     {@link PresenterType#INDIVIDUAL_FILING_FOR_SELF}
      */
     @Override
     public PresenterStatements statementTypesFor(final PresenterType presenterType, final FormType formType) {
