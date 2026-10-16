@@ -1,0 +1,22 @@
+@startuml Get Details ACSP
+
+participant "Calling Service" as Web
+participant "Presenters API" as PresentersAPI
+participant "ACSP Manage\n Users API" as ACSPAPI
+participant "Authentication\n Service" as AuthService
+box "Statement Matrix" #LightBlue
+    participant "Presenter Type\n to Assoc Statement" as PTAS
+    participant "Form Group\n to Delivery Statement" as FGDS
+    participant "Presenter Type\n to Verification Statement" as PTVS
+end box
+
+Web -> PresentersAPI: Get details for ACSP user
+PresentersAPI -> ACSPAPI: Get ACSP Code and ACSP Name
+PresentersAPI -> AuthService: Get email address and person name
+PresentersAPI -> PTAS: Get Association Statement for Presenter Type
+PresentersAPI -> FGDS: Get Delivery Statement(s) for Form Group
+PresentersAPI -> PTVS: Get Verification Statement for Presenter Type
+PresentersAPI -> Web: Return details
+
+@enduml
+
