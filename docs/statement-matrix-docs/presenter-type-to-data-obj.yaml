@@ -1,0 +1,30 @@
+officer-employee:
+  - personal-code
+  - name
+  - date-of-birth
+corporate-officer-employee:
+  - personal-code
+  - name
+  - date-of-birth
+judicial-factor:
+  - personal-code
+  - name
+  - date-of-birth
+officer-employee-same-group:
+  - personal-code
+  - name
+  - date-of-birth
+official-receiver:
+  - email
+acsp:
+  - acsp-code
+  - acsp-name
+  - email
+  - name
+individual-filing-for-self:
+  - personal-code
+  - name
+individual-filing-for-someone-else:
+  - personal-code
+  - name
+  - date-of-birth
