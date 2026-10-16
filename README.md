@@ -3,9 +3,9 @@ The service provides presenter details and statements for CHS filings.
 
 Configuration
 -------------
-System properties for efs-submission-api are defined in `application.properties`. These are normally configured per environment.
+System properties for presenters-api are defined in `application.properties`. These are normally configured per environment.
 
-Certain form types will be sent by efs-submission-api to FES while other form types will be emailed to the relevant org unit. Properties relevant to either scenario are labelled accordingly.
+Certain form types will be sent by presenters-api to FES while other form types will be emailed to the relevant org unit. Properties relevant to either scenario are labelled accordingly.
 
 | Variable                                     | Description                                                                                                                                 | Example                                             |Mandatory (always, email, FES, local)|
 ----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|--------|
