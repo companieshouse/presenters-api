@@ -1,0 +1,20 @@
+@startuml Get Details Individual
+
+participant "Calling Service" as Web
+participant "Presenters API" as PresentersAPI
+participant "Identity\n Verification API" as IDVAPI
+box "Statement Matrix" #LightBlue
+    participant "Presenter Type\n to Assoc Statement" as PTAS
+    participant "Presenter Type\n to Delivery Statement" as PTDS
+    participant "Presenter Type\n to Verification Statement" as PTVS
+end box
+
+Web -> PresentersAPI: Get details for verified individual
+PresentersAPI -> IDVAPI: Get Personal Code, Name, DoB and Identity ID
+PresentersAPI -> PTAS: Get Association Statement for Presenter Type
+PresentersAPI -> PTDS: Get Delivery Statement for Presenter Type
+PresentersAPI -> PTVS: Get Verification Statement for Presenter Type
+PresentersAPI -> Web: Return details
+
+@enduml
+

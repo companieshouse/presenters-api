@@ -1,0 +1,20 @@
+@startuml Get Presenter Types
+
+participant "Calling Service" as Web
+participant "Presenters API" as PresentersAPI
+participant "ACSP Manage\n Users API" as ACSPAPI
+participant "Exempt Users\n Collection" as ExemptUsersCollection
+box "Statement Matrix" #LightBlue
+    participant "Form Group\n to Form" as FormGroupToForm
+    participant "Form Group\n to Presenter Type" as FormGroupToPresenterType
+end box
+
+Web -> PresentersAPI: Get presenter types
+PresentersAPI -> FormGroupToForm: Get Form Group for Form
+PresentersAPI -> FormGroupToPresenterType: Get Presenter Type for Form Group
+PresentersAPI -> ACSPAPI: Check if user is associated with ACSP
+PresentersAPI -> ExemptUsersCollection: Check if user is exempt
+PresentersAPI -> Web: Return presenter types
+
+@enduml
+
