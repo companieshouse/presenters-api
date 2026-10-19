@@ -1,0 +1,20 @@
+@startuml Get Details Official Receiver
+
+participant "Calling Service" as Web
+participant "Presenters API" as PresentersAPI
+participant "Exempt Users\n Collection" as ExemptUsersCollection
+box "Statement Matrix" #LightBlue
+    participant "Presenter Type\n to Assoc Statement" as PTAS
+    participant "Form Group\n to Delivery Statement" as FGDS
+    participant "Presenter Type\n to Verification Statement" as PTVS
+end box
+
+Web -> PresentersAPI: Get details for Official Receiver
+PresentersAPI -> ExemptUsersCollection: Get exempt user email address
+PresentersAPI -> PTAS: Get Association Statement for Presenter Type
+PresentersAPI -> FGDS: Get Delivery Statement(s) for Form Group
+PresentersAPI -> PTVS: Get Verification Statement for Presenter Type
+PresentersAPI -> Web: Return details
+
+@enduml
+
