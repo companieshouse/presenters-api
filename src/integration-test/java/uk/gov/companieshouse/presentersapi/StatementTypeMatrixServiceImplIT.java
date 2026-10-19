@@ -28,7 +28,7 @@ class StatementTypeMatrixServiceImplIT {
     @Test
     void shouldCombinePresenterTypeAndFormGroupDeliveryStatements() {
         final var statements = service.statementTypesFor(PresenterType.OFFICER_EMPLOYEE,
-                                                         FormType.from("1"));
+                                                         FormType.MR01);
 
         assertThat(statements.associationStatements(),
                 is(EnumSet.of(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT)));

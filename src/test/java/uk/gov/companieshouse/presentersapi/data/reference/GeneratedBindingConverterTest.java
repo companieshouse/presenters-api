@@ -1,9 +1,15 @@
 package uk.gov.companieshouse.presentersapi.data.reference;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -11,6 +17,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import javax.tools.ToolProvider;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -73,14 +80,14 @@ class GeneratedBindingConverterTest {
             }
             """);
         final var compiler = ToolProvider.getSystemJavaCompiler();
-        assertThat(compiler).as("A JDK is required to compile generated sources").isNotNull();
+        assertThat("A JDK is required to compile generated sources", compiler, is(notNullValue()));
         try (final var manager = compiler.getStandardFileManager(null, null, null);
                 final var files = Files.walk(sources)) {
             final var units = manager.getJavaFileObjectsFromPaths(
                 files.filter(path -> path.toString().endsWith(".java")).toList());
             final var options = List.of("-parameters", "-classpath", System.getProperty("java.class.path"),
                 "-d", Files.createDirectories(tempDir.resolve("classes")).toString());
-            assertThat(compiler.getTask(null, manager, null, options, null, units).call()).isTrue();
+            assertThat(compiler.getTask(null, manager, null, options, null, units).call(), is(true));
         }
     }
 
@@ -99,16 +106,18 @@ class GeneratedBindingConverterTest {
             final var reverse = bimapType.getMethod("formGroupFor", formType);
 
             runner(loader).run(context -> {
-                assertThat(context).hasNotFailed();
-                assertThat(context).hasSingleBean(loader.loadClass(PACKAGE + ".enums.FormTypeBindingConverter"));
-                assertThat(context).hasSingleBean(loader.loadClass(PACKAGE + ".enums.FormGroupBindingConverter"));
+                assertThat(context.getStartupFailure(), is(nullValue()));
+                assertThat(context.getBeanNamesForType(loader.loadClass(PACKAGE + ".enums.FormTypeBindingConverter")).length,
+                    is(1));
+                assertThat(context.getBeanNamesForType(loader.loadClass(PACKAGE + ".enums.FormGroupBindingConverter")).length,
+                    is(1));
                 final var bimap = context.getBean(bimapType);
-                assertThat(forward.invoke(bimap, firm)).isEqualTo(Set.of(dotted, standard));
-                assertThat(forward.invoke(bimap, individual)).isEqualTo(Set.of(undotted));
-                assertThat(reverse.invoke(bimap, dotted)).isEqualTo(firm);
-                assertThat(reverse.invoke(bimap, undotted)).isEqualTo(individual);
-                assertThat(formType.getMethod("code").invoke(dotted)).isEqualTo("4.13(NI)");
-                assertThat(formType.getMethod("code").invoke(undotted)).isEqualTo("413(NI)");
+                assertThat(forward.invoke(bimap, firm), is(Set.of(dotted, standard)));
+                assertThat(forward.invoke(bimap, individual), is(Set.of(undotted)));
+                assertThat(reverse.invoke(bimap, dotted), is(firm));
+                assertThat(reverse.invoke(bimap, undotted), is(individual));
+                assertThat(formType.getMethod("code").invoke(dotted), is("4.13(NI)"));
+                assertThat(formType.getMethod("code").invoke(undotted), is("413(NI)"));
             });
         }
     }
@@ -120,9 +129,9 @@ class GeneratedBindingConverterTest {
             final var converterType = loader.loadClass(PACKAGE + ".enums.FormTypeBindingConverter");
             final var converter = converterType.getConstructor().newInstance();
 
-            assertThatThrownBy(() -> converterType.getMethod("convert", String.class).invoke(converter, code))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasStackTraceContaining("Unknown FormType: " + code);
+            final var failure = assertThrows(InvocationTargetException.class,
+                () -> converterType.getMethod("convert", String.class).invoke(converter, code));
+            assertInvalidCodeFailure(failure, "Unknown FormType: " + code);
         }
     }
 
@@ -132,10 +141,7 @@ class GeneratedBindingConverterTest {
 
         try (final var loader = classLoader()) {
             runner(loader).run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                    .hasStackTraceContaining("Unknown FormType: unknown");
+                assertInvalidCodeFailure(context.getStartupFailure(), "Unknown FormType: unknown");
             });
         }
     }
@@ -146,10 +152,7 @@ class GeneratedBindingConverterTest {
 
         try (final var loader = classLoader()) {
             runner(loader).run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                    .hasStackTraceContaining("Unknown FormGroup: unknown-group");
+                assertInvalidCodeFailure(context.getStartupFailure(), "Unknown FormGroup: unknown-group");
             });
         }
     }
@@ -165,13 +168,19 @@ class GeneratedBindingConverterTest {
             final var bimapType = loader.loadClass(PACKAGE + ".bimaps.FormGroupFormTypeBiMap");
 
             runner(loader).run(context -> {
-                assertThat(context).hasNotFailed();
+                assertThat(context.getStartupFailure(), is(nullValue()));
                 final var value = formType.getField("_4_13_NI").get(null);
                 final var group = formGroup.getField("FIRM_DELIVERY").get(null);
-                assertThat(bimapType.getMethod("formGroupFor", formType).invoke(context.getBean(bimapType), value))
-                    .isEqualTo(group);
+                assertThat(bimapType.getMethod("formGroupFor", formType).invoke(context.getBean(bimapType), value),
+                    is(group));
             });
         }
+    }
+
+    private static void assertInvalidCodeFailure(final Throwable failure, final String message) {
+        assertThat(failure, is(notNullValue()));
+        assertThat(ExceptionUtils.getRootCause(failure), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(ExceptionUtils.getStackTrace(failure), containsString(message));
     }
 
     private void replaceResource(final String original, final String replacement) throws IOException {
