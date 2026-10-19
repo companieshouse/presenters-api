@@ -54,7 +54,7 @@ class EnumGenerator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
 
                     // Process each enum definition in source
                     sourceConfig.enums().forEach((enumName, enumDef) -> {
@@ -91,7 +91,7 @@ class EnumGenerator {
             GeneratorValidator.validateUniqueness(yamlDataList, enumDef.validation().uniquenessValidation(), sourceFile);
         }
 
-        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+        final var yamlData = GeneratorData.toSetMap(yamlDataList);
         final var existingValues = generatedEnums.get(enumName).values();
         final var sourceValues = extractValuesFromYaml(yamlData, enumDef.location());
         existingValues.addAll(sourceValues);
@@ -109,7 +109,7 @@ class EnumGenerator {
             GeneratorValidator.validateUniqueness(yamlDataList, enumDef.validation().uniquenessValidation(), sourceFile);
         }
 
-        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+        final var yamlData = GeneratorData.toSetMap(yamlDataList);
         final var enumValues = extractValuesFromYaml(yamlData, enumDef.location());
         final var generatedEnum = new GeneratedEnumDef(enumName, enumValues, config.outputPackage().enumPackage());
         generatedEnums.put(enumName, generatedEnum);
@@ -181,7 +181,7 @@ class EnumGenerator {
             ));
 
         final var constantsBlock = constantToCode.entrySet().stream()
-                                                  .map(e -> "    " + e.getKey() + "(\"" + EnumBiMapGenerator.escapeForJavaStringLiteral(e.getValue()) + "\")")
+                                                  .map(e -> "    " + e.getKey() + "(\"" + GeneratorData.escapeForJavaStringLiteral(e.getValue()) + "\")")
                                                   .collect(java.util.stream.Collectors.joining(",\n"));
 
         return """

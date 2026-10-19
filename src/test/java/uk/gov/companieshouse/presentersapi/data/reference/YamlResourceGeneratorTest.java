@@ -54,10 +54,10 @@ class YamlResourceGeneratorTest {
     @Test
     void shouldBindEveryFormCodeUsingGeneratedConverters() throws IOException {
         final var configFile = Path.of("src/main/resources/enum-generator-config.yaml");
-        YamlResourceGenerator.generate(EnumBiMapGenerator.readConfig(configFile), configFile.getParent(), resources());
+        YamlResourceGenerator.generate(GeneratorData.readConfig(configFile), configFile.getParent(), resources());
         final var resource = resources().resolve("data/form-group-to-form.yaml");
         final var propertySources = new YamlPropertySourceLoader().load("forms", new FileSystemResource(resource));
-        final var dictionary = EnumBiMapGenerator.readYamlData(resource, List.of("form-types-map", "by-form-group"));
+        final var dictionary = GeneratorData.readYamlData(resource, List.of("form-types-map", "by-form-group"));
 
         new ApplicationContextRunner().withUserConfiguration(FormBindingConfiguration.class)
             .withInitializer(context -> propertySources.forEach(
@@ -86,7 +86,7 @@ class YamlResourceGeneratorTest {
     @Test
     void shouldMergePresenterTypesFromValuesAndAllFourMappingKeySources() throws IOException {
         final var configFile = Path.of("src/main/resources/enum-generator-config.yaml");
-        final var original = EnumBiMapGenerator.readConfig(configFile);
+        final var original = GeneratorData.readConfig(configFile);
         final var generated = YamlResourceGenerator.generate(original, configFile.getParent(), resources());
         final var expected = new LinkedHashSet<String>();
         final var definitions = new LinkedHashSet<String>();
@@ -96,7 +96,7 @@ class YamlResourceGeneratorTest {
                 continue;
             }
             definitions.add(entry.getKey());
-            final var dictionary = EnumBiMapGenerator.readYamlData(
+            final var dictionary = GeneratorData.readYamlData(
                 resources().resolve(entry.getKey()), entry.getValue().rootKeys());
             if (entry.getKey().equals("data/form-group-to-presenter-types.yaml")) {
                 assertThat(definition.location(), is(EnumGeneratorConfig.Location.DICTIONARY_VALUES));
@@ -138,7 +138,7 @@ class YamlResourceGeneratorTest {
         assertThat(Files.readString(tempDir.resolve("mapping.yaml")), is(input));
         final var output = resources().resolve("data/mapping.yaml");
         assertThat(Files.readAllLines(output).subList(0, 2), is(List.of("items-map:", "  by-group:")));
-        assertThat(EnumBiMapGenerator.readYamlData(output, roots), is(Map.of(
+        assertThat(GeneratorData.readYamlData(output, roots), is(Map.of(
             "first", List.of("single"), "second", List.of("one", "two", "one"),
             "empty", List.of(), "empty-list", List.of())));
     }
@@ -164,7 +164,7 @@ class YamlResourceGeneratorTest {
     @Test
     void shouldGenerateEveryConfiguredDocumentationDictionary() throws IOException {
         final var configFile = Path.of("src/main/resources/enum-generator-config.yaml");
-        final var original = EnumBiMapGenerator.readConfig(configFile);
+        final var original = GeneratorData.readConfig(configFile);
         final var generated = YamlResourceGenerator.generate(original, configFile.getParent(), resources());
         final var mapper = new ObjectMapper(new YAMLFactory());
 
@@ -174,10 +174,10 @@ class YamlResourceGeneratorTest {
             final Map<String, Object> dictionary = mapper.readValue(Files.readString(input), new TypeReference<>() {});
             final var expected = new LinkedHashMap<String, List<String>>();
             dictionary.forEach((key, value) -> expected.put(key, value instanceof final String text
-                ? List.of(text) : EnumBiMapGenerator.extractValuesList(
+                ? List.of(text) : GeneratorData.extractValuesList(
                     new java.util.AbstractMap.SimpleEntry<>(key, value), key, input.toString())));
             final var resourceName = "data/" + input.getFileName();
-            assertThat(EnumBiMapGenerator.readYamlData(
+            assertThat(GeneratorData.readYamlData(
                 resources().resolve(resourceName), entry.getValue().rootKeys()), is(expected));
             assertThat(generated.sources().get(resourceName), is(entry.getValue()));
         }
@@ -201,7 +201,7 @@ class YamlResourceGeneratorTest {
 
         YamlResourceGenerator.generate(config, tempDir, resources());
 
-        assertThat(EnumBiMapGenerator.readYamlData(resources().resolve("data/mapping.yaml"),
+        assertThat(GeneratorData.readYamlData(resources().resolve("data/mapping.yaml"),
             List.of("items-map", "by-group")), is(Map.of("key", List.of("updated"))));
     }
 

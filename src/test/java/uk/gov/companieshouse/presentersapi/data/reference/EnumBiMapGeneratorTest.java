@@ -107,7 +107,7 @@ class EnumBiMapGeneratorTest {
 
         EnumBiMapGenerator.main(new String[] {args()[0], out().toString(), resourcesDir.toString()});
 
-        assertThat(EnumBiMapGenerator.readYamlData(
+        assertThat(GeneratorData.readYamlData(
             resourcesDir.resolve("data/groups.yaml"), List.of("groups-map", "by-group")),
             is(Map.of("g1", List.of("i1"), "g2", List.of("i2"))));
         assertThat(Files.readString(out().resolve("uk/test/enums/Item.java")), containsString("I2(\"i2\")"));

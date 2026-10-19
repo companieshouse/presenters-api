@@ -24,13 +24,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.dataformat.yaml.JacksonYAMLParseException;
 
 /**
- * Unit test suite for EnumBiMapGenerator utility methods.
+ * Unit test suite for GeneratorData utility methods.
  * Tests pure utility functions for YAML data handling and escaping:
  * - String escaping for Java literals
  * - List-to-set data conversion
  * - Value extraction and validation from YAML
  */
-class EnumBiMapGeneratorHelpersTest {
+class GeneratorDataTest {
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 1: escapeForJavaStringLiteral() - String Escaping
@@ -40,7 +40,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testEscapeForJavaStringLiteralPlainText() {
         final var input = "plain text";
 
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Plain text should pass through unchanged",
                   result, is("plain text"));
@@ -50,7 +50,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testEscapeForJavaStringLiteralWithDoubleQuotes() {
         final var input = "text with \"quotes\"";
 
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Double quotes should be escaped",
                   result, containsString("\\\""));
@@ -60,7 +60,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testEscapeForJavaStringLiteralWithBackslash() {
         final var input = "path\\to\\file";
 
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Backslashes should be escaped",
                   result, containsString("\\\\"));
@@ -70,7 +70,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testEscapeForJavaStringLiteralWithBothQuotesAndBackslash() {
         final var input = "text with \"quotes\" and \\slashes";
 
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Should escape both quotes and backslashes",
                   result, containsString("\\\""));
@@ -81,7 +81,7 @@ class EnumBiMapGeneratorHelpersTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "abc"})
     void testEscapeForJavaStringLiteralNoSpecialChars(final String input) {
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Strings without special chars should pass through",
                   result, is(input));
@@ -91,7 +91,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testEscapeForJavaStringLiteralMixedContent() {
         final var input = "JSON: {\"key\": \"value\"}";
 
-        final var result = EnumBiMapGenerator.escapeForJavaStringLiteral(input);
+        final var result = GeneratorData.escapeForJavaStringLiteral(input);
 
         assertThat("Should escape quotes in JSON-like content",
                   result, containsString("\\\""));
@@ -108,7 +108,7 @@ class EnumBiMapGeneratorHelpersTest {
             "key2", List.of("x", "y")
         );
 
-        final var result = EnumBiMapGenerator.toSetMap(listMap);
+        final var result = GeneratorData.toSetMap(listMap);
 
         assertThat("Result should have same keys",
                   result.keySet(), hasItems("key1", "key2"));
@@ -122,7 +122,7 @@ class EnumBiMapGeneratorHelpersTest {
             "key1", List.of("a", "b", "a", "c", "b")
         );
 
-        final var result = EnumBiMapGenerator.toSetMap(listMap);
+        final var result = GeneratorData.toSetMap(listMap);
 
         assertThat("Set should deduplicate values",
                   result.get("key1").size(), is(3));
@@ -138,7 +138,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testExtractValuesListSimpleList() {
         final var entry = new AbstractMap.SimpleEntry<String, Object>("key", List.of("a", "b", "c"));
 
-        final var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
+        final var result = GeneratorData.extractValuesList(entry, "key", "test.yaml");
 
         assertThat("Should extract list values",
                   result, hasItems("a", "b", "c"));
@@ -150,7 +150,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testExtractValuesListNullValue() {
         final var entry = new AbstractMap.SimpleEntry<>("key", null);
 
-        final var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
+        final var result = GeneratorData.extractValuesList(entry, "key", "test.yaml");
 
         assertThat("Null value should return empty list",
                   result.size(), is(0));
@@ -160,7 +160,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testExtractValuesListEmptyList() {
         final var entry = new AbstractMap.SimpleEntry<String, Object>("key", List.of());
 
-        final var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
+        final var result = GeneratorData.extractValuesList(entry, "key", "test.yaml");
 
         assertThat("Empty list should return empty list",
                   result.size(), is(0));
@@ -172,7 +172,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
                 IllegalStateException.class,
-                () -> EnumBiMapGenerator.extractValuesList(entry, "key1", "test.yaml"),
+                () -> GeneratorData.extractValuesList(entry, "key1", "test.yaml"),
                 "Should throw on invalid structure"
         );
         assertThat(exception.getMessage(), containsString("expected a list of strings or null/empty value"));
@@ -184,7 +184,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
             IllegalStateException.class,
-            () -> EnumBiMapGenerator.extractValuesList(entry, "key1", "test.yaml"),
+            () -> GeneratorData.extractValuesList(entry, "key1", "test.yaml"),
             "Should throw on invalid structure"
         );
 
@@ -200,7 +200,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
             IllegalStateException.class,
-            () -> EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml"),
+            () -> GeneratorData.extractValuesList(entry, "key", "test.yaml"),
             "Should throw when list contains non-string"
         );
 
@@ -214,7 +214,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testExtractValuesListPreservesOrderAndDuplicates() {
         final var entry = new AbstractMap.SimpleEntry<String, Object>("key", List.of("a", "b", "a", "c"));
 
-        final var result = EnumBiMapGenerator.extractValuesList(entry, "key", "test.yaml");
+        final var result = GeneratorData.extractValuesList(entry, "key", "test.yaml");
 
         assertThat("Should preserve order",
                   result, contains("a", "b", "a", "c"));
@@ -226,7 +226,7 @@ class EnumBiMapGeneratorHelpersTest {
     void testExtractValuesListFromMapWithNestedList() {
         final var entry = new AbstractMap.SimpleEntry<String, Object>("forms", List.of("AD01", "CS01", "PSC01"));
 
-        final var result = EnumBiMapGenerator.extractValuesList(entry, "forms", "form-data.yaml");
+        final var result = GeneratorData.extractValuesList(entry, "forms", "form-data.yaml");
 
         assertThat("Should extract form codes",
                   result, hasItems("AD01", "CS01", "PSC01"));
@@ -239,7 +239,7 @@ class EnumBiMapGeneratorHelpersTest {
     @Test
     void testReadConfigValidFile() throws IOException {
         final var configFile = Paths.get("src/test/resources/valid-config.yaml");
-        final var result = EnumBiMapGenerator.readConfig(configFile);
+        final var result = GeneratorData.readConfig(configFile);
 
         assertThat("Config should load successfully", result, is(notNullValue()));
         assertThat("Configuration should have output packages", result.outputPackage(), is(notNullValue()));
@@ -250,7 +250,7 @@ class EnumBiMapGeneratorHelpersTest {
         final var configFile = Paths.get("src/test/resources/nonexistent-config.yaml");
         final var exception = assertThrows(
                 IOException.class,
-                () -> EnumBiMapGenerator.readConfig(configFile),
+                () -> GeneratorData.readConfig(configFile),
                 "Should throw when config file doesn't exist"
         );
         assertThat("Error message should be informative",
@@ -262,7 +262,7 @@ class EnumBiMapGeneratorHelpersTest {
         final var configFile = Paths.get("src/test/resources/malformed.yaml");
         final var exception = assertThrows(
                 JacksonYAMLParseException.class,
-                () -> EnumBiMapGenerator.readConfig(configFile),
+                () -> GeneratorData.readConfig(configFile),
                 "Should throw when config file is malformed"
         );
         assertThat("Error message should be informative",
@@ -278,7 +278,7 @@ class EnumBiMapGeneratorHelpersTest {
         final var yamlFile = Paths.get("src/test/resources/valid-data.yaml");
         final var rootKeys = List.of("data");
 
-        final var result = EnumBiMapGenerator.readYamlData(yamlFile, rootKeys);
+        final var result = GeneratorData.readYamlData(yamlFile, rootKeys);
 
         assertThat("Should return map with keys",
                 result.keySet(), hasItems("key1", "key2"));
@@ -293,7 +293,7 @@ class EnumBiMapGeneratorHelpersTest {
         final var yamlFile = Paths.get("src/test/resources/nested-data.yaml");
         final var rootKeys = List.of("level1", "level2");
 
-        final var result = EnumBiMapGenerator.readYamlData(yamlFile, rootKeys);
+        final var result = GeneratorData.readYamlData(yamlFile, rootKeys);
 
         assertThat("Should navigate nested structure",
                 result.keySet(), hasItems("nestedKey1", "nestedKey2"));
@@ -310,7 +310,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
                 IllegalStateException.class,
-                () -> EnumBiMapGenerator.readYamlData(yamlFile, rootKeys),
+                () -> GeneratorData.readYamlData(yamlFile, rootKeys),
                 "Should throw when first root-key missing"
         );
         assertThat("Error should mention missing root-key",
@@ -324,7 +324,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
                 IllegalStateException.class,
-                () -> EnumBiMapGenerator.readYamlData(yamlFile, rootKeys),
+                () -> GeneratorData.readYamlData(yamlFile, rootKeys),
                 "Should throw when nested root-key missing"
         );
 
@@ -337,7 +337,7 @@ class EnumBiMapGeneratorHelpersTest {
         final var yamlFile = Paths.get("src/test/resources/valid-data.yaml");
         final var rootKeys = List.of("data");
 
-        final var result = EnumBiMapGenerator.readYamlData(yamlFile, rootKeys);
+        final var result = GeneratorData.readYamlData(yamlFile, rootKeys);
 
         // LinkedHashMap should preserve order
         final var keys = new ArrayList<>(result.keySet());
@@ -352,7 +352,7 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
                 IOException.class,
-                () -> EnumBiMapGenerator.readYamlData(yamlFile, rootKeys),
+                () -> GeneratorData.readYamlData(yamlFile, rootKeys),
                 "Should throw when YAML file doesn't exist"
         );
         assertThat("Error should include path to missing file",
@@ -366,11 +366,10 @@ class EnumBiMapGeneratorHelpersTest {
 
         final var exception = assertThrows(
                 Exception.class,
-                () -> EnumBiMapGenerator.readYamlData(yamlFile, rootKeys),
+                () -> GeneratorData.readYamlData(yamlFile, rootKeys),
                 "Should throw on malformed data YAML"
         );
         assertThat("Error should return an informative exception",
                 exception.getMessage(), containsString("could not find expected"));
     }
 }
-

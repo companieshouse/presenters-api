@@ -1,18 +1,7 @@
 package uk.gov.companieshouse.presentersapi.data.reference;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Generates runtime YAML resources, Java enum classes and bidirectional maps (BiMaps).
@@ -27,12 +16,10 @@ import tools.jackson.dataformat.yaml.YAMLFactory;
  * <ul>
  *   <li><b>Orchestration:</b> Coordinates EnumGenerator, BiMapGenerator, and GeneratorValidator
  *       to execute the multi-phase generation and validation pipeline.
- *   <li><b>Configuration Loading:</b> Reads enum-generator-config.yaml to determine which YAML
+ *   <li><b>Configuration Loading:</b> Uses GeneratorData to read enum-generator-config.yaml and determine which YAML
  *       sources contribute to which enums, along with their validation and cardinality rules.
- *   <li><b>YAML Data Reading:</b> Loads and navigates YAML structures based on configured root-keys.
  *   <li><b>Resource Generation:</b> Wraps documentation dictionaries in binding keys when a resources
  *       output directory is supplied.
- *   <li><b>Shared Utilities:</b> Provides common string escaping and configuration reading functions.
  * </ul>
  *
  * <p><b>Delegation Model:</b>
@@ -66,16 +53,12 @@ public class EnumBiMapGenerator {
         this.validator = enumGenerator.getValidator();
     }
 
-    // Static patterns for enum constant normalization (accessed by EnumGenerator)
-    static final Pattern BACKSLASH = Pattern.compile("\\\\");
-    static final Pattern QUOTE = Pattern.compile("\"");
-
     public static void main(final String[] args) throws Exception {
         final var configFile = validateAndParseArgs(args);
         final var outputDir = Path.of(args[1]);
         final var configDir = configFile.getParent() != null ? configFile.getParent() : Path.of(".");
 
-        final var config = readConfig(configFile);
+        final var config = GeneratorData.readConfig(configFile);
         final EnumBiMapGenerator generator;
         if (args.length == 3) {
             final var resourcesDir = Path.of(args[2]);
@@ -103,77 +86,4 @@ public class EnumBiMapGenerator {
         return Path.of(args[0]);
     }
 
-    static EnumGeneratorConfig readConfig(final Path configFile) throws IOException {
-        final var mapper = new ObjectMapper(new YAMLFactory());
-        return mapper.readValue(Files.readString(configFile), EnumGeneratorConfig.class);
-    }
-
-    // Read YAML data and navigate to the root-keys path
-    // Returns raw data with duplicates preserved for uniqueness validation
-    static Map<String, List<String>> readYamlData(final Path yamlFile, final List<String> rootKeys) throws IOException {
-        final var mapper = new ObjectMapper(new YAMLFactory());
-        final Map<String, Object> root = mapper.readValue(Files.readString(yamlFile), new TypeReference<>() {});
-
-        @SuppressWarnings("unchecked")
-        var level = (Map<String, Object>) root.get(rootKeys.getFirst());
-        if (level == null) {
-            throw new IllegalStateException("Configuration error in " + yamlFile + ": missing root-key '" + rootKeys.getFirst()
-                    + "'. Check enum-generator-config.yaml root-keys path for this source.");
-        }
-
-        // Navigate through remaining root-keys
-        for (var i = 1; i < rootKeys.size(); i++) {
-            @SuppressWarnings("unchecked")
-            final var next = (Map<String, Object>) level.get(rootKeys.get(i));
-            if (next == null) {
-                throw new IllegalStateException("Configuration error in " + yamlFile + ": missing root-keys path '"
-                        + String.join(" → ", rootKeys.subList(0, i + 1)) + "'. Check that the YAML structure matches the root-keys in enum-generator-config.yaml.");
-            }
-            level = next;
-        }
-
-        // Preserve insertion order and duplicates
-        final var result = new LinkedHashMap<String, List<String>>();
-        level.entrySet().forEach(entry ->
-            result.put(entry.getKey(), extractValuesList(entry, entry.getKey(), yamlFile.toString())));
-        return result;
-    }
-
-    @SuppressWarnings("java:S1481") // Suppress Sonar warning about unused variable; used for pattern matching type check
-    static List<String> extractValuesList(final Map.Entry<String, Object> entry, final String keyName, final String sourceFile) {
-        if (entry.getValue() == null) {
-            return new ArrayList<>();
-        }
-
-        if (entry.getValue() instanceof final List<?> list) {
-            // Validate each item is a String, preserve duplicates for validation
-            return list.stream()
-                .map(v -> {
-                    if (!(v instanceof final String s)) {
-                        throw new IllegalStateException("Data type error in " + sourceFile + " at key '" + keyName
-                                + "': dictionary value must be a string or list of strings. Found " + v.getClass().getSimpleName() + " = " + v);
-                    }
-                    return s;
-                })
-                .toList();
-        }
-
-        // Deliberately strict: a single scalar (e.g. "key: item") is not accepted as shorthand for a one-item list,
-        // as it usually indicates a typo or a missing '-' in the YAML.
-        throw new IllegalStateException("Data structure error in " + sourceFile + " at key '" + keyName
-                + "': expected a list of strings or null/empty value. Found " + entry.getValue().getClass().getSimpleName()
-                + ". Check YAML syntax (should be a list with '- item' format or empty).");
-    }
-
-    // Converts each value list to an insertion-ordered set, dropping duplicate values within a key.
-    // Any check that needs the duplicates (e.g. uniqueness validation) must run on the lists before calling this.
-    static Map<String, Set<String>> toSetMap(final Map<String, List<String>> listMap) {
-        final var result = new LinkedHashMap<String, Set<String>>();
-        listMap.forEach((key, values) -> result.put(key, new LinkedHashSet<>(values)));
-        return result;
-    }
-
-    static String escapeForJavaStringLiteral(final String s) {
-        return QUOTE.matcher(BACKSLASH.matcher(s).replaceAll("\\\\\\\\")).replaceAll("\\\\\"");
-    }
 }

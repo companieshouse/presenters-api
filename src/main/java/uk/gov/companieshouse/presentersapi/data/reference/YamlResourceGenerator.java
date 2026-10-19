@@ -47,7 +47,7 @@ class YamlResourceGenerator {
                 // Documentation permits scalars; runtime bindings and validation use lists.
                 normalised.put(entry.getKey(), entry.getValue() instanceof final String value
                     ? List.of(value)
-                    : EnumBiMapGenerator.extractValuesList(entry, entry.getKey(), sourcePath.toString()));
+                    : GeneratorData.extractValuesList(entry, entry.getKey(), sourcePath.toString()));
             }
             final var wrapped = Map.of(rootKeys.getFirst(), Map.of(rootKeys.getLast(), normalised));
             final var output = resourcesDir.resolve(resourceName);

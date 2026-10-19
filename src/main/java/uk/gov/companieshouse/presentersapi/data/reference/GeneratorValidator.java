@@ -45,8 +45,8 @@ class GeneratorValidator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
-                    final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlData = GeneratorData.toSetMap(yamlDataList);
 
                     final var allKeysInSource = yamlData.keySet();
 
@@ -128,8 +128,8 @@ class GeneratorValidator {
                 .map(sourceEntry -> {
                     try {
                         final var yamlPath = configDir.resolve(sourceEntry.getKey());
-                        final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
-                        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                        final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
+                        final var yamlData = GeneratorData.toSetMap(yamlDataList);
                         validateDictionaryKeysMatch(yamlData, validEnumValues, targetEnumName, yamlPath, true, definitionSources);
                         return sourceEntry.getKey();
                     } catch (final IOException e) {
@@ -174,8 +174,8 @@ class GeneratorValidator {
                 .flatMap(sourceEntry -> {
                     try {
                         final var yamlPath = configDir.resolve(sourceEntry.getKey());
-                        final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
-                        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                        final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
+                        final var yamlData = GeneratorData.toSetMap(yamlDataList);
                         // Filter enums by location, flatten to individual values with their enum names
                         return sourceEntry.getValue().enums().entrySet().stream()
                             .filter(enumEntry -> location == enumEntry.getValue().location())
@@ -310,8 +310,8 @@ class GeneratorValidator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
-                    final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlData = GeneratorData.toSetMap(yamlDataList);
 
                     // Use source-level key-enum and value-enum fields to define allowed enum types per role
                     final Set<String> allowedKeyEnums = sourceConfig.keyEnum() != null

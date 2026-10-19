@@ -79,8 +79,12 @@ classDiagram
         -GeneratorValidator validator
         +main(String[]) void
         -generate() void
+    }
+
+    class GeneratorData {
         ~readConfig(Path) EnumGeneratorConfig
         ~readYamlData(Path, List) Map
+        ~extractValuesList(...) List
         ~toSetMap(Map) Map
         ~escapeForJavaStringLiteral(String) String
     }
@@ -143,6 +147,12 @@ classDiagram
     EnumBiMapGenerator --> EnumGenerator : creates
     EnumBiMapGenerator --> BiMapGenerator : creates
     EnumBiMapGenerator --> GeneratorValidator : obtains via getValidator()
+    EnumBiMapGenerator --> GeneratorData : reads configuration
+    EnumBiMapGenerator --> YamlResourceGenerator : generates runtime YAML
+    EnumGenerator --> GeneratorData : reads and formats data
+    GeneratorValidator --> GeneratorData : reads data
+    YamlResourceGenerator --> GeneratorData : validates dictionary values
+    GeneratorData --> EnumGeneratorConfig : loads
 
     EnumGenerator --> GeneratorValidator : creates, sharing generatedEnums
     EnumGenerator --> GeneratedEnumDef : creates/manages
@@ -171,12 +181,17 @@ classDiagram
   `EnumGenerator.getValidator()`
 - Runs the phases in order (see [Generation Pipeline](#generation-pipeline-6-phases))
 
-**Shared utilities (package-private static):**
+### GeneratorData (Shared Data Utilities)
+
+**Role:** Provides package-private static helpers without depending on the orchestrator, generators or validator.
+The pipeline components depend on this utility rather than calling back into `EnumBiMapGenerator`, keeping
+class dependencies acyclic.
 
 - `readConfig(Path)`: parses the generator configuration
 - `readYamlData(Path, List<String>)`: loads a data file, navigates the `root-keys` path, and returns each key's values
   as a list (duplicates preserved, so uniqueness validation can detect them). A value must be a list of strings or
   empty; a single scalar is rejected as a probable typo.
+- `extractValuesList(...)`: validates and extracts string lists from dictionary entries
 - `toSetMap(Map)`: converts the lists to insertion-ordered sets (drops duplicates within a key)
 - `escapeForJavaStringLiteral(String)`: escapes backslashes and quotes for generated string literals
 
