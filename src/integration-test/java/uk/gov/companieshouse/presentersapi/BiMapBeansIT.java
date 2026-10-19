@@ -50,24 +50,23 @@ class BiMapBeansIT {
 
     @Test
     void shouldPopulateFormGroupFormTypeInBothDirectionsWhenContextStarts() {
-        assertThat(formGroupFormType.formTypesFor(FormGroup.from("firm-delivery")),
-            containsInAnyOrder(FormType.from("AD01"), FormType.from("CS01")));
-        assertThat(formGroupFormType.formTypesFor(FormGroup.from("official-receiver-forms")), is(empty()));
-        assertThat(formGroupFormType.formGroupFor(FormType.from("PSC01")), is(FormGroup.from("individual-delivery")));
+        assertThat(formGroupFormType.formTypesFor(FormGroup.from("self-delivery")),
+            containsInAnyOrder(FormType.from("DS01"), FormType.from("LL DS01"), FormType.from("ACSP01-Sole")));
+        assertThat(formGroupFormType.formGroupFor(FormType.from("DS01")), is(FormGroup.from("self-delivery")));
+        assertThat(formGroupFormType.formGroupFor(FormType.from("PSC01")), is(FormGroup.from("firm-delivery")));
     }
 
     @Test
     void shouldPopulateFormGroupPresenterTypeInBothDirectionsWhenContextStarts() {
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("acsp-only-firm-delivery")),
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("acsp-only")),
             containsInAnyOrder(PresenterType.from("acsp")));
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("exempt-form")),
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("unmarked")),
             is(empty()));
-        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.from("official-receiver")),
-            containsInAnyOrder(FormGroup.from("official-receiver-forms")));
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("official-receiver-forms")),
+        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.from("official-receiver")), is(empty()));
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("wu-sub-forms")),
             containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
                 PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("acsp"), PresenterType.from("official-receiver")));
+                PresenterType.from("acsp"), PresenterType.from("individual-representing")));
     }
 
     @Test
@@ -78,7 +77,8 @@ class BiMapBeansIT {
         assertThat(formGroupDeliveryStatement.deliveryStatementTypesFor(FormGroup.from("multi-delivery")),
             containsInAnyOrder(firm, individual));
         assertThat(formGroupDeliveryStatement.formGroupsFor(firm),
-            containsInAnyOrder(FormGroup.from("firm-delivery"), FormGroup.from("multi-delivery")));
+            containsInAnyOrder(FormGroup.from("firm-delivery"), FormGroup.from("multi-delivery"),
+                FormGroup.from("officer-only"), FormGroup.from("wu-sub-forms")));
     }
 
     @Test
@@ -105,7 +105,9 @@ class BiMapBeansIT {
         assertThat(presenterTypeVerificationStatement.presenterTypesFor(verified),
             containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
                 PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("individual-filing-for-self"), PresenterType.from("individual-filing-for-someone-else")));
+                PresenterType.from("individual-filing-for-self"), PresenterType.from("individual-representing")));
+        assertThat(presenterTypeVerificationStatement.verificationStatementTypesFor(PresenterType.from("official-receiver")),
+            is(empty()));
     }
 
     @Test
@@ -125,28 +127,29 @@ class BiMapBeansIT {
         assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.from("individual-filing-for-self")),
             containsInAnyOrder(DataObjectType.from("personal-code"), DataObjectType.from("name")));
         assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.from("official-receiver")),
-            containsInAnyOrder(DataObjectType.from("organisation-name"), DataObjectType.from("name"),
-                DataObjectType.from("email")));
+            containsInAnyOrder(DataObjectType.from("email")));
         assertThat(presenterTypeDataObject.presenterTypesFor(DataObjectType.from("date-of-birth")),
             containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
                 PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("individual-filing-for-someone-else")));
+                PresenterType.from("individual-representing")));
     }
 
     @Test
     void shouldNotExposeInternalSetsWhenCallersMutateReturnedSets() {
-        final var firmDelivery = FormGroup.from("firm-delivery");
-        final var officialReceiver = PresenterType.from("official-receiver");
+        final var selfDelivery = FormGroup.from("self-delivery");
+        final var officer = PresenterType.from("officer-employee");
 
-        formGroupFormType.formTypesFor(firmDelivery).clear();
-        formGroupPresenterType.presenterTypesFor(firmDelivery).clear();
-        formGroupPresenterType.formGroupsFor(officialReceiver).clear();
+        formGroupFormType.formTypesFor(selfDelivery).clear();
+        formGroupPresenterType.presenterTypesFor(selfDelivery).clear();
+        formGroupPresenterType.formGroupsFor(officer).clear();
 
-        assertThat(formGroupFormType.formTypesFor(firmDelivery),
-            containsInAnyOrder(FormType.from("AD01"), FormType.from("CS01")));
-        assertThat(formGroupPresenterType.presenterTypesFor(firmDelivery).isEmpty(), is(false));
-        assertThat(formGroupPresenterType.formGroupsFor(officialReceiver),
-            containsInAnyOrder(FormGroup.from("official-receiver-forms")));
+        assertThat(formGroupFormType.formTypesFor(selfDelivery),
+            containsInAnyOrder(FormType.from("DS01"), FormType.from("LL DS01"), FormType.from("ACSP01-Sole")));
+        assertThat(formGroupPresenterType.presenterTypesFor(selfDelivery),
+            containsInAnyOrder(PresenterType.from("individual-filing-for-self")));
+        assertThat(formGroupPresenterType.formGroupsFor(officer),
+            containsInAnyOrder(FormGroup.from("firm-delivery"), FormGroup.from("multi-delivery"),
+                FormGroup.from("officer-only"), FormGroup.from("wu-sub-forms")));
     }
 
     @Test
@@ -154,6 +157,7 @@ class BiMapBeansIT {
         final var lines = summaryLogger.summaryLines();
 
         assertThat(lines.size(), is(7));
-        assertThat(lines.contains("BiMap 'FormGroupFormTypeBiMap' created: 8 forward mappings (keys), 8 reverse mappings (values)"), is(true));
+        assertThat(lines.contains("BiMap 'FormGroupFormTypeBiMap' created: " + FormGroup.values().length
+            + " forward mappings (keys), " + FormType.values().length + " reverse mappings (values)"), is(true));
     }
 }

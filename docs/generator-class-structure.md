@@ -3,18 +3,21 @@
 ## Overview
 
 presenters-api holds its reference data (form groups, form types, presenter types, statement types and data
-objects) as YAML files under `src/main/resources/data/`. At build time a small code generator reads those files and
+objects) as YAML files under `docs/statement-matrix-docs/`. At build time a small code generator reads those files and
 produces:
 
+- a **runtime YAML resource** for each dictionary, wrapped in the configured two-level binding keys and written
+  under `target/generated-resources/data/` with the documentation filename
 - a **Java enum** for each kind of reference value (e.g. `FormGroup`, `PresenterType`)
+- a **configuration binding converter** alongside each enum, resolving original YAML codes through `from(String)`
 - a **BiMap** class for each YAML file, giving type-safe lookups in both directions between a key enum and a value
   enum (e.g. `FormGroup` ↔ `FormType`)
 
-At runtime each generated BiMap is a Spring `@ConfigurationProperties` bean, populated from the same YAML files.
+At runtime each generated BiMap is a Spring `@ConfigurationProperties` bean, populated from the generated YAML.
 
 The generator lives in `uk.gov.companieshouse.presentersapi.data.reference` and is driven by
 `src/main/resources/enum-generator-config.yaml`. Generated code is written to
-`target/generated-sources/java` and is never committed.
+`target/generated-sources/java`; generated YAML is written to `target/generated-resources/data/`. Neither is committed.
 
 ## Build Integration
 
@@ -23,17 +26,48 @@ The generator runs during the `generate-sources` phase, before the application i
 
 1. **`maven-compiler-plugin` (`compile-generator`)** compiles only the generator classes
    (`uk/gov/companieshouse/presentersapi/data/reference/*.java`).
-2. **`exec-maven-plugin` (`generate-enum-bimaps`)** runs `EnumBiMapGenerator.main` with two arguments:
+2. **`exec-maven-plugin` (`generate-enum-bimaps`)** runs `EnumBiMapGenerator.main` with three arguments:
    - `src/main/resources/enum-generator-config.yaml`
    - `target/generated-sources/java`
+   - `target/generated-resources`
 3. **`build-helper-maven-plugin` (`add-generated-sources`)** registers `target/generated-sources/java` as a source
    root, so the normal `default-compile` execution compiles the generated enums and BiMaps alongside the application.
+
+Maven's resources configuration includes `target/generated-resources` alongside `src/main/resources`. During
+`process-resources`, generated YAML is copied to `target/classes/data/` and subsequently packaged in the JAR.
+Run `mvn generate-sources` to regenerate the files, or a later lifecycle phase such as `mvn test` or `mvn package`
+to generate them and process resources. Running `resources:resources` alone does not invoke generation.
+
+### Runtime YAML Generation
+
+`YamlResourceGenerator` reads each documentation dictionary using a source path relative to
+`enum-generator-config.yaml`. For example, `../../../docs/statement-matrix-docs/presenter-type-to-assoc-statement.yaml`
+is wrapped using `root-keys: [association-statements-map, by-presenter-type]`:
+
+```yaml
+association-statements-map:
+  by-presenter-type:
+    officer-employee:
+      - officer-employee-statement
+```
+
+Scalar strings become single-element lists, lists retain their order and duplicates, and null values become empty
+lists. The documentation files are not modified. The generator returns a configuration pointing to the generated
+`data/<filename>.yaml` files, which the existing enum/BiMap generation and validation pipeline then consumes.
+The same `root-keys` define both the YAML wrapper and the generated Java binding, preventing them from drifting.
+Duplicate output filenames, invalid binding keys, invalid dictionary values and missing files fail generation.
+The original two-argument invocation remains supported for callers supplying already-wrapped YAML.
+
+The documentation data is subject to the existing validation rules without exceptions. Empty form codes,
+normalisation collisions and invalid enum references fail generation.
 
 The compiler is also configured with `<parameters>true</parameters>`, which the generated BiMaps' constructor binding
 relies on (see [Spring Boot Integration](#spring-boot-integration)).
 
 Any validation failure in the generator throws an exception, failing the build with a message that identifies the
 offending YAML file and value.
+Invalid dictionary-key errors also name the enum's defining sources and suggest checking for missing source data,
+as well as correcting an invalid key. A mapping that only references an enum does not define additional enum values.
 
 ## Architecture Diagram
 
@@ -129,9 +163,10 @@ classDiagram
 
 **Role:** Entry point for the build; runs the 6-phase generation and validation pipeline.
 
-- Parses command-line arguments (`<configFile> <outputDir>`); YAML source paths in the config are resolved relative
+- Parses command-line arguments (`<configFile> <outputDir> [resourcesDir]`); YAML source paths in the config are resolved relative
   to the config file's directory
 - Loads `enum-generator-config.yaml` into an `EnumGeneratorConfig`
+- With `resourcesDir`, generates wrapped YAML resources and points the remaining pipeline at those resources
 - Creates `EnumGenerator` and `BiMapGenerator`, and obtains the shared `GeneratorValidator` from
   `EnumGenerator.getValidator()`
 - Runs the phases in order (see [Generation Pipeline](#generation-pipeline-6-phases))
@@ -155,7 +190,7 @@ classDiagram
 - Extracts values by `Location`: `DICTIONARY_KEYS` or `DICTIONARY_VALUES`
 - Runs uniqueness validation for each enum definition that declares one (per source)
 - Merges enums defined in more than one source (e.g. `DeliveryStatementType` comes from both
-  `delivery-statement-by-form-group.yaml` and `delivery-statement-by-presenter-type.yaml`), rewriting the enum file
+  `form-group-to-delivery-statement.yaml` and `presenter-type-to-delivery-statement.yaml`), rewriting the enum file
   with the combined values
 - Generates enum source with:
   - constant names normalised by `toEnumConstant` (upper case, runs of non-alphanumerics replaced by `_`, leading
@@ -166,6 +201,12 @@ classDiagram
 - Fails generation if an enum ends up with no values, or if two values normalise to the same constant name
 - Creates the `GeneratorValidator`, passing it the `generatedEnums` map so later validation phases can see every
   extracted value
+- Writes `<EnumName>BindingConverter.java` beside each enum, annotated with `@Component` and
+  `@ConfigurationPropertiesBinding` and delegating to the enum's `from(String)` lookup.
+
+Parentheses use the same underscore normalisation as other punctuation; no LP/RP tokens are generated.
+Collision validation remains enabled. Exact-code converters are still necessary: Spring's default lenient
+matching conflates distinct codes such as `4.13(NI)` and `413(NI)`, despite their distinct Java constants.
 
 ---
 
@@ -288,7 +329,7 @@ mapping. Generated method names follow the enum names: for key enum `K` and valu
 - Reverse getter: `public K <k>For(final V value)`, e.g. `FormGroup formGroupFor(FormType value)`; returns `null`
   for an unmapped value
 
-**Example:** `form-type-by-form-group.yaml`. Each form type belongs to exactly one form group, so `AD01` appearing
+**Example:** `form-group-to-form.yaml`. Each form type belongs to exactly one form group, so `AD01` appearing
 under both `firm-delivery` and `individual-delivery` fails the build.
 
 ### VALUES_PER_KEY
@@ -300,25 +341,28 @@ under both `firm-delivery` and `individual-delivery` fails the build.
 - Reverse getter: `public EnumSet<K> <k>sFor(final V value)`, e.g.
   `EnumSet<FormGroup> formGroupsFor(PresenterType value)`; returns an empty set for an unmapped value
 
-**Example:** `presenter-type-by-form-group.yaml`. `officer-employee` is allowed under both `firm-delivery` and
-`individual-delivery`, but listing it twice under `firm-delivery` fails the build.
+**Example:** `form-group-to-presenter-types.yaml`. `officer-employee` is allowed under both `firm-delivery` and
+`multi-delivery`, but listing it twice under `firm-delivery` fails the build.
 
 ## Current Sources and Generated Classes
 
 | Data file | Root keys (prefix, property) | Key enum | Value enum | Mode | BiMap |
 |-----------|------------------------------|----------|------------|------|-------|
-| `form-type-by-form-group.yaml` | `form-types-map`, `by-form-group` | `FormGroup` | `FormType` | `VALUES_PER_KEY_SET` | `FormGroupFormTypeBiMap` |
-| `presenter-type-by-form-group.yaml` | `presenter-types-map`, `by-form-group` | `FormGroup` | `PresenterType` | `VALUES_PER_KEY` | `FormGroupPresenterTypeBiMap` |
-| `delivery-statement-by-form-group.yaml` | `delivery-statements-map`, `by-form-group` | `FormGroup` | `DeliveryStatementType` | `VALUES_PER_KEY` | `FormGroupDeliveryStatementTypeBiMap` |
-| `delivery-statement-by-presenter-type.yaml` | `delivery-statements-map`, `by-presenter-type` | `PresenterType` | `DeliveryStatementType` | `VALUES_PER_KEY` | `PresenterTypeDeliveryStatementTypeBiMap` |
-| `verification-statement-by-presenter-type.yaml` | `verification-statements-map`, `by-presenter-type` | `PresenterType` | `VerificationStatementType` | `VALUES_PER_KEY` | `PresenterTypeVerificationStatementTypeBiMap` |
-| `association-statement-by-presenter-type.yaml` | `association-statements-map`, `by-presenter-type` | `PresenterType` | `AssociationStatementType` | `VALUES_PER_KEY` | `PresenterTypeAssociationStatementTypeBiMap` |
-| `data-object-by-presenter-type.yaml` | `data-objects-map`, `by-presenter-type` | `PresenterType` | `DataObjectType` | `VALUES_PER_KEY` | `PresenterTypeDataObjectTypeBiMap` |
+| `form-group-to-form.yaml` | `form-types-map`, `by-form-group` | `FormGroup` | `FormType` | `VALUES_PER_KEY_SET` | `FormGroupFormTypeBiMap` |
+| `form-group-to-presenter-types.yaml` | `presenter-types-map`, `by-form-group` | `FormGroup` | `PresenterType` | `VALUES_PER_KEY` | `FormGroupPresenterTypeBiMap` |
+| `form-group-to-delivery-statement.yaml` | `delivery-statements-map`, `by-form-group` | `FormGroup` | `DeliveryStatementType` | `VALUES_PER_KEY` | `FormGroupDeliveryStatementTypeBiMap` |
+| `presenter-type-to-delivery-statement.yaml` | `delivery-statements-map`, `by-presenter-type` | `PresenterType` | `DeliveryStatementType` | `VALUES_PER_KEY` | `PresenterTypeDeliveryStatementTypeBiMap` |
+| `presenter-type-to-verification-statement.yaml` | `verification-statements-map`, `by-presenter-type` | `PresenterType` | `VerificationStatementType` | `VALUES_PER_KEY` | `PresenterTypeVerificationStatementTypeBiMap` |
+| `presenter-type-to-assoc-statement.yaml` | `association-statements-map`, `by-presenter-type` | `PresenterType` | `AssociationStatementType` | `VALUES_PER_KEY` | `PresenterTypeAssociationStatementTypeBiMap` |
+| `presenter-type-to-data-obj.yaml` | `data-objects-map`, `by-presenter-type` | `PresenterType` | `DataObjectType` | `VALUES_PER_KEY` | `PresenterTypeDataObjectTypeBiMap` |
 
 Where enum values come from:
 
-- `FormGroup`: keys of `form-type-by-form-group.yaml`
-- `PresenterType`: values of `presenter-type-by-form-group.yaml`
+- `FormGroup`: keys of `form-group-to-form.yaml`
+- `PresenterType`: values of `form-group-to-presenter-types.yaml`, merged with dictionary keys from
+  `presenter-type-to-data-obj.yaml`, `presenter-type-to-assoc-statement.yaml`,
+  `presenter-type-to-delivery-statement.yaml` and `presenter-type-to-verification-statement.yaml`.
+  Keys contribute even when their value sets are empty; no form-group association is inferred.
 - Other sources keyed by these enums declare them as their `dictionary-keys-reference`, so Phase 3 checks those keys
 
 Both `FormGroup` and `PresenterType` have `validate-as-keys-in-other-sources: true`.
@@ -330,19 +374,19 @@ The two `delivery-statements-map` sources share a prefix but bind different prop
 
 ### Loading the Data
 
-`src/main/resources/application.properties` imports every data file into the Spring `Environment`:
+`src/main/resources/application.properties` imports `reference-data.properties`, which loads the generated
+YAML files into the Spring `Environment`:
 
 ```properties
-spring.config.import[0]=classpath:data/form-type-by-form-group.yaml
-spring.config.import[1]=classpath:data/presenter-type-by-form-group.yaml
+spring.config.import[0]=classpath:data/form-group-to-form.yaml
+spring.config.import[1]=classpath:data/form-group-to-presenter-types.yaml
 ...
-spring.config.import[6]=classpath:data/data-object-by-presenter-type.yaml
+spring.config.import[6]=classpath:data/presenter-type-to-data-obj.yaml
 ```
 
-Every source listed in `enum-generator-config.yaml` must be imported here. The imports are deliberately not
-`optional:`, so a missing or misnamed file fails startup. However, **forgetting to add an import is not an error**:
-the BiMap bean is simply created empty and lookups return nothing. `ReferenceBiMapSummaryLogger` (below) makes this
-visible.
+Every generated resource listed in `enum-generator-config.yaml` must be imported here. The imports are deliberately
+not `optional:`, so a missing or misnamed file fails startup. A missing import can still leave a BiMap empty;
+`ReferenceBiMapSummaryLogger` (below) makes empty maps visible.
 
 ### Bean Discovery
 
@@ -352,17 +396,15 @@ visible.
 
 ### Binding
 
-Taking `form-type-by-form-group.yaml` as an example:
+Taking the generated `data/form-group-to-form.yaml` as an example (abbreviated):
 
 ```yaml
 form-types-map:
   by-form-group:
     firm-delivery:
       - AD01
-      - CS01
     individual-delivery:
       - PSC01
-    official-receiver:
     # ...
 ```
 
@@ -389,10 +431,10 @@ Notes:
 
 - The prefix is the first root key (`form-types-map`), and `by-form-group` binds to the `byFormGroup` constructor
   parameter. This requires the class to be compiled with `-parameters` (set in `pom.xml`).
-- Spring Boot binds enums leniently, ignoring case and non-alphanumeric characters, so YAML codes such as
-  `firm-delivery` bind to `FormGroup.FIRM_DELIVERY` and `officer-employee` to `PresenterType.OFFICER_EMPLOYEE`.
-  `toEnumConstant` produces names that are always compatible with this.
-- An empty key (e.g. `official-receiver:`) binds to an empty set.
+- Generated configuration binding converters resolve original YAML codes through the enum's exact `from(String)`
+  lookup, keeping punctuation-sensitive codes distinct. Spring's enum-name fallbacks remain available, so this
+  does not enforce original-code-only validation. Jackson uses `from(String)` through `@JsonCreator`.
+- An empty list binds to an empty set.
 
 ### Startup Reporting
 
@@ -466,11 +508,11 @@ target/generated-sources/java/
 
 ## Adding a New Reference Data File
 
-1. Add the YAML file under `src/main/resources/data/`, with a two-level root (`<prefix>:` then `<property>:`) above
-   the dictionary.
-2. Add a `sources` entry to `enum-generator-config.yaml` with `root-keys`, `key-enum`, `value-enum` and the enum
-   definitions. Use `dictionary-keys-reference` if the keys belong to an enum defined in another source.
-3. Add the next `spring.config.import[n]=classpath:data/<file>.yaml` line to `application.properties`.
+1. Add the dictionary YAML under `docs/statement-matrix-docs/`, without binding wrapper keys.
+2. Add its config-relative source path to `enum-generator-config.yaml` with two `root-keys`, `key-enum`,
+   `value-enum` and the enum definitions. Use `dictionary-keys-reference` if the keys belong to an enum defined
+   in another source. The generator adds the binding keys and writes `target/generated-resources/data/<file>.yaml`.
+3. Add the next `spring.config.import[n]=classpath:data/<file>.yaml` line to `reference-data.properties`.
 4. Build. Generator validation failures fail the build with a description of the problem.
 5. Extend `BiMapBeansIT` to cover the new BiMap. It checks that `ReferenceBiMapSummaryLogger` reports the expected
    number of BiMaps.
@@ -479,6 +521,10 @@ target/generated-sources/java/
 
 - **Unit tests** (`src/test/java/.../data/reference/`, run by Surefire) cover the generator classes: enum
   normalisation and generation, BiMap source generation, YAML reading, and each validation phase.
+  `YamlResourceGeneratorTest` also checks wrapping, scalar/list/null conversion, Spring binding, and preservation
+  of all seven documentation dictionaries.
+  It also starts a Spring context to verify every form code binds in both directions using the generated
+  converters, including `4.13(NI)` and `413(NI)`.
 - **Integration test** `BiMapBeansIT` (`src/integration-test/java`, run by Failsafe in `verify`) starts the Spring
   context against the real data files. It checks that every BiMap is bound and populated in both directions, that
   returned sets are defensive copies, and that the summary logger reports all of them.

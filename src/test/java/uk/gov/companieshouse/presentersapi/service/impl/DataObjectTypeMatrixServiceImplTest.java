@@ -31,7 +31,7 @@ class DataObjectTypeMatrixServiceImplTest {
 
     @Test
     void shouldReturnDataObjectTypesForOfficialReceiver() {
-        final var expected = EnumSet.of(DataObjectType.ORGANISATION_NAME, DataObjectType.NAME, DataObjectType.EMAIL);
+        final var expected = EnumSet.of(DataObjectType.EMAIL);
         when(presenterTypeDataObjectTypeBiMap.dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER))
             .thenReturn(expected);
 

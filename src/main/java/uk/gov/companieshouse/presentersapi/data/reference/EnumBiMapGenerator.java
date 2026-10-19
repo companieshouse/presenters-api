@@ -15,7 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- * Generates Java enum classes and bidirectional maps (BiMaps) from YAML configuration.
+ * Generates runtime YAML resources, Java enum classes and bidirectional maps (BiMaps).
  *
  * <p>This class orchestrates the end-to-end process of reading YAML enum definitions, validating
  * data consistency and cardinality constraints, and generating Java enum and BiMap source files.
@@ -30,6 +30,8 @@ import tools.jackson.dataformat.yaml.YAMLFactory;
  *   <li><b>Configuration Loading:</b> Reads enum-generator-config.yaml to determine which YAML
  *       sources contribute to which enums, along with their validation and cardinality rules.
  *   <li><b>YAML Data Reading:</b> Loads and navigates YAML structures based on configured root-keys.
+ *   <li><b>Resource Generation:</b> Wraps documentation dictionaries in binding keys when a resources
+ *       output directory is supplied.
  *   <li><b>Shared Utilities:</b> Provides common string escaping and configuration reading functions.
  * </ul>
  *
@@ -74,7 +76,14 @@ public class EnumBiMapGenerator {
         final var configDir = configFile.getParent() != null ? configFile.getParent() : Path.of(".");
 
         final var config = readConfig(configFile);
-        final var generator = new EnumBiMapGenerator(config, configDir, outputDir);
+        final EnumBiMapGenerator generator;
+        if (args.length == 3) {
+            final var resourcesDir = Path.of(args[2]);
+            final var generatedConfig = YamlResourceGenerator.generate(config, configDir, resourcesDir);
+            generator = new EnumBiMapGenerator(generatedConfig, resourcesDir, outputDir);
+        } else {
+            generator = new EnumBiMapGenerator(config, configDir, outputDir);
+        }
         generator.generate();
     }
 
@@ -88,8 +97,8 @@ public class EnumBiMapGenerator {
     }
 
     private static Path validateAndParseArgs(final String[] args) {
-        if (args.length != 2) {
-            throw new IllegalArgumentException("Usage: <configFile> <outputDir>");
+        if (args.length != 2 && args.length != 3) {
+            throw new IllegalArgumentException("Usage: <configFile> <outputDir> [resourcesDir]");
         }
         return Path.of(args[0]);
     }

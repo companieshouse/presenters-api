@@ -130,7 +130,7 @@ class GeneratorValidator {
                         final var yamlPath = configDir.resolve(sourceEntry.getKey());
                         final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
                         final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
-                        validateDictionaryKeysMatch(yamlData, validEnumValues, targetEnumName, yamlPath, true);
+                        validateDictionaryKeysMatch(yamlData, validEnumValues, targetEnumName, yamlPath, true, definitionSources);
                         return sourceEntry.getKey();
                     } catch (final IOException e) {
                         // Wrap checked IOException to propagate through stream; unwrapped below
@@ -202,7 +202,8 @@ class GeneratorValidator {
 
     private static void validateDictionaryKeysMatch(
             final Map<String, Set<String>> yamlData, final Set<String> validEnumValues,
-            final String enumName, final Path sourceFile, final boolean isKeyValidation) {
+            final String enumName, final Path sourceFile, final boolean isKeyValidation,
+            final Set<String> definitionSources) {
         final var invalidItems = yamlData.keySet().stream()
                                         .filter(key -> !validEnumValues.contains(key))
                                         .collect(Collectors.toSet());
@@ -216,7 +217,11 @@ class GeneratorValidator {
                 DATA_VALIDATION_ERROR_IN + sourceFile + ": invalid " + itemType + "(s) — not valid " + enumName + ".\n"
                 + "  Invalid: " + invalidItems + "\n"
                 + "  Valid " + enumName + " values: " + validEnumValues + hint + "\n"
-                + "  To fix: Replace with valid values from the list above."
+                + "  To fix: Replace with valid values from the list above, or, if the key is correct, check whether "
+                + "it is missing from the source data defining " + enumName + ": " + definitionSources + ".\n"
+                + "  Add the missing code at the configured extraction location (DICTIONARY_KEYS or DICTIONARY_VALUES) "
+                + "in the original source YAML and regenerate. Adding a key to a mapping that only references "
+                + enumName + " does not define a new enum value."
             );
         }
     }

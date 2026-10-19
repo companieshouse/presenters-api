@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  *   <li>Extract enum values from YAML data by location (keys or values)
  *   <li>Create and register new enums
  *   <li>Merge multi-source enums
- *   <li>Generate and write enum source files
+ *   <li>Generate and write enum source files and exact-code configuration binding converters
  * </ul>
  */
 class EnumGenerator {
@@ -135,6 +135,28 @@ class EnumGenerator {
         Files.createDirectories(packagePath);
         final var enumSource = buildEnumSource(generatedEnum.outputPackage(), generatedEnum.name(), generatedEnum.values(), sourceFiles);
         Files.writeString(packagePath.resolve(generatedEnum.name() + ".java"), enumSource);
+        Files.writeString(packagePath.resolve(generatedEnum.name() + "BindingConverter.java"),
+            buildBindingConverterSource(generatedEnum.outputPackage(), generatedEnum.name()));
+    }
+
+    static String buildBindingConverterSource(final String pkg, final String enumName) {
+        return """
+            package %s;
+
+            import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+            import org.springframework.core.convert.converter.Converter;
+            import org.springframework.stereotype.Component;
+
+            @Component
+            @ConfigurationPropertiesBinding
+            public class %sBindingConverter implements Converter<String, %s> {
+
+                @Override
+                public %s convert(final String source) {
+                    return %s.from(source);
+                }
+            }
+            """.formatted(pkg, enumName, enumName, enumName, enumName);
     }
 
     static String buildEnumSource(final String pkg, final String enumName, final Set<String> codes, final Set<String> sourceFiles) {
