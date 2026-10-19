@@ -76,7 +76,7 @@ class AcspUserServiceImplTest {
         when(request.execute()).thenReturn(new ApiResponse<>(200, Map.of(), null));
 
         assertThat(service.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
-                .isEqualTo(Optional.empty());
+                .isEmpty();
     }
 
     @Test
