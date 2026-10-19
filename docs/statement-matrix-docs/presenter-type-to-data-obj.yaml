@@ -24,7 +24,7 @@ acsp:
 individual-filing-for-self:
   - personal-code
   - name
-individual-filing-for-someone-else:
+individual-representing:
   - personal-code
   - name
   - date-of-birth
