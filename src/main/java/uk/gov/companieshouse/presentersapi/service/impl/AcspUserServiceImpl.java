@@ -16,8 +16,6 @@ import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 @Service
 public class AcspUserServiceImpl implements AcspUserService {
 
-    private static final boolean INCLUDE_REMOVED_MEMBERSHIPS = false;
-
     private final PrivateApiClientFactory apiClientFactory;
     private final Logger logger;
 
@@ -30,11 +28,7 @@ public class AcspUserServiceImpl implements AcspUserService {
     public Optional<AcspMembership> getAcspMembershipForUser(final String userId, final String passthroughToken) {
         final Map<String, Object> logMap = Map.of("user_id", userId);
         try {
-            final AcspMembershipsList memberships = apiClientFactory.create(passthroughToken)
-                    .privateAcspManageUsersApiResourceHandler()
-                    .getUserAcspMemberships(INCLUDE_REMOVED_MEMBERSHIPS)
-                    .execute()
-                    .getData();
+            final AcspMembershipsList memberships = getUserAcspMembershipsExcludingRemoved(passthroughToken);
             logger.infoContext(userId, "Retrieved ACSP memberships for user", logMap);
 
             if (memberships == null || memberships.getItems() == null) {
@@ -46,5 +40,14 @@ public class AcspUserServiceImpl implements AcspUserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "unhandled error occurred while retrieving ACSP memberships", exception);
         }
+    }
+
+    private AcspMembershipsList getUserAcspMembershipsExcludingRemoved(
+        final String passthroughToken) throws URIValidationException, IOException  {
+            return apiClientFactory.create(passthroughToken)
+                .privateAcspManageUsersApiResourceHandler()
+                .getUserAcspMemberships(false)
+                .execute()
+                .getData();
     }
 }
