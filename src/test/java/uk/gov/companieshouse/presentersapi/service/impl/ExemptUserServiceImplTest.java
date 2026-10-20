@@ -174,4 +174,13 @@ class ExemptUserServiceImplTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
     }
+    @Test
+    void mapsDataAccessFailureToInternalServerErrorWhenCheckingByEmail() {
+        when(repository.existsByEmail("test@example.com"))
+            .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.isExemptUserByEmail("test@example.com"))
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
 }
