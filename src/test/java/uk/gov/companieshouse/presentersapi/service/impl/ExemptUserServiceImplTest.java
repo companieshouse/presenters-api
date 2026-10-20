@@ -36,7 +36,7 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
-    void getsExemptUserByEmail() {
+    void returnsExemptUserByEmail() {
         ExemptUserDao mockUser = new ExemptUserDao();
         mockUser.setEmail("test@example.com");
         when(repository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
@@ -49,7 +49,7 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
-    void getsExemptUserById() {
+    void returnsExemptUserById() {
         ExemptUserDao mockUser = new ExemptUserDao();
         mockUser.setId("6ba129e2939hf");
 
@@ -117,7 +117,7 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
-    void returnsFalseWhenNoExemptUserByIs(){
+    void returnsFalseWhenNoExemptUserById(){
         when(repository.existsById("id")).thenReturn(false);
         boolean result = service.isExemptUserById("id");
 
@@ -144,6 +144,25 @@ class ExemptUserServiceImplTest {
         assertThatThrownBy(() -> service.getExemptUserByEmail("test@example.com"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+    @Test
+    void mapsDataAccessFailureToInternalServerErrorWhenGettingById() {
+        when(repository.findById("1111"))
+            .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.getExemptUserById("1111"))
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void mapsDataIntegrityFailureToInternalServerErrorWhenGettingById() {
+        when(repository.findById("1111"))
+            .thenThrow(new IncorrectResultSizeDataAccessException(1, 2));
+
+        assertThatThrownBy(() -> service.getExemptUserById("1111"))
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     @Test
