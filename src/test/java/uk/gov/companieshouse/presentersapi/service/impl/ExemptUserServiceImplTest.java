@@ -146,6 +146,17 @@ class ExemptUserServiceImplTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
     }
+
+    @Test
+    void mapsMongoFailureToServiceUnavailableWhenGettingByEmail() {
+        when(repository.findByEmail("test@example.com"))
+                .thenThrow(new MongoException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.getExemptUserByEmail("test@example.com"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
     @Test
     void mapsDataAccessFailureToServiceUnavailableWhenGettingById() {
         when(repository.findById("1111"))
