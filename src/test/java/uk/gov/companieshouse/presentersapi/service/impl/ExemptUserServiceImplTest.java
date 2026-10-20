@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.mongodb.MongoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -127,13 +128,13 @@ class ExemptUserServiceImplTest {
 
 
     @Test
-    void mapsDataAccessFailureToInternalServerErrorWhenGettingByEmail() {
+    void mapsDataAccessFailureToServiceUnavailableWhenGettingByEmail() {
         when(repository.findByEmail("test@example.com"))
                 .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
 
         assertThatThrownBy(() -> service.getExemptUserByEmail("test@example.com"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
     }
 
     @Test
@@ -146,13 +147,13 @@ class ExemptUserServiceImplTest {
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
     }
     @Test
-    void mapsDataAccessFailureToInternalServerErrorWhenGettingById() {
+    void mapsDataAccessFailureToServiceUnavailableWhenGettingById() {
         when(repository.findById("1111"))
             .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
 
         assertThatThrownBy(() -> service.getExemptUserById("1111"))
             .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
     }
 
     @Test
@@ -166,21 +167,48 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
-    void mapsDataAccessFailureToInternalServerErrorWhenCheckingById() {
+    void mapsMongoFailureToServiceUnavailableWhenGettingById() {
+        when(repository.findById("1111"))
+                .thenThrow(new MongoException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.getExemptUserById("1111"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
+    @Test
+    void mapsDataAccessFailureToServiceUnavailableWhenCheckingById() {
         when(repository.existsById("id"))
                 .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
 
         assertThatThrownBy(() -> service.isExemptUserById("id"))
-                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                    assertThat(exception.getReason()).isEqualTo("Unable to check exempt user existence");
+                });
     }
+
     @Test
-    void mapsDataAccessFailureToInternalServerErrorWhenCheckingByEmail() {
+    void mapsDataAccessFailureToServiceUnavailableWhenCheckingByEmail() {
         when(repository.existsByEmail("test@example.com"))
             .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
 
         assertThatThrownBy(() -> service.isExemptUserByEmail("test@example.com"))
-            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                assertThat(exception.getReason()).isEqualTo("Unable to check exempt user existence");
+            });
+    }
+
+    @Test
+    void mapsMongoFailureToServiceUnavailableWhenCheckingByEmail() {
+        when(repository.existsByEmail("test@example.com"))
+                .thenThrow(new MongoException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.isExemptUserByEmail("test@example.com"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                    assertThat(exception.getReason()).isEqualTo("Unable to check exempt user existence");
+                });
     }
 }

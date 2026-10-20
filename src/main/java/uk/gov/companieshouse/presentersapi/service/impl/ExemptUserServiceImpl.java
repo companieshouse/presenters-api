@@ -19,6 +19,8 @@ public class ExemptUserServiceImpl implements ExemptUserService {
 
     private static final String DATA_ACCESS_MESSAGE = "Unable to retrieve exempt user data";
     private static final String DATA_INTEGRITY_MESSAGE = "Exempt user data integrity issue";
+    private static final String EXISTENCE_CHECK_DATA_ACCESS_MESSAGE =
+            "Unable to check exempt user existence";
 
     private final ExemptUserRepository repository;
     private final Logger logger;
@@ -43,7 +45,7 @@ public class ExemptUserServiceImpl implements ExemptUserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_INTEGRITY_MESSAGE, exception);
         } catch (DataAccessException | MongoException exception) {
             logger.errorContext(email, "Failed to retrieve exempt user by email", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_ACCESS_MESSAGE, exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, DATA_ACCESS_MESSAGE, exception);
         }
     }
 
@@ -63,7 +65,7 @@ public class ExemptUserServiceImpl implements ExemptUserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_INTEGRITY_MESSAGE, exception);
         } catch (DataAccessException | MongoException exception) {
             logger.errorContext(id, "Failed to retrieve exempt user by id", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_ACCESS_MESSAGE, exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, DATA_ACCESS_MESSAGE, exception);
         }
     }
 
@@ -74,7 +76,8 @@ public class ExemptUserServiceImpl implements ExemptUserService {
             return repository.existsByEmail(email);
         } catch (DataAccessException | MongoException exception) {
             logger.errorContext(email, "Failed to check exempt user existence by email", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_ACCESS_MESSAGE, exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    EXISTENCE_CHECK_DATA_ACCESS_MESSAGE, exception);
         }
     }
 
@@ -85,7 +88,8 @@ public class ExemptUserServiceImpl implements ExemptUserService {
             return repository.existsById(id);
         } catch (DataAccessException | MongoException exception) {
             logger.errorContext(id, "Failed to check exempt user existence by id", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_ACCESS_MESSAGE, exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    EXISTENCE_CHECK_DATA_ACCESS_MESSAGE, exception);
         }
     }
 }
