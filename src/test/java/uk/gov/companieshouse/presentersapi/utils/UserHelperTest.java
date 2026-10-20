@@ -62,4 +62,11 @@ class UserHelperTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Missing required header: ERIC-Access-Token");
     }
+
+    @Test
+    void getsPassthroughToken() {
+        when(request.getHeader("ERIC-Access-Token")).thenReturn("token");
+
+        assertThat(UserHelper.requirePassthroughToken(request)).isEqualTo("token");
+    }
 }

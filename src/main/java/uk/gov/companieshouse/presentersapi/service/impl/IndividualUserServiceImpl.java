@@ -3,7 +3,6 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
@@ -14,8 +13,8 @@ import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
-import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 
 @Service
 public class IndividualUserServiceImpl implements IndividualUserService {
@@ -23,13 +22,11 @@ public class IndividualUserServiceImpl implements IndividualUserService {
     private static final String IDENTITY_BY_USER_ID_URI = "/verification/identities";
     private static final String UVIDS_BY_IDENTITY_ID_URI = "/verification/identities/%s/uvids";
 
-    private final String internalApiUrl;
+    private final PrivateApiClientFactory apiClientFactory;
     private final Logger logger;
 
-    public IndividualUserServiceImpl(
-            @Value("${internal.api.url}") String internalApiUrl,
-            Logger logger) {
-        this.internalApiUrl = internalApiUrl;
+    public IndividualUserServiceImpl(PrivateApiClientFactory apiClientFactory, Logger logger) {
+        this.apiClientFactory = apiClientFactory;
         this.logger = logger;
     }
 
@@ -37,7 +34,7 @@ public class IndividualUserServiceImpl implements IndividualUserService {
     public Identity getIdentityByUserId(String userId, String passthroughToken) throws URIValidationException {
         Map<String, Object> logMap = Map.of("user_id", userId);
         try {
-            InternalApiClient apiClient = getApiClient(passthroughToken);
+            InternalApiClient apiClient = apiClientFactory.create(passthroughToken);
             Identity identity = apiClient.privateIdentityVerificationResourceHandler()
                     .findIdentityByUserId(IDENTITY_BY_USER_ID_URI, userId)
                     .execute()
@@ -66,7 +63,7 @@ public class IndividualUserServiceImpl implements IndividualUserService {
             throws URIValidationException {
         Map<String, Object> logMap = Map.of("identity_id", identityId);
         try {
-            InternalApiClient apiClient = getApiClient(passthroughToken);
+            InternalApiClient apiClient = apiClientFactory.create(passthroughToken);
             List<Uvid> activeUvids = apiClient.privateIdentityVerificationResourceHandler()
                     .findUvidsByIdentityId(UVIDS_BY_IDENTITY_ID_URI.formatted(identityId), true)
                     .execute()
@@ -100,12 +97,5 @@ public class IndividualUserServiceImpl implements IndividualUserService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Identity-verification API is unavailable", exception);
         }
-    }
-
-    private InternalApiClient getApiClient(String passthroughToken) throws IOException {
-        InternalApiClient apiClient = ApiSdkManager.getPrivateSDK(passthroughToken);
-        // ApiSdkManager only sets the public base path; private handlers use this path.
-        apiClient.setInternalBasePath(internalApiUrl);
-        return apiClient;
     }
 }
