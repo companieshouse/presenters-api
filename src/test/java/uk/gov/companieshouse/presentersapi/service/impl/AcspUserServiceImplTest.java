@@ -12,6 +12,11 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.InternalApiClient;
@@ -25,29 +30,34 @@ import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class AcspUserServiceImplTest {
 
     private static final String USER_ID = "user-123";
     private static final String PASSTHROUGH_TOKEN =
             "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
+    @Mock
     private PrivateApiClientFactory apiClientFactory;
+    @Mock
     private PrivateAcspManageUsersApiUserAcspMembershipsGet request;
+    @Mock
+    private InternalApiClient apiClient;
+    @Mock
+    private PrivateAcspManageUsersApiResourceHandler handler;
+    @Mock
+    private Logger logger;
+
     private AcspUserServiceImpl service;
 
     @BeforeEach
     void setUp() throws Exception {
-        apiClientFactory = mock(PrivateApiClientFactory.class);
-        request = mock(PrivateAcspManageUsersApiUserAcspMembershipsGet.class);
-        InternalApiClient apiClient = mock(InternalApiClient.class);
-        PrivateAcspManageUsersApiResourceHandler handler =
-                mock(PrivateAcspManageUsersApiResourceHandler.class);
-
         when(apiClientFactory.create(PASSTHROUGH_TOKEN)).thenReturn(apiClient);
         when(apiClient.privateAcspManageUsersApiResourceHandler()).thenReturn(handler);
         when(handler.getUserAcspMemberships(false)).thenReturn(request);
 
-        service = new AcspUserServiceImpl(apiClientFactory, mock(Logger.class));
+        service = new AcspUserServiceImpl(apiClientFactory, logger);
     }
 
     @Test
