@@ -170,7 +170,9 @@ public class GlobalExceptionHandler{
         final var servletRequest = ((ServletWebRequest) request).getRequest();
         logMap.put("path", servletRequest.getRequestURI());
         logMap.put("method", servletRequest.getMethod());
-        Optional.ofNullable(apiErrorList).ifPresent(l -> logMap.put("errors", l));
+        if (apiErrorList != null) {
+            logMap.put("errors", apiErrorList);
+        }
         chLogger.error(msg, ex, logMap);
     }
 }
