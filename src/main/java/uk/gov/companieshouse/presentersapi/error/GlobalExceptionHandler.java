@@ -55,7 +55,7 @@ public class GlobalExceptionHandler{
             LocationType.RESOURCE.getValue(), ErrorType.VALIDATION.getType());
 
         Optional.ofNullable(ex.getMessage())
-            .ifPresent(m -> error.addErrorValue("Resource not found: ", m));
+            .ifPresent(m -> error.addErrorValue("error", m));
 
         final var errorList = List.of(error);
         logError(logger, request, ex.getMessage(), ex, errorList);
