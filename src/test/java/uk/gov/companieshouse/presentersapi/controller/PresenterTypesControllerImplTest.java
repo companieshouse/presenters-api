@@ -1,13 +1,10 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.EnumSet;
 import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +16,9 @@ import org.springframework.http.ResponseEntity;
 
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.exception.InternalServerError;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,102 +31,52 @@ class PresenterTypesControllerImplTest {
     @InjectMocks
     private PresenterTypesControllerImpl controller;
 
-    private EnumSet<PresenterType> testPresenterTypes;
+    @Test
+    @DisplayName("should throw FormTypeNotFoundException when formType is formTypeNotFound")
+    void shouldThrowFormTypeNotFoundException() {
+        FormTypeNotFoundException exception = assertThrows(
+            FormTypeNotFoundException.class,
+            () -> controller.getPresenterTypes("user123", "formTypeNotFound"));
 
-    @BeforeEach
-    void setUp() {
-        testPresenterTypes = EnumSet.allOf(PresenterType.class);
+        assertEquals("Form Type: formTypeNotFound", exception.getMessage());
+        verifyNoInteractions(presenterTypesService);
     }
 
     @Test
-    @DisplayName("should return presenter types with status 200")
-    void testGetPresenterTypesSuccess() {
-        String userId = "user123";
-        String formType = "form-abc";
+    @DisplayName("should throw PresenterNotFoundException when userId is presenterNotFound")
+    void shouldThrowPresenterNotFoundException() {
+        PresenterNotFoundException exception = assertThrows(
+            PresenterNotFoundException.class,
+            () -> controller.getPresenterTypes("presenterNotFound", "AD01"));
 
-        when(presenterTypesService.getPresenterTypes(userId, formType))
-            .thenReturn(testPresenterTypes);
+        assertEquals("Presenter not found with UserId: presenterNotFound", exception.getMessage());
+        verifyNoInteractions(presenterTypesService);
+    }
 
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes(userId, formType);
+    @Test
+    @DisplayName("should throw InternalServerError when userId is internalServerError")
+    void shouldThrowInternalServerError() {
+        InternalServerError exception = assertThrows(
+            InternalServerError.class,
+            () -> controller.getPresenterTypes("internalServerError", "AD01"));
+
+        assertEquals("An unexpected error occurred while processing the request.", exception.getMessage());
+        verifyNoInteractions(presenterTypesService);
+    }
+
+    @Test
+    @DisplayName("should return presenter types when applyMockScenarios has no match")
+    void shouldReturnPresenterTypesWhenNoMockScenarioMatches() {
+        EnumSet<PresenterType> serviceResponse = EnumSet.allOf(PresenterType.class);
+        when(presenterTypesService.getPresenterTypes("user123", "AD01")).thenReturn(serviceResponse);
+
+        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user123", "AD01");
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(PresenterType.values().length, response.getBody().getTypes().size());
-        assertEquals(PresenterType.values()[0].code(), response.getBody().getTypes().getFirst());
-
-        verify(presenterTypesService, times(1))
-            .getPresenterTypes(userId, formType);
-    }
-
-    @Test
-    @DisplayName("should pass userId and formType parameters to service")
-    void testParametersPassedToService() {
-        String userId = "user456";
-        String formType = "form-xyz";
-
-        when(presenterTypesService.getPresenterTypes(userId, formType))
-            .thenReturn(testPresenterTypes);
-
-        controller.getPresenterTypes(userId, formType);
-
-        verify(presenterTypesService).getPresenterTypes(userId, formType);
-    }
-
-    @Test
-    @DisplayName("should return empty list when service returns empty types")
-    void testEmptyPresenterTypes() {
-        when(presenterTypesService.getPresenterTypes(anyString(), anyString()))
-            .thenReturn(EnumSet.noneOf(PresenterType.class));
-
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user789", "form-empty");
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assert response.getBody() != null;
-        assertEquals(0, response.getBody().getTypes().size());
-    }
-
-    @Test
-    @DisplayName("should return response entity with presenter types")
-    void testResponseEntityStructure() {
-        when(presenterTypesService.getPresenterTypes(anyString(), anyString()))
-            .thenReturn(testPresenterTypes);
-
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user123", "form-abc");
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertNotNull(response.getBody().getTypes());
-        assertFalse(response.getBody().getTypes().isEmpty());
-    }
-
-    @Test
-    @DisplayName("should verify controller delegates to service")
-    void testControllerDelegation() {
-        String userId = "delegation-test-user";
-        String formType = "delegation-test-form";
-
-        when(presenterTypesService.getPresenterTypes(userId, formType))
-            .thenReturn(testPresenterTypes);
-
-        controller.getPresenterTypes(userId, formType);
-
-        verify(presenterTypesService, times(1))
-            .getPresenterTypes(userId, formType);
-        verifyNoMoreInteractions(presenterTypesService);
-    }
-
-    @Test
-    @DisplayName("should return types containing all expected presenter types")
-    void testAllExpectedTypes() {
-        when(presenterTypesService.getPresenterTypes(anyString(), anyString()))
-            .thenReturn(testPresenterTypes);
-
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user", "form");
-
-        assert response.getBody() != null;
-        List<String> types = response.getBody().getTypes();
-        assertEquals(EnumSet.allOf(PresenterType.class).stream().map(PresenterType::code).toList(), types);
+        List<String> expectedTypes = serviceResponse.stream().map(PresenterType::code).toList();
+        assertEquals(expectedTypes, response.getBody().getTypes());
+        verify(presenterTypesService).getPresenterTypes("user123", "AD01");
     }
 }

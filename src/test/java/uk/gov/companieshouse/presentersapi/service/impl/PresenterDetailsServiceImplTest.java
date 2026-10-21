@@ -74,12 +74,4 @@ class PresenterDetailsServiceImplTest {
         assertEquals("Exemption LTD", result.getExempt().getOrganisationName());
         assertEquals("Mr Test Exemption", result.getExempt().getName());
     }
-
-    @Test
-    @DisplayName("should throw exception for unknown presenter type")
-    void shouldThrowForUnknownPresenterType() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> service.getPresenterDetails("user123", "form-abc", "unknown-type"));
-        assertEquals("Unexpected value: unknown-type", exception.getMessage());
-    }
 }

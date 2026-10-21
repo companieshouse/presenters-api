@@ -11,6 +11,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     @Override
     public EnumSet<PresenterType> getPresenterTypes(final String userId, final String formType) {
+
         return EnumSet.allOf(PresenterType.class);
     }
 }

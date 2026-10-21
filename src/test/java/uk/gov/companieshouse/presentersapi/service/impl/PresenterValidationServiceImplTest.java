@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -33,14 +34,38 @@ class PresenterValidationServiceImplTest {
     }
 
     @Test
-    @DisplayName("should return invalid response when formType is not AD01")
-    void testValidatePresenterDetailsReturnsInvalidForNonAd01() {
-        validationRequest.setFormType("LLP01");
+    @DisplayName("should return invalid response for AD02")
+    void testValidatePresenterDetailsReturnsInvalidForAd02() {
+        validationRequest.setFormType("AD02");
 
         ValidationResponse result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
         assertEquals(ValidationResponse.ResultEnum.INVALID, result.getResult());
         assertEquals("Statement form type mismatch", result.getReason());
+    }
+
+    @Test
+    @DisplayName("should return empty response for unsupported form type")
+    void testValidatePresenterDetailsReturnsEmptyForUnsupportedFormType() {
+        validationRequest.setFormType("AA01");
+
+        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+
+        assertNotNull(result);
+        assertNull(result.getResult());
+        assertNull(result.getReason());
+    }
+
+    @Test
+    @DisplayName("should return empty response for null form type")
+    void testValidatePresenterDetailsReturnsEmptyForNullFormType() {
+        validationRequest.setFormType(null);
+
+        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+
+        assertNotNull(result);
+        assertNull(result.getResult());
+        assertNull(result.getReason());
     }
 }

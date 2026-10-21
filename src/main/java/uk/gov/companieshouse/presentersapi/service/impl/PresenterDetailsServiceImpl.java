@@ -9,6 +9,7 @@ import uk.gov.companieshouse.api.presenters.model.Exempt;
 import uk.gov.companieshouse.api.presenters.model.Individual;
 import uk.gov.companieshouse.api.presenters.model.PersonName;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
+import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 
 @Service
@@ -75,9 +76,9 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setStatements(statements);
                 presenterDetails.setExempt(exempt);
             }
-            default -> throw new IllegalStateException("Unexpected value: " + presenterType);
+            default -> throw new PresenterTypeNotFoundException(
+                String.format("Presenter Type: %s is not valid", presenterType));
         }
-
         return presenterDetails;
     }
 }
