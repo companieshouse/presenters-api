@@ -14,8 +14,10 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
         ValidationResponse validationResponse = new ValidationResponse();
 
         if ("AD01".equals(validationRequest.getFormType())) {
+
             validationResponse.setResult(ValidationResponse.ResultEnum.VALID);
-        } else {
+        } else if ("AD02".equals(validationRequest.getFormType())) {
+
             validationResponse.setResult(ValidationResponse.ResultEnum.INVALID);
             validationResponse.setReason("Statement form type mismatch");
         }
