@@ -29,22 +29,29 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(final @NonNull InterceptorRegistry registry) {
         addLoggingInterceptor(registry);
+        addInternalUserInterceptor(registry);
     }
 
     private void addLoggingInterceptor(final @NonNull InterceptorRegistry registry) {
         registry.addInterceptor(requestLoggingInterceptor())
+            .addPathPatterns(BASE_PATH + "/**")
                 .order(0);
     }
 
     @Bean("chsLoggingInterceptor")
-    public RequestLoggingInterceptor requestLoggingInterceptor() {
+    public @NonNull RequestLoggingInterceptor requestLoggingInterceptor() {
         return new RequestLoggingInterceptor(logger);
     }
 
     private void addInternalUserInterceptor(final @NonNull InterceptorRegistry registry) {
-        registry.addInterceptor(new InternalUserInterceptor())
+        registry.addInterceptor(internalAppUserInterceptor())
                 .addPathPatterns(VALIDATION_PATH)
                 .order(1);
+    }
+
+    @Bean("chsInternalUserInterceptor")
+    public @NonNull InternalUserInterceptor internalAppUserInterceptor() {
+        return new InternalUserInterceptor();
     }
 
 

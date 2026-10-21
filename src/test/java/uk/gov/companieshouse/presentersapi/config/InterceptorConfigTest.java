@@ -47,6 +47,8 @@ class InterceptorConfigTest {
     void shouldRegisterRequestLoggingInterceptorBeforeInternalUserInterceptor() {
         when(registry.addInterceptor(any(HandlerInterceptor.class)))
             .thenReturn(loggingRegistration, internalUserRegistration);
+        when(loggingRegistration.addPathPatterns("/presenters/**"))
+            .thenReturn(loggingRegistration);
         when(internalUserRegistration.addPathPatterns("/presenters/validation"))
             .thenReturn(internalUserRegistration);
 
@@ -56,6 +58,7 @@ class InterceptorConfigTest {
         order.verify(registry).addInterceptor(any(RequestLoggingInterceptor.class));
         order.verify(registry).addInterceptor(any(InternalUserInterceptor.class));
 
+        verify(loggingRegistration).addPathPatterns("/presenters/**");
         verify(loggingRegistration).order(0);
         verifyNoMoreInteractions(loggingRegistration);
         verify(internalUserRegistration).addPathPatterns("/presenters/validation");
