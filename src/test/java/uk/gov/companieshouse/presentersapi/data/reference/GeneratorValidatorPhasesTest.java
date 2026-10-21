@@ -161,6 +161,12 @@ class GeneratorValidatorPhasesTest {
         assertThat(exception.getMessage(), containsString("unknown-group"));
         assertThat("Hint about values defined elsewhere should be shown for key validation",
             exception.getMessage(), containsString("Hint"));
+        assertThat(exception.getMessage(), containsString("Replace with valid values from the list above"));
+        assertThat(exception.getMessage(), containsString("missing from the source data defining Group: [keys.yaml]"));
+        assertThat(exception.getMessage(), containsString("configured extraction location"));
+        assertThat(exception.getMessage(), containsString("in the original source YAML and regenerate"));
+        assertThat(exception.getMessage(), containsString(
+            "Adding a key to a mapping that only references Group does not define a new enum value"));
     }
 
     @Test
@@ -381,12 +387,12 @@ class GeneratorValidatorPhasesTest {
     @Test
     void testValidateDictionaryKeysMatchOmitsHintForValueValidation() throws Exception {
         final var method = GeneratorValidator.class.getDeclaredMethod(
-            "validateDictionaryKeysMatch", Map.class, Set.class, String.class, Path.class, boolean.class);
+            "validateDictionaryKeysMatch", Map.class, Set.class, String.class, Path.class, boolean.class, Set.class);
         method.setAccessible(true);
         final Map<String, Set<String>> yamlData = Map.of("bad", Set.of("x"));
 
         final var thrown = assertThrows(java.lang.reflect.InvocationTargetException.class,
-            () -> method.invoke(null, yamlData, Set.of("good"), "Group", tempDir.resolve("f.yaml"), false));
+            () -> method.invoke(null, yamlData, Set.of("good"), "Group", tempDir.resolve("f.yaml"), false, Set.of("keys.yaml")));
 
         final var message = thrown.getCause().getMessage();
         assertThat(message, containsString("invalid value(s)"));

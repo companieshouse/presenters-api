@@ -28,7 +28,7 @@ class StatementTypeMatrixServiceImplIT {
     @Test
     void shouldCombinePresenterTypeAndFormGroupDeliveryStatements() {
         final var statements = service.statementTypesFor(PresenterType.OFFICER_EMPLOYEE,
-                                                         FormType.PSC01);
+                                                         FormType.MR01);
 
         assertThat(statements.associationStatements(),
                 is(EnumSet.of(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT)));
@@ -60,6 +60,6 @@ class StatementTypeMatrixServiceImplIT {
     @Test
     void shouldRejectNullFormTypeWhenResolvingFormGroupDeliveryStatements() {
         assertThrows(NullPointerException.class, () -> service.statementTypesFor(
-            PresenterType.INDIVIDUAL_FILING_FOR_SOMEONE_ELSE, null));
+            PresenterType.INDIVIDUAL_REPRESENTING, null));
     }
 }
