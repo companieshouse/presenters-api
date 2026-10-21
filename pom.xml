@@ -239,6 +239,15 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/generated-resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -295,6 +304,7 @@
                             <arguments>
                                 <argument>${project.basedir}/src/main/resources/enum-generator-config.yaml</argument>
                                 <argument>${project.build.directory}/generated-sources/java</argument>
+                                <argument>${project.build.directory}/generated-resources</argument>
                             </arguments>
                             <classpathScope>compile</classpathScope>
                         </configuration>

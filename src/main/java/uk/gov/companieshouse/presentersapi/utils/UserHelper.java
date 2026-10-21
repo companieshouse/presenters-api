@@ -6,6 +6,8 @@ import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.util.security.AuthorisationUtil;
 
 public final class UserHelper {
+    
+    private static final String ERIC_ACCESS_TOKEN_HEADER = "ERIC-Access-Token";
 
     private UserHelper() {
     }
@@ -39,5 +41,9 @@ public final class UserHelper {
         }
 
         return value;
+    }
+
+    public static String requirePassthroughToken(HttpServletRequest request) {
+        return requireHeader(request, ERIC_ACCESS_TOKEN_HEADER);
     }
 }

@@ -1,10 +1,13 @@
 # YAML-driven enum and BiMap generator configuration
 #
-# This configuration drives the EnumBiMapGenerator which performs two main tasks:
+# This configuration drives YAML resource generation followed by enum and BiMap generation.
+# Source paths are relative to this configuration file. Documentation dictionaries are wrapped
+# in root-keys and written to target/generated-resources/data/ using their original filenames.
 #
 # 1. ENUM GENERATION
 #    - Reads YAML dictionaries and extracts enum values from keys and/or values
 #    - Generates Java enum classes with Jackson annotations
+#    - Generates ConfigurationPropertiesBinding converters for exact original-code lookup
 #    - Validates uniqueness constraints (VALUES_PER_KEY_SET vs VALUES_PER_KEY) during BiMap generation
 #
 # 2. BIMAP GENERATION
@@ -54,7 +57,7 @@
 # - output-package.enums: Package where all generated enum classes are placed
 # - output-package.bimaps: Package where all generated BiMap classes are placed
 # - sources: Map of YAML files to the enums they define
-#   - root-keys: Path through YAML structure to reach the dictionary
+#   - root-keys: Two binding keys added around the source dictionary in the generated resource
 #   - key-enum: Enum extracted from dictionary keys (drives BiMap generation if present)
 #   - value-enum: Enum extracted from dictionary values (drives BiMap generation if present)
 #   - enums: Map of enum names to their extraction rules
@@ -70,7 +73,7 @@ output-package:
   bimaps: uk.gov.companieshouse.presentersapi.data.bimaps
 
 sources:
-  data/form-type-by-form-group.yaml:
+  ../../../docs/statement-matrix-docs/form-group-to-form.yaml:
     root-keys: [form-types-map, by-form-group]
     key-enum: FormGroup
     value-enum: FormType
@@ -86,7 +89,7 @@ sources:
           uniqueness: VALUES_PER_KEY_SET
           validate-as-keys-in-other-sources: false
 
-  data/presenter-type-by-form-group.yaml:
+  ../../../docs/statement-matrix-docs/form-group-to-presenter-types.yaml:
     root-keys: [presenter-types-map, by-form-group]
     key-enum: FormGroup
     value-enum: PresenterType
@@ -98,7 +101,7 @@ sources:
           uniqueness: VALUES_PER_KEY
           validate-as-keys-in-other-sources: true
 
-  data/delivery-statement-by-form-group.yaml:
+  ../../../docs/statement-matrix-docs/form-group-to-delivery-statement.yaml:
     root-keys: [delivery-statements-map, by-form-group]
     key-enum: FormGroup
     value-enum: DeliveryStatementType
@@ -110,11 +113,15 @@ sources:
           uniqueness: VALUES_PER_KEY
           validate-as-keys-in-other-sources: false
 
-  data/delivery-statement-by-presenter-type.yaml:
+  ../../../docs/statement-matrix-docs/presenter-type-to-delivery-statement.yaml:
     root-keys: [delivery-statements-map, by-presenter-type]
     key-enum: PresenterType
     value-enum: DeliveryStatementType
     enums:
+      PresenterType:
+        location: DICTIONARY_KEYS
+        validation:
+          validate-as-keys-in-other-sources: true
       DeliveryStatementType:
         location: DICTIONARY_VALUES
         dictionary-keys-reference: PresenterType
@@ -122,11 +129,15 @@ sources:
           uniqueness: VALUES_PER_KEY
           validate-as-keys-in-other-sources: false
 
-  data/verification-statement-by-presenter-type.yaml:
+  ../../../docs/statement-matrix-docs/presenter-type-to-verification-statement.yaml:
     root-keys: [verification-statements-map, by-presenter-type]
     key-enum: PresenterType
     value-enum: VerificationStatementType
     enums:
+      PresenterType:
+        location: DICTIONARY_KEYS
+        validation:
+          validate-as-keys-in-other-sources: true
       VerificationStatementType:
         location: DICTIONARY_VALUES
         dictionary-keys-reference: PresenterType
@@ -134,11 +145,15 @@ sources:
           uniqueness: VALUES_PER_KEY
           validate-as-keys-in-other-sources: false
 
-  data/association-statement-by-presenter-type.yaml:
+  ../../../docs/statement-matrix-docs/presenter-type-to-assoc-statement.yaml:
     root-keys: [association-statements-map, by-presenter-type]
     key-enum: PresenterType
     value-enum: AssociationStatementType
     enums:
+      PresenterType:
+        location: DICTIONARY_KEYS
+        validation:
+          validate-as-keys-in-other-sources: true
       AssociationStatementType:
         location: DICTIONARY_VALUES
         dictionary-keys-reference: PresenterType
@@ -146,11 +161,15 @@ sources:
           uniqueness: VALUES_PER_KEY
           validate-as-keys-in-other-sources: false
 
-  data/data-object-by-presenter-type.yaml:
+  ../../../docs/statement-matrix-docs/presenter-type-to-data-obj.yaml:
     root-keys: [data-objects-map, by-presenter-type]
     key-enum: PresenterType
     value-enum: DataObjectType
     enums:
+      PresenterType:
+        location: DICTIONARY_KEYS
+        validation:
+          validate-as-keys-in-other-sources: true
       DataObjectType:
         location: DICTIONARY_VALUES
         dictionary-keys-reference: PresenterType
