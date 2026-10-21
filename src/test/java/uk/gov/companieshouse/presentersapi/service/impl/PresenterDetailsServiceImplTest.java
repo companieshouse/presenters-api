@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
+import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 
 @DisplayName("PresenterDetailsServiceImpl tests")
 class PresenterDetailsServiceImplTest {
@@ -24,6 +25,8 @@ class PresenterDetailsServiceImplTest {
         assertNotNull(result.getIndividual());
         assertEquals("123456", result.getIndividual().getPersonalCode());
         assertEquals("1234", result.getIndividual().getVerificationId());
+        assertNull(result.getAcsp());
+        assertNull(result.getExempt());
     }
 
     @Test
@@ -58,6 +61,8 @@ class PresenterDetailsServiceImplTest {
         assertEquals("123456-123456", result.getAcsp().getAcspCode());
         assertEquals("Mr ACSP Ltd", result.getAcsp().getAcspName());
         assertEquals("me@myacsp.co.uk", result.getAcsp().getAcspEmployeeEmail());
+        assertNull(result.getIndividual());
+        assertNull(result.getExempt());
     }
 
     @Test
@@ -73,5 +78,18 @@ class PresenterDetailsServiceImplTest {
         assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
         assertEquals("Exemption LTD", result.getExempt().getOrganisationName());
         assertEquals("Mr Test Exemption", result.getExempt().getName());
+        assertNull(result.getAcsp());
+        assertNull(result.getIndividual());
     }
+
+    @Test
+    @DisplayName("should throw exception when presenter type is unsupported")
+    void shouldThrowExceptionWhenPresenterTypeIsUnsupported() {
+        PresenterTypeNotFoundException exception = assertThrows(PresenterTypeNotFoundException.class,
+            () -> service.getPresenterDetails("user123", "form-abc", "unsupported-type"));
+
+        assertEquals("Presenter Type: unsupported-type is not found", exception.getMessage());
+    }
+
+
 }

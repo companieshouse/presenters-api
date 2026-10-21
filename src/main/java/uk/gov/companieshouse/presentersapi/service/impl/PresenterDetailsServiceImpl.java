@@ -77,7 +77,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setExempt(exempt);
             }
             default -> throw new PresenterTypeNotFoundException(
-                String.format("Presenter Type: %s is not valid", presenterType));
+                String.format("Presenter Type: %s is not found", presenterType));
         }
         return presenterDetails;
     }
