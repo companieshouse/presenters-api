@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembershipsList;
+import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
@@ -35,10 +37,19 @@ public class AcspUserServiceImpl implements AcspUserService {
                 return Optional.empty();
             }
             return memberships.getItems().stream().findFirst();
-        } catch (URIValidationException | IOException exception) {
-            logger.errorContext(userId, "Error retrieving ACSP memberships", exception, logMap);
+        } catch (ApiErrorResponseException exception) {
+            logger.errorContext(userId, "ACSP manage users API returned an error", exception, logMap);
+            throw new ResponseStatusException(
+                    HttpStatusCode.valueOf(exception.getStatusCode()),
+                    "ACSP manage users API request failed", exception);
+        } catch (URIValidationException exception) {
+            logger.errorContext(userId, "Invalid ACSP manage users API URI", exception, logMap);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "unhandled error occurred while retrieving ACSP memberships", exception);
+                    "Invalid ACSP manage users API URI", exception);
+        } catch (IOException exception) {
+            logger.errorContext(userId, "Unable to retrieve ACSP memberships", exception, logMap);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "ACSP manage users API is unavailable", exception);
         }
     }
 

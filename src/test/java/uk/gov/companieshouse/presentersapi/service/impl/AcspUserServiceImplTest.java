@@ -2,7 +2,10 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.api.client.http.HttpHeaders;
@@ -13,6 +16,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -98,35 +103,46 @@ class AcspUserServiceImplTest {
     }
 
     @Test
-    void mapsClientCreationFailuresToInternalServerError() throws Exception {
-        IOException cause = new IOException("Connection timed out");
+    void mapsClientCreationIoFailuresToBadGateway() throws Exception {
+        final IOException cause = new IOException("Connection timed out");
         when(apiClientFactory.create(PASSTHROUGH_TOKEN)).thenThrow(cause);
 
-        assertInternalServerError(cause);
+        assertResponseStatus(HttpStatus.BAD_GATEWAY, cause);
     }
 
-    @Test
-    void mapsDownstreamApiErrorsToInternalServerError() throws Exception {
-        ApiErrorResponseException cause = new ApiErrorResponseException(
-                new HttpResponseException.Builder(401, "Unauthorized", new HttpHeaders()));
+    @ParameterizedTest
+    @ValueSource(ints = {400, 401, 403, 404, 500, 503})
+    void propagatesDownstreamApiErrorStatus(final int statusCode) throws Exception {
+        final ApiErrorResponseException cause = new ApiErrorResponseException(
+                new HttpResponseException.Builder(statusCode, "Error", new HttpHeaders()));
         when(request.execute()).thenThrow(cause);
 
-        assertInternalServerError(cause);
+        assertResponseStatus(HttpStatus.valueOf(statusCode), cause);
     }
 
     @Test
     void mapsUriValidationFailuresToInternalServerError() throws Exception {
-        URIValidationException cause = mock(URIValidationException.class);
+        final URIValidationException cause = mock(URIValidationException.class);
         when(request.execute()).thenThrow(cause);
 
-        assertInternalServerError(cause);
+        assertResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR, cause);
     }
 
-    private void assertInternalServerError(Exception cause) {
+    @Test
+    void logsUserIdContextWhenRetrievalFails() throws Exception {
+        final IOException cause = new IOException("Connection reset");
+        when(apiClientFactory.create(PASSTHROUGH_TOKEN)).thenThrow(cause);
+
+        assertThatThrownBy(() -> service.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
+                .isInstanceOf(ResponseStatusException.class);
+
+        verify(logger).errorContext(eq(USER_ID), anyString(), eq(cause), eq(Map.of("user_id", USER_ID)));
+    }
+
+    private void assertResponseStatus(final HttpStatus expectedStatus, final Exception cause) {
         assertThatThrownBy(() -> service.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
-                    assertThat(exception.getStatusCode())
-                            .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertThat(exception.getStatusCode()).isEqualTo(expectedStatus);
                     assertThat(exception.getCause()).isSameAs(cause);
                 });
     }
