@@ -6,6 +6,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.api.interceptor.MappablePermissionsInterceptor;
 import uk.gov.companieshouse.api.interceptor.PermissionsMapping;
 import uk.gov.companieshouse.api.interceptor.TokenPermissionsInterceptor;
@@ -21,6 +22,7 @@ import uk.gov.companieshouse.presentersapi.interceptor.RequestLoggingInterceptor
 public class InterceptorConfig implements WebMvcConfigurer {
     @SuppressWarnings("java:S1075") // Suppress SonarQube warning for hardcoded paths
     private static final String BASE_PATH = "/presenters";
+    private static final String VALIDATION_PATH = "%s/validation".formatted(BASE_PATH);
     private static final String PRESENTER_TYPE_PATH = "%s/presenter-type".formatted(BASE_PATH);
 
     private final Logger logger;
@@ -32,6 +34,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(final @NonNull InterceptorRegistry registry) {
         addLoggingInterceptor(registry);
+        addInternalUserInterceptor(registry);
         addTokenPermissionsInterceptor(registry);
         addRequestPermissionsInterceptor(registry);
     }
@@ -63,6 +66,17 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @Bean("chsLoggingInterceptor")
     public @NonNull RequestLoggingInterceptor requestLoggingInterceptor() {
         return new RequestLoggingInterceptor(logger);
+    }
+
+    private void addInternalUserInterceptor(final @NonNull InterceptorRegistry registry) {
+        registry.addInterceptor(internalAppUserInterceptor())
+                .addPathPatterns(VALIDATION_PATH)
+                .order(1);
+    }
+
+    @Bean("chsInternalUserInterceptor")
+    public @NonNull InternalUserInterceptor internalAppUserInterceptor() {
+        return new InternalUserInterceptor();
     }
 
     @Bean("chsTokenPermissionsCaptor")
