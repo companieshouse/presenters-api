@@ -6,13 +6,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isA;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,13 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import org.springframework.web.servlet.handler.MappedInterceptor;
+import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.api.interceptor.MappablePermissionsInterceptor;
 import uk.gov.companieshouse.api.interceptor.PermissionsMapping;
 import uk.gov.companieshouse.api.interceptor.TokenPermissionsInterceptor;
@@ -49,29 +42,34 @@ class InterceptorConfigTest {
 
         final var registeredInterceptors = registry.registeredInterceptors();
 
-        assertThat(registeredInterceptors, hasSize(4));
+        assertThat(registeredInterceptors, hasSize(5));
         assertRegistration(registeredInterceptors.get(0), RequestLoggingInterceptor.class, "/presenters/**");
         assertRegistration(
             registeredInterceptors.get(1),
+            InternalUserInterceptor.class,
+            "/presenters/validation"
+        );
+        assertRegistration(
+            registeredInterceptors.get(2),
             TokenPermissionsInterceptor.class,
             "/presenters/presenter-type"
         );
         assertRegistration(
-            registeredInterceptors.get(2),
+            registeredInterceptors.get(3),
             MappablePermissionsInterceptor.class,
             "/presenters/presenter-type"
         );
         assertPermissionConfiguration(
-            registeredInterceptors.get(2),
+            registeredInterceptors.get(3),
             Permission.Key.USER_PROFILE
         );
         assertRegistration(
-            registeredInterceptors.get(3),
+            registeredInterceptors.get(4),
             MappablePermissionsInterceptor.class,
             "/presenters/presenter-type"
         );
         assertPermissionConfiguration(
-            registeredInterceptors.get(3),
+            registeredInterceptors.get(4),
             Permission.Key.ACSP_ASSOCIATIONS
         );
     }
@@ -82,6 +80,14 @@ class InterceptorConfigTest {
         final var interceptor = interceptorConfig.requestLoggingInterceptor();
 
         assertThat(interceptor, is(isA(RequestLoggingInterceptor.class)));
+    }
+
+    @Test
+    void shouldCreateInternalUserInterceptorWhenBeanRequested() {
+        final var interceptorConfig = new InterceptorConfig(logger);
+        final var interceptor = interceptorConfig.internalAppUserInterceptor();
+
+        assertThat(interceptor, is(isA(InternalUserInterceptor.class)));
     }
 
     @Test

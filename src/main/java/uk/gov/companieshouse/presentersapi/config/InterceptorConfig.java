@@ -45,6 +45,12 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .order(0);
     }
 
+    private void addInternalUserInterceptor(final @NonNull InterceptorRegistry registry) {
+        registry.addInterceptor(internalAppUserInterceptor())
+                .addPathPatterns(VALIDATION_PATH)
+                .order(1);
+    }
+
     private void addTokenPermissionsInterceptor(final @NonNull InterceptorRegistry registry) {
         registry.addInterceptor(tokenPermissionsInterceptor())
                 .addPathPatterns(PRESENTER_TYPE_PATH)
@@ -66,12 +72,6 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @Bean("chsLoggingInterceptor")
     public @NonNull RequestLoggingInterceptor requestLoggingInterceptor() {
         return new RequestLoggingInterceptor(logger);
-    }
-
-    private void addInternalUserInterceptor(final @NonNull InterceptorRegistry registry) {
-        registry.addInterceptor(internalAppUserInterceptor())
-                .addPathPatterns(VALIDATION_PATH)
-                .order(1);
     }
 
     @Bean("chsInternalUserInterceptor")
