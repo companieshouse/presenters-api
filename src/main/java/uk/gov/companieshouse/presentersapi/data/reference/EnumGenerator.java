@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  *   <li>Extract enum values from YAML data by location (keys or values)
  *   <li>Create and register new enums
  *   <li>Merge multi-source enums
- *   <li>Generate and write enum source files
+ *   <li>Generate and write enum source files and exact-code configuration binding converters
  * </ul>
  */
 class EnumGenerator {
@@ -54,7 +54,7 @@ class EnumGenerator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
 
                     // Process each enum definition in source
                     sourceConfig.enums().forEach((enumName, enumDef) -> {
@@ -91,7 +91,7 @@ class EnumGenerator {
             GeneratorValidator.validateUniqueness(yamlDataList, enumDef.validation().uniquenessValidation(), sourceFile);
         }
 
-        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+        final var yamlData = GeneratorData.toSetMap(yamlDataList);
         final var existingValues = generatedEnums.get(enumName).values();
         final var sourceValues = extractValuesFromYaml(yamlData, enumDef.location());
         existingValues.addAll(sourceValues);
@@ -109,7 +109,7 @@ class EnumGenerator {
             GeneratorValidator.validateUniqueness(yamlDataList, enumDef.validation().uniquenessValidation(), sourceFile);
         }
 
-        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+        final var yamlData = GeneratorData.toSetMap(yamlDataList);
         final var enumValues = extractValuesFromYaml(yamlData, enumDef.location());
         final var generatedEnum = new GeneratedEnumDef(enumName, enumValues, config.outputPackage().enumPackage());
         generatedEnums.put(enumName, generatedEnum);
@@ -135,6 +135,28 @@ class EnumGenerator {
         Files.createDirectories(packagePath);
         final var enumSource = buildEnumSource(generatedEnum.outputPackage(), generatedEnum.name(), generatedEnum.values(), sourceFiles);
         Files.writeString(packagePath.resolve(generatedEnum.name() + ".java"), enumSource);
+        Files.writeString(packagePath.resolve(generatedEnum.name() + "BindingConverter.java"),
+            buildBindingConverterSource(generatedEnum.outputPackage(), generatedEnum.name()));
+    }
+
+    static String buildBindingConverterSource(final String pkg, final String enumName) {
+        return """
+            package %s;
+
+            import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+            import org.springframework.core.convert.converter.Converter;
+            import org.springframework.stereotype.Component;
+
+            @Component
+            @ConfigurationPropertiesBinding
+            public class %sBindingConverter implements Converter<String, %s> {
+
+                @Override
+                public %s convert(final String source) {
+                    return %s.from(source);
+                }
+            }
+            """.formatted(pkg, enumName, enumName, enumName, enumName);
     }
 
     static String buildEnumSource(final String pkg, final String enumName, final Set<String> codes, final Set<String> sourceFiles) {
@@ -159,7 +181,7 @@ class EnumGenerator {
             ));
 
         final var constantsBlock = constantToCode.entrySet().stream()
-                                                  .map(e -> "    " + e.getKey() + "(\"" + EnumBiMapGenerator.escapeForJavaStringLiteral(e.getValue()) + "\")")
+                                                  .map(e -> "    " + e.getKey() + "(\"" + GeneratorData.escapeForJavaStringLiteral(e.getValue()) + "\")")
                                                   .collect(java.util.stream.Collectors.joining(",\n"));
 
         return """

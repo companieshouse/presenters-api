@@ -20,7 +20,7 @@ public record EnumGeneratorConfig(
          * Validates that a value is unique across the entire set of keys in the file.
          * If a value appears under multiple keys, validation fails.
          * 
-         * Use case: FormType in form-type-by-form-group.yaml
+         * Use case: FormType in form-group-to-form.yaml
          * Each form type belongs to exactly one form group; if a form type appears
          * in multiple form groups, validation will report failure.
          */
@@ -33,7 +33,7 @@ public record EnumGeneratorConfig(
          * Validates that within each key, all values are unique. Values can repeat
          * across different keys, but not within the same key.
          * 
-         * Use case: PresenterType in presenter-type-by-form-group.yaml
+         * Use case: PresenterType in form-group-to-presenter-types.yaml
          * Same presenter type can serve multiple form groups
          * (e.g., officer-employee works for firm-delivery AND individual-delivery).
          */
@@ -75,4 +75,3 @@ public record EnumGeneratorConfig(
     ) {
     }
 }
-

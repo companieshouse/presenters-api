@@ -48,6 +48,13 @@ class EnumGeneratorTest {
         "abc_def,ABC_DEF",
         "TYPE A,TYPE_A",
         "type-b---c,TYPE_B_C",
+        "413(1)(NI),_413_1_NI",
+        "413-1(NI),_413_1_NI",
+        "4.13(NI),_4_13_NI",
+        "413(NI),_413_NI",
+        "2.07(NI),_2_07_NI",
+        "((AD01)),AD01",
+        "  (ad01)  ,AD01",
     })
     void testConvertToEnumConstantFromVariousFormats(final String input, final String expected) {
         final var result = EnumGenerator.toEnumConstant(input);
@@ -174,6 +181,28 @@ class EnumGeneratorTest {
     }
 
     @Test
+    void testParenthesisNormalisationCollisionStillFailsGeneration() {
+        final var collidingCodes = new LinkedHashSet<>(List.of("413(1)(NI)", "413-1(NI)"));
+        final var sourceFiles = Set.of("forms.yaml");
+
+        final var exception = assertThrows(IllegalStateException.class, () -> EnumGenerator.buildEnumSource(
+            "uk.test", "FormType", collidingCodes, sourceFiles));
+
+        assertThat(exception.getMessage(), containsString("normalization collision"));
+    }
+
+    @Test
+    void testBuildBindingConverterUsesExactCodeLookup() {
+        final var source = EnumGenerator.buildBindingConverterSource("uk.test.enums", "FormType");
+
+        assertThat(source, containsString("package uk.test.enums;"));
+        assertThat(source, containsString("@Component"));
+        assertThat(source, containsString("@ConfigurationPropertiesBinding"));
+        assertThat(source, containsString("class FormTypeBindingConverter implements Converter<String, FormType>"));
+        assertThat(source, containsString("return FormType.from(source);"));
+    }
+
+    @Test
     void testBuildEnumSourceSpecialCharactersEscaped() {
         // Arrange: Value with quote that needs escaping
         final var codesWithQuote = new LinkedHashSet<>(Set.of("AD01"));
@@ -247,6 +276,8 @@ class EnumGeneratorTest {
         assertThat("Values from the first source should be present", source, containsString("ALPHA(\"alpha\")"));
         assertThat("Shared values should be present", source, containsString("BETA(\"beta\")"));
         assertThat("Values from the later source should be written to the file", source, containsString("GAMMA(\"gamma\")"));
+        assertThat(Files.readString(tempDir.resolve("out/uk/test/enums/StatementBindingConverter.java")),
+            is(EnumGenerator.buildBindingConverterSource("uk.test.enums", "Statement")));
     }
 
     @Test

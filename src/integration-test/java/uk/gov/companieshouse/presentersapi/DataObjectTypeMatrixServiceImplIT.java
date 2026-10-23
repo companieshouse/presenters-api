@@ -24,7 +24,7 @@ class DataObjectTypeMatrixServiceImplIT {
     @Test
     void shouldResolveDataObjectTypesForOfficialReceiver() {
         assertThat(service.dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER),
-            is(EnumSet.of(DataObjectType.ORGANISATION_NAME, DataObjectType.NAME, DataObjectType.EMAIL)));
+            is(EnumSet.of(DataObjectType.EMAIL)));
     }
 
     @Test

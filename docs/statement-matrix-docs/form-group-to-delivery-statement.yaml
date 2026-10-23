@@ -1,0 +1,20 @@
+firm-delivery:
+  - delivery-on-behalf-of-firm
+individual-delivery:
+  - delivery-on-behalf-of-individual
+multi-delivery:
+  - delivery-on-behalf-of-firm
+  - delivery-on-behalf-of-individual
+self-delivery:
+  - delivery-on-behalf-of-individual
+officer-only:
+  - delivery-on-behalf-of-firm
+verified-individual-delivery:
+  - delivery-on-behalf-of-individual
+incorporation:
+  - delivery-on-behalf-of-individual
+rec-five:
+  - delivery-on-behalf-of-individual
+wu-sub-forms:
+  - delivery-on-behalf-of-firm
+  - delivery-on-behalf-of-individual

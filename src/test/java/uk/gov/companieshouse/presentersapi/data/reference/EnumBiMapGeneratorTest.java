@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -99,6 +101,50 @@ class EnumBiMapGeneratorTest {
     }
 
     @Test
+    void testMainGeneratesResourcesBeforeEnumsAndBiMaps() throws Exception {
+        writeInputs("g1: i1\ng2: [i2]\n", "g1: o1\n");
+        final var resourcesDir = tempDir.resolve("resources");
+
+        EnumBiMapGenerator.main(new String[] {args()[0], out().toString(), resourcesDir.toString()});
+
+        assertThat(GeneratorData.readYamlData(
+            resourcesDir.resolve("data/groups.yaml"), List.of("groups-map", "by-group")),
+            is(Map.of("g1", List.of("i1"), "g2", List.of("i2"))));
+        assertThat(Files.readString(out().resolve("uk/test/enums/Item.java")), containsString("I2(\"i2\")"));
+        final var bimap = Files.readString(out().resolve("uk/test/bimaps/GroupItemBiMap.java"));
+        assertThat(bimap, containsString("@ConfigurationProperties(prefix = \"groups-map\")"));
+        assertThat(bimap, containsString("byGroup"));
+    }
+
+    @Test
+    void testGeneratedResourcesStillUndergoUniquenessValidation() throws Exception {
+        writeInputs("g1: i1\ng2: i1\n", "g1: o1\n");
+        final var arguments = new String[] {args()[0], out().toString(), tempDir.resolve("resources").toString()};
+
+        assertThrows(IllegalStateException.class, () -> EnumBiMapGenerator.main(arguments));
+    }
+
+    @Test
+    void testGeneratedResourcesStillUndergoReferencedKeyValidation() throws Exception {
+        writeInputs("g1: i1\ng2: i2\n", "unknown: o1\n");
+        final var arguments = new String[] {args()[0], out().toString(), tempDir.resolve("resources").toString()};
+
+        final var exception = assertThrows(IllegalStateException.class, () -> EnumBiMapGenerator.main(arguments));
+
+        assertThat(exception.getMessage(), containsString("not valid Group"));
+    }
+
+    @Test
+    void testGeneratedResourcesStillRejectInvalidEnumCodes() throws Exception {
+        for (final var input : List.of("g1: [foo-bar, foo_bar]\n", "g1: [\"\"]\n")) {
+            writeInputs(input, "g1: o1\n");
+            final var arguments = new String[] {args()[0], out().toString(), tempDir.resolve("resources").toString()};
+
+            assertThrows(IllegalStateException.class, () -> EnumBiMapGenerator.main(arguments));
+        }
+    }
+
+    @Test
     void testMainResolvesSourcesRelativeToConfigFileDirectory() throws Exception {
         final var configDir = Files.createDirectory(tempDir.resolve("conf"));
         Files.writeString(configDir.resolve("config.yaml"), CONFIG);
@@ -128,7 +174,7 @@ class EnumBiMapGeneratorTest {
     @Test
     void testMainRejectsTooManyArguments() {
         assertThrows(IllegalArgumentException.class,
-            () -> EnumBiMapGenerator.main(new String[] {"config.yaml", "out", "extra"}));
+            () -> EnumBiMapGenerator.main(new String[] {"config.yaml", "out", "resources", "extra"}));
     }
 
     @Test

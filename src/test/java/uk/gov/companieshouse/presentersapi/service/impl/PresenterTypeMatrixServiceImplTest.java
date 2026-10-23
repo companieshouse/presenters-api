@@ -1,6 +1,8 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -42,7 +44,7 @@ class PresenterTypeMatrixServiceImplTest {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AD01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(formGroupPresenterTypeBiMap.presenterTypesFor(FormGroup.FIRM_DELIVERY)).thenReturn(expected);
 
-        assertThat(service.presenterTypesFor(FormType.AD01)).isEqualTo(expected);
+        assertThat(service.presenterTypesFor(FormType.AD01), is(expected));
         verify(formGroupFormTypeBiMap).formGroupFor(FormType.AD01);
         verify(formGroupPresenterTypeBiMap).presenterTypesFor(FormGroup.FIRM_DELIVERY);
     }
@@ -52,7 +54,7 @@ class PresenterTypeMatrixServiceImplTest {
     void presenterTypesForFormTypeWithoutFormGroupReturnsEmpty() {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
 
-        assertThat(service.presenterTypesFor(FormType.WU15)).isEmpty();
+        assertThat(service.presenterTypesFor(FormType.WU15), is(empty()));
         verifyNoInteractions(formGroupPresenterTypeBiMap);
     }
 

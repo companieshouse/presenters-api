@@ -1,0 +1,40 @@
+firm-delivery:
+  - officer-employee
+  - corporate-officer-employee
+  - judicial-factor
+  - officer-employee-same-group
+  - acsp
+individual-delivery:
+  - acsp
+  - individual-filing-for-self
+  - individual-representing
+multi-delivery:
+  - officer-employee
+  - corporate-officer-employee
+  - judicial-factor
+  - officer-employee-same-group
+  - acsp
+  - individual-filing-for-self
+  - individual-representing
+acsp-only:
+  - acsp
+self-delivery:
+  - individual-filing-for-self
+officer-only:
+  - officer-employee
+verified-individual-delivery:
+  - individual-filing-for-self
+  - individual-representing
+incorporation:
+  - acsp
+  - individual-filing-for-self
+rec-five:
+  - acsp
+  - individual-representing
+wu-sub-forms:
+  - officer-employee
+  - corporate-officer-employee
+  - judicial-factor
+  - officer-employee-same-group
+  - acsp
+  - individual-representing

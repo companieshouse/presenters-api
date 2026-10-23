@@ -1,0 +1,41 @@
+@startuml Validation Endpoint
+
+participant "Calling Service" as Web
+participant "Presenters API" as PresentersAPI
+box "Statement Matrix" #LightBlue
+    participant "Form Group\n to Form" as FormGroupToForm
+    participant "Form Group\n to Presenter Type" as FormGroupToPresenterType
+    participant "Presenter Type\n to Data Objects" as PTDO
+    participant "Presenter Type\n to Assoc Statement" as PTAS
+    participant "Presenter Type\n to Delivery Statement" as PTDS
+    participant "Presenter Type\n to Verification Statement" as PTVS
+    participant "Form Group\n to Delivery Statement" as FGDS
+end box
+
+Web -> PresentersAPI: Validate Presenter Details
+PresentersAPI -> PTDO: Get "DO Presenter Types" for Data Objects
+alt Data Object Mismatch
+    PresentersAPI -> Web: Return validation error for Data Object Mismatch
+end
+PresentersAPI -> FormGroupToForm: Get Form Group for Form
+PresentersAPI -> FormGroupToPresenterType: Get "Form Presenter Types" for Form Group
+alt Form Presenter Type DO Presenter Types Mismatch
+    PresentersAPI -> Web: Return validation error for Data type Form Type mismatch
+end
+PresentersAPI -> PTAS: Get Possible Presenter Types for Association Statement
+PresentersAPI -> PTDS: Get Possible Presenter Types for Delivery Statement
+PresentersAPI -> PTVS: Get Possible Presenter Types for Verification Statement
+alt Presenter Types Statement Mismatch
+    PresentersAPI -> Web: Return validation error for Statement mismatch
+end
+alt Statement Presenter Types DO Presenter Types Mismatch
+    PresentersAPI -> Web: Return validation error for Data type statement mismatch
+end
+PresentersAPI -> FGDS: Get Possible Delivery Statements for Form Group
+alt Delivery Statements DO Statement Mismatch
+    PresentersAPI -> Web: Return validation error for Data type form type mismatch
+end
+PresentersAPI -> Web: Return validation success if no mismatches found
+
+@enduml
+

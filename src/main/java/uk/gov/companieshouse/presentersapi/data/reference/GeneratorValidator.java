@@ -45,8 +45,8 @@ class GeneratorValidator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
-                    final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlData = GeneratorData.toSetMap(yamlDataList);
 
                     final var allKeysInSource = yamlData.keySet();
 
@@ -128,9 +128,9 @@ class GeneratorValidator {
                 .map(sourceEntry -> {
                     try {
                         final var yamlPath = configDir.resolve(sourceEntry.getKey());
-                        final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
-                        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
-                        validateDictionaryKeysMatch(yamlData, validEnumValues, targetEnumName, yamlPath, true);
+                        final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
+                        final var yamlData = GeneratorData.toSetMap(yamlDataList);
+                        validateDictionaryKeysMatch(yamlData, validEnumValues, targetEnumName, yamlPath, true, definitionSources);
                         return sourceEntry.getKey();
                     } catch (final IOException e) {
                         // Wrap checked IOException to propagate through stream; unwrapped below
@@ -174,8 +174,8 @@ class GeneratorValidator {
                 .flatMap(sourceEntry -> {
                     try {
                         final var yamlPath = configDir.resolve(sourceEntry.getKey());
-                        final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
-                        final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                        final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceEntry.getValue().rootKeys());
+                        final var yamlData = GeneratorData.toSetMap(yamlDataList);
                         // Filter enums by location, flatten to individual values with their enum names
                         return sourceEntry.getValue().enums().entrySet().stream()
                             .filter(enumEntry -> location == enumEntry.getValue().location())
@@ -202,7 +202,8 @@ class GeneratorValidator {
 
     private static void validateDictionaryKeysMatch(
             final Map<String, Set<String>> yamlData, final Set<String> validEnumValues,
-            final String enumName, final Path sourceFile, final boolean isKeyValidation) {
+            final String enumName, final Path sourceFile, final boolean isKeyValidation,
+            final Set<String> definitionSources) {
         final var invalidItems = yamlData.keySet().stream()
                                         .filter(key -> !validEnumValues.contains(key))
                                         .collect(Collectors.toSet());
@@ -216,7 +217,11 @@ class GeneratorValidator {
                 DATA_VALIDATION_ERROR_IN + sourceFile + ": invalid " + itemType + "(s) — not valid " + enumName + ".\n"
                 + "  Invalid: " + invalidItems + "\n"
                 + "  Valid " + enumName + " values: " + validEnumValues + hint + "\n"
-                + "  To fix: Replace with valid values from the list above."
+                + "  To fix: Replace with valid values from the list above, or, if the key is correct, check whether "
+                + "it is missing from the source data defining " + enumName + ": " + definitionSources + ".\n"
+                + "  Add the missing code at the configured extraction location (DICTIONARY_KEYS or DICTIONARY_VALUES) "
+                + "in the original source YAML and regenerate. Adding a key to a mapping that only references "
+                + enumName + " does not define a new enum value."
             );
         }
     }
@@ -305,8 +310,8 @@ class GeneratorValidator {
             config.sources().forEach((sourceFile, sourceConfig) -> {
                 try {
                     final var yamlPath = configDir.resolve(sourceFile);
-                    final var yamlDataList = EnumBiMapGenerator.readYamlData(yamlPath, sourceConfig.rootKeys());
-                    final var yamlData = EnumBiMapGenerator.toSetMap(yamlDataList);
+                    final var yamlDataList = GeneratorData.readYamlData(yamlPath, sourceConfig.rootKeys());
+                    final var yamlData = GeneratorData.toSetMap(yamlDataList);
 
                     // Use source-level key-enum and value-enum fields to define allowed enum types per role
                     final Set<String> allowedKeyEnums = sourceConfig.keyEnum() != null
