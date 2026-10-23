@@ -79,7 +79,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
         return new InternalUserInterceptor();
     }
 
-    @Bean("chsTokenPermissionsCaptor")
+    @Bean("chsTokenPermissionsInterceptor")
     public TokenPermissionsInterceptor tokenPermissionsInterceptor() {
         return new TokenPermissionsInterceptor();
     }
