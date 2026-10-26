@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterTypeRequestApi;
@@ -9,14 +10,18 @@ import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.InternalServerError;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
+import uk.gov.companieshouse.presentersapi.utils.UserHelper;
 
 @RestController
 public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
 
     private final PresenterTypesService presenterTypesService;
+    private final HttpServletRequest request;
 
-    public PresenterTypesControllerImpl(final PresenterTypesService presenterTypesService) {
+    public PresenterTypesControllerImpl(final PresenterTypesService presenterTypesService,
+        final HttpServletRequest request) {
         this.presenterTypesService = presenterTypesService;
+        this.request = request;
     }
 
     @Override
@@ -25,8 +30,10 @@ public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
         // Mock scenarios to be removed
         applyMockScenarios(userId, formType);
 
+        final var passthroughToken = UserHelper.requirePassthroughToken(request);
+
         final var presenterTypes = new PresenterTypes();
-        presenterTypes.setTypes(presenterTypesService.getPresenterTypes(userId, formType).stream()
+        presenterTypes.setTypes(presenterTypesService.getPresenterTypes(userId, formType, passthroughToken).stream()
             .map(PresenterType::code)
             .toList());
         return ResponseEntity.ok(presenterTypes);
