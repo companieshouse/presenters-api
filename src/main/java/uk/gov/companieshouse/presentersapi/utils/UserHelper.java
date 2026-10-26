@@ -2,6 +2,8 @@ package uk.gov.companieshouse.presentersapi.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.util.security.AuthorisationUtil;
 
@@ -13,17 +15,25 @@ public final class UserHelper {
     }
 
     /**
-     * TODO: This helper is intended to allow the CHS User ID to be retrieved from the request.
-     * Currently, the CHS User ID is passed in as a query parameter, but is it more secure to
-     * retrieve it from the OAuth2 token instead?
-     * Example used would be:
-     * <pre>{@code
-     * String userId = UserHelper.getChsUserId(request);
-     * String passthroughToken = UserHelper.requireHeader(request, ERIC_ACCESS_TOKEN_HEADER);
-     * Identity identity = identityVerificationService.getIdentityByUserId(userId, passthroughToken);
-     * }</pre>
+     * Retrieves the HTTP request bound to the current thread. This allows request details to be read by
+     * controllers implementing generated API interfaces, whose method signatures do not expose the request.
+     *
+     * @return the current HTTP servlet request
+     * @throws IllegalStateException if no request is bound to the current thread
      */
-    public static String getChsUserId(HttpServletRequest request) {
+    private static HttpServletRequest currentRequest() {
+        return ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+    }
+
+    /**
+     * Retrieves the CHS User ID from the request bound to the current thread.
+     *
+     * @return the CHS User ID
+     * @throws ResponseStatusException with status 401 if the user is not an OAuth2 user or the user ID is blank
+     * @throws IllegalStateException   if no request is bound to the current thread
+     */
+    public static String getChsUserId() {
+        HttpServletRequest request = currentRequest();
         String userId = AuthorisationUtil.getAuthorisedIdentity(request);
 
         if (!AuthorisationUtil.isOauth2User(request) || userId.isBlank()) {
@@ -43,7 +53,15 @@ public final class UserHelper {
         return value;
     }
 
-    public static String requirePassthroughToken(HttpServletRequest request) {
-        return requireHeader(request, ERIC_ACCESS_TOKEN_HEADER);
+    /**
+     * Retrieves the ERIC passthrough token from the request bound to the current thread.
+     * Enforces that the ERIC passthrough token header is present and not blank.
+     *
+     * @return the ERIC passthrough token
+     * @throws ResponseStatusException with status 400 if the header is missing or blank
+     * @throws IllegalStateException   if no request is bound to the current thread
+     */
+    public static String requirePassthroughToken() {
+        return requireHeader(currentRequest(), ERIC_ACCESS_TOKEN_HEADER);
     }
 }

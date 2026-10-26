@@ -3,9 +3,10 @@ package uk.gov.companieshouse.presentersapi.controller;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.EnumSet;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
@@ -33,11 +37,22 @@ class PresenterTypesControllerImplTest {
     @Mock
     private PresenterTypesService presenterTypesService;
 
-    @Mock
-    private HttpServletRequest request;
+    private MockHttpServletRequest request;
 
     @InjectMocks
     private PresenterTypesControllerImpl controller;
+
+    @BeforeEach
+    void setUp() {
+        request = new MockHttpServletRequest();
+        request.addHeader(ERIC_ACCESS_TOKEN_HEADER, PASSTHROUGH_TOKEN);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
+    }
 
     @Test
     @DisplayName("should throw FormTypeNotFoundException when formType is formTypeNotFound")
@@ -76,7 +91,6 @@ class PresenterTypesControllerImplTest {
     @DisplayName("should return presenter types when applyMockScenarios has no match")
     void shouldReturnPresenterTypesWhenNoMockScenarioMatches() {
         EnumSet<PresenterType> serviceResponse = EnumSet.allOf(PresenterType.class);
-        when(request.getHeader(ERIC_ACCESS_TOKEN_HEADER)).thenReturn(PASSTHROUGH_TOKEN);
         when(presenterTypesService.getPresenterTypes("user123", "AD01", PASSTHROUGH_TOKEN))
             .thenReturn(serviceResponse);
 
@@ -93,7 +107,7 @@ class PresenterTypesControllerImplTest {
     @Test
     @DisplayName("should reject request with 400 when the ERIC passthrough token is missing")
     void shouldRejectRequestWhenPassthroughTokenMissing() {
-        when(request.getHeader(ERIC_ACCESS_TOKEN_HEADER)).thenReturn(null);
+        request.removeHeader(ERIC_ACCESS_TOKEN_HEADER);
 
         ResponseStatusException exception = assertThrows(
             ResponseStatusException.class,
