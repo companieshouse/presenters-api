@@ -11,8 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -33,8 +38,13 @@ class InterceptorConfigTest {
     @Mock
     private Logger logger;
 
-    @Test
-    void shouldRegisterInterceptorsForTheirConfiguredPathsAndOrder() {
+    @ParameterizedTest
+    @MethodSource("interceptorRegistrations")
+    void shouldRegisterInterceptorsForTheirConfiguredPathsAndOrder(
+        final int registrationIndex,
+        final Class<? extends HandlerInterceptor> interceptorType,
+        final List<String> pathPatterns
+    ) {
         final var registry = new TestInterceptorRegistry();
         final var interceptorConfig = new InterceptorConfig(logger);
 
@@ -43,35 +53,39 @@ class InterceptorConfigTest {
         final var registeredInterceptors = registry.registeredInterceptors();
 
         assertThat(registeredInterceptors, hasSize(5));
-        assertRegistration(registeredInterceptors.get(0), RequestLoggingInterceptor.class, "/presenters/**");
-        assertRegistration(
-            registeredInterceptors.get(1),
-            InternalUserInterceptor.class,
-            "/presenters/validation"
+        final var registration = registeredInterceptors.get(registrationIndex);
+        assertThat(registration.getInterceptor(), isA(interceptorType));
+        final var includePathPatterns = registration.getIncludePathPatterns();
+        assertNotNull(includePathPatterns);
+        assertThat(Arrays.asList(includePathPatterns), is(pathPatterns));
+    }
+
+    private static Stream<Arguments> interceptorRegistrations() {
+        final var permissionPaths = List.of("/presenters/presenter-type", "/presenters/presenter-details");
+        return Stream.of(
+            Arguments.of(0, RequestLoggingInterceptor.class, List.of("/presenters/**")),
+            Arguments.of(1, InternalUserInterceptor.class, List.of("/presenters/validation")),
+            Arguments.of(2, TokenPermissionsInterceptor.class, permissionPaths),
+            Arguments.of(3, MappablePermissionsInterceptor.class, permissionPaths),
+            Arguments.of(4, MappablePermissionsInterceptor.class, permissionPaths)
         );
-        assertRegistration(
-            registeredInterceptors.get(2),
-            TokenPermissionsInterceptor.class,
-            "/presenters/presenter-type"
-        );
-        assertRegistration(
-            registeredInterceptors.get(3),
-            MappablePermissionsInterceptor.class,
-            "/presenters/presenter-type"
-        );
-        assertPermissionConfiguration(
-            registeredInterceptors.get(3),
-            Permission.Key.USER_PROFILE
-        );
-        assertRegistration(
-            registeredInterceptors.get(4),
-            MappablePermissionsInterceptor.class,
-            "/presenters/presenter-type"
-        );
-        assertPermissionConfiguration(
-            registeredInterceptors.get(4),
-            Permission.Key.ACSP_ASSOCIATIONS
-        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "3, USER_PROFILE",
+        "4, ACSP_ASSOCIATIONS"
+    })
+    void shouldRequireConfiguredPermissionWhenPermissionsInterceptorRegistered(
+        final int registrationIndex,
+        final Permission.Key expectedPermissionKey
+    ) {
+        final var registry = new TestInterceptorRegistry();
+        final var interceptorConfig = new InterceptorConfig(logger);
+
+        interceptorConfig.addInterceptors(registry);
+
+        assertPermissionConfiguration(registry.registeredInterceptors().get(registrationIndex), expectedPermissionKey);
     }
 
     @Test
@@ -127,17 +141,6 @@ class InterceptorConfigTest {
         final var postPermissions = permissionsMapping.apply("POST");
          assertThat(getPermissions, contains(Permission.Value.READ));
         assertThat(postPermissions, is(empty()));
-    }
-
-    private static void assertRegistration(
-        final MappedInterceptor registration,
-        final Class<? extends HandlerInterceptor> interceptorType,
-        final String pathPattern
-    ) {
-        assertThat(registration.getInterceptor(), isA(interceptorType));
-        final var includePathPatterns = registration.getIncludePathPatterns();
-        assertNotNull(includePathPatterns);
-        assertThat(Arrays.asList(includePathPatterns), contains(pathPattern));
     }
 
     private static void assertPermissionConfiguration(
