@@ -17,7 +17,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
-class UserHelperTest {
+class RequestHelperTest {
 
     @Mock
     private HttpServletRequest request;
@@ -33,7 +33,7 @@ class UserHelperTest {
         when(request.getHeader(ERIC_IDENTITY)).thenReturn("user-123");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        assertThat(UserHelper.getChsUserId()).isEqualTo("user-123");
+        assertThat(RequestHelper.getChsUserId()).isEqualTo("user-123");
     }
 
     @Test
@@ -42,7 +42,7 @@ class UserHelperTest {
         when(request.getHeader(ERIC_IDENTITY)).thenReturn("user-123");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        assertThatThrownBy(UserHelper::getChsUserId)
+        assertThatThrownBy(RequestHelper::getChsUserId)
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("An OAuth2 user is required");
     }
@@ -53,14 +53,14 @@ class UserHelperTest {
         when(request.getHeader(ERIC_IDENTITY)).thenReturn(" ");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        assertThatThrownBy(UserHelper::getChsUserId)
+        assertThatThrownBy(RequestHelper::getChsUserId)
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("An OAuth2 user is required");
     }
 
     @Test
     void rejectsChsUserIdLookupWhenNoRequestIsBound() {
-        assertThatThrownBy(UserHelper::getChsUserId)
+        assertThatThrownBy(RequestHelper::getChsUserId)
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -68,14 +68,14 @@ class UserHelperTest {
     void requiresNonBlankHeader() {
         when(request.getHeader("ERIC-Access-Token")).thenReturn("token");
 
-        assertThat(UserHelper.requireHeader(request, "ERIC-Access-Token")).isEqualTo("token");
+        assertThat(RequestHelper.requireHeader(request, "ERIC-Access-Token")).isEqualTo("token");
     }
 
     @Test
     void rejectsMissingHeader() {
         when(request.getHeader("ERIC-Access-Token")).thenReturn(null);
 
-        assertThatThrownBy(() -> UserHelper.requireHeader(request, "ERIC-Access-Token"))
+        assertThatThrownBy(() -> RequestHelper.requireHeader(request, "ERIC-Access-Token"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Missing required header: ERIC-Access-Token");
     }
@@ -85,7 +85,7 @@ class UserHelperTest {
         when(request.getHeader("ERIC-Access-Token")).thenReturn("token");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        assertThat(UserHelper.requirePassthroughToken()).isEqualTo("token");
+        assertThat(RequestHelper.requirePassthroughToken()).isEqualTo("token");
     }
 
     @Test
@@ -93,14 +93,14 @@ class UserHelperTest {
         when(request.getHeader("ERIC-Access-Token")).thenReturn(null);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        assertThatThrownBy(UserHelper::requirePassthroughToken)
+        assertThatThrownBy(RequestHelper::requirePassthroughToken)
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Missing required header: ERIC-Access-Token");
     }
 
     @Test
     void rejectsPassthroughTokenLookupWhenNoRequestIsBound() {
-        assertThatThrownBy(UserHelper::requirePassthroughToken)
+        assertThatThrownBy(RequestHelper::requirePassthroughToken)
                 .isInstanceOf(IllegalStateException.class);
     }
 }

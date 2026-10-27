@@ -9,7 +9,7 @@ import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.InternalServerError;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
-import uk.gov.companieshouse.presentersapi.utils.UserHelper;
+import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 
 @RestController
 public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
@@ -23,7 +23,7 @@ public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
     @Override
     public ResponseEntity<PresenterTypes> getPresenterTypes(String userId, String formType) {
 
-        final var passthroughToken = UserHelper.requirePassthroughToken();
+        final var passthroughToken = RequestHelper.requirePassthroughToken();
 
         // Mock scenarios to be removed
         applyMockScenarios(userId, formType);

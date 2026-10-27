@@ -7,11 +7,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.util.security.AuthorisationUtil;
 
-public final class UserHelper {
+public final class RequestHelper {
     
     private static final String ERIC_ACCESS_TOKEN_HEADER = "ERIC-Access-Token";
 
-    private UserHelper() {
+    private RequestHelper() {
     }
 
     /**
