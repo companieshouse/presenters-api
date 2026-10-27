@@ -3,7 +3,6 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -151,7 +150,7 @@ class PresenterTypesServiceImplTest {
 
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) {
-        when(presenterTypeMatrixService.presenterTypesFor(eq(FormType.from(FORM_TYPE_CODE))))
+        when(presenterTypeMatrixService.presenterTypesFor(FormType.from(FORM_TYPE_CODE)))
             .thenReturn(presenterTypes);
     }
 
