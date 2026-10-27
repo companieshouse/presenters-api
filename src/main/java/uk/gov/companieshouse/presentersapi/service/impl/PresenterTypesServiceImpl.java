@@ -35,13 +35,16 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         final var formTypeEnum = toFormType(formType);
         final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum));
 
+        final Map<String, Object> logMap = Map.of(
+            "user_id", userId, "form_type", formType, "presenter_types", presenterTypes.toString());
+        logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
+
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
             presenterTypes.remove(PresenterType.ACSP);
         }
 
-        logger.debugContext(userId, "Resolved presenter types for form type",
-            Map.of("user_id", userId, "form_type", formType, "presenter_types", presenterTypes.toString()));
+        logger.debugContext(userId, "Resolved possible presenter types for form type and user", logMap);
 
         return presenterTypes;
     }
