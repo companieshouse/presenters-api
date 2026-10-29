@@ -228,6 +228,30 @@ class EnumGeneratorTest {
                   result, containsString("Unknown"));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "FormType,FormTypeNotFoundException",
+        "PresenterType,PresenterTypeNotFoundException",
+        "DataObjectType,DataObjectTypeNotFoundException",
+        "DeliveryStatementType,StatementNotFoundException",
+        "VerificationStatementType,StatementNotFoundException",
+        "AssociationStatementType,StatementNotFoundException"
+    })
+    void testBuildEnumSourceUsesDedicatedLookupException(
+            final String enumName, final String exceptionType) {
+        final var codes = new LinkedHashSet<>(Set.of("AD01"));
+        final var source = EnumGenerator.buildEnumSource("uk.test", enumName, codes, Set.of("test.yaml"));
+        final var messagePrefix = switch (enumName) {
+            case "FormType" -> "Form Type: ";
+            case "PresenterType" -> "Presenter Type: ";
+            case "DataObjectType" -> "Data Object Type: ";
+            default -> "Statement: ";
+        };
+
+        assertThat(source, containsString("import uk.gov.companieshouse.presentersapi.exception." + exceptionType + ";"));
+        assertThat(source, containsString("if (e == null) throw new " + exceptionType + "(\"" + messagePrefix + "\" + v);"));
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 3: Edge Cases and Error Scenarios

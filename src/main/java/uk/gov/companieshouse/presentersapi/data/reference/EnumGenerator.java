@@ -183,12 +183,14 @@ class EnumGenerator {
         final var constantsBlock = constantToCode.entrySet().stream()
                                                   .map(e -> "    " + e.getKey() + "(\"" + GeneratorData.escapeForJavaStringLiteral(e.getValue()) + "\")")
                                                   .collect(java.util.stream.Collectors.joining(",\n"));
+        final var lookupFailure = lookupFailureFor(enumName);
 
         return """
             package %s;
 
             import com.fasterxml.jackson.annotation.JsonCreator;
             import com.fasterxml.jackson.annotation.JsonValue;
+            %s
 
             import java.util.Arrays;
             import java.util.Map;
@@ -215,21 +217,43 @@ class EnumGenerator {
                 @JsonCreator
                 public static %s from(String v) {
                     final var e = BY_CODE.get(v);
-                    if (e == null) throw new IllegalArgumentException("Unknown %s: " + v);
+                    if (e == null) throw new %s("%s" + v);
                     return e;
                 }
             }
             """.formatted(
             pkg,
+            lookupFailure.importStatement(),
             enumName,
             constantsBlock,
             enumName,
             enumName,
             enumName,
             enumName,
-            enumName
+            lookupFailure.exceptionType(),
+            lookupFailure.messagePrefix()
         );
     }
+
+    private static LookupFailure lookupFailureFor(final String enumName) {
+        return switch (enumName) {
+            case "FormType" -> new LookupFailure(
+                "FormTypeNotFoundException", "Form Type: ",
+                "import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;");
+            case "PresenterType" -> new LookupFailure(
+                "PresenterTypeNotFoundException", "Presenter Type: ",
+                "import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;");
+            case "DataObjectType" -> new LookupFailure(
+                "DataObjectTypeNotFoundException", "Data Object Type: ",
+                "import uk.gov.companieshouse.presentersapi.exception.DataObjectTypeNotFoundException;");
+            case "DeliveryStatementType", "VerificationStatementType", "AssociationStatementType" -> new LookupFailure(
+                "StatementNotFoundException", "Statement: ",
+                "import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;");
+            default -> new LookupFailure("IllegalArgumentException", "Unknown " + enumName + ": ", "");
+        };
+    }
+
+    private record LookupFailure(String exceptionType, String messagePrefix, String importStatement) {}
 
     static String toEnumConstant(final String raw) {
         var s = raw.trim().toUpperCase(java.util.Locale.ROOT);
