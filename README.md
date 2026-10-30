@@ -11,4 +11,5 @@ Certain form types will be sent by presenters-api to FES while other form types 
 ----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|--------|
  CHS_API_KEY                     | The internal api key for calling internal services                                                            | dummy-key                                  |always
  INTERNAL_CHS_API_KEY                        | An api key for calling services without an internal privilege constraint                                                       | dummy-internal-key                                  |always
+ DOCUMENT_API_LOCAL_URL                        | A URL for calling the Document API. Unused by presenters-api but required by the SDK                                    | dummy-key                                           |always
 
