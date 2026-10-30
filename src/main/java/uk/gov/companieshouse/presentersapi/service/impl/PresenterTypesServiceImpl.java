@@ -11,6 +11,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
+import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 
@@ -19,12 +20,18 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     private final PresenterTypeMatrixService presenterTypeMatrixService;
     private final AcspUserService acspUserService;
+    private final ExemptUserService exemptUserService;
     private final Logger logger;
 
+    // Create a list of Exempt User presenter types for more flexibility
+    private static final EnumSet<PresenterType> EXEMPT_USER_PRESENTER_TYPES = EnumSet.of(PresenterType.OFFICIAL_RECEIVER);
+
     public PresenterTypesServiceImpl(final PresenterTypeMatrixService presenterTypeMatrixService,
-        final AcspUserService acspUserService, final Logger logger) {
+        final AcspUserService acspUserService, final ExemptUserService exemptUserService,
+        final Logger logger) {
         this.presenterTypeMatrixService = presenterTypeMatrixService;
         this.acspUserService = acspUserService;
+        this.exemptUserService = exemptUserService;
         this.logger = logger;
     }
 
@@ -38,7 +45,10 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         final Map<String, Object> logMap = Map.of(
             "user_id", userId, "form_type", formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
-
+        // Call out to ExemptUser service
+        if (isExemptUser(userId)) {
+            presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
+        }
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
             presenterTypes.remove(PresenterType.ACSP);
@@ -66,5 +76,9 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private static boolean isActiveMembershipOfActiveAcsp(final AcspMembership membership) {
         return membership.getMembershipStatus() == MembershipStatusEnum.ACTIVE
             && membership.getAcspStatus() == AcspStatusEnum.ACTIVE;
+    }
+
+    private boolean isExemptUser(final String userId) {
+        return exemptUserService.isExemptUserByUserId(userId);
     }
 }
