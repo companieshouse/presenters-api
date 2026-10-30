@@ -24,6 +24,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
+import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,13 +40,15 @@ class PresenterTypesServiceImplTest {
     @Mock
     private AcspUserService acspUserService;
     @Mock
+    private ExemptUserService exemptUserService;
+    @Mock
     private Logger logger;
 
     private PresenterTypesServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, logger);
+        service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, exemptUserService, logger);
     }
 
     @Test
@@ -148,6 +151,26 @@ class PresenterTypesServiceImplTest {
         verifyNoInteractions(presenterTypeMatrixService, acspUserService);
     }
 
+    @Test
+    @DisplayName("should return OFFICIAL_RECEIVER when user is exempt")
+    void shouldReturnOfficialReceiverWhenUserIsExempt() {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(exemptUserService.isExemptUserByUserId(USER_ID)).thenReturn(true);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result, is(EnumSet.of(PresenterType.OFFICIAL_RECEIVER)));
+    }
+    @Test
+    @DisplayName("should not return OFFICIAL_RECEIVER when user is not exempt")
+    void shouldNotReturnOfficialReceiverWhenUserIsNotExempt() {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(exemptUserService.isExemptUserByUserId(USER_ID)).thenReturn(false);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+    }
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) {
         when(presenterTypeMatrixService.presenterTypesFor(FormType.from(FORM_TYPE_CODE)))
