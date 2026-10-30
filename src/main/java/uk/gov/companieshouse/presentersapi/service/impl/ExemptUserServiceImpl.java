@@ -50,6 +50,26 @@ public class ExemptUserServiceImpl implements ExemptUserService {
     }
 
     @Override
+    public Optional<ExemptUserDao> getExemptUserByUserId(String userId) {
+        Map<String, Object> logMap = Map.of("user_id", userId);
+        try {
+            Optional<ExemptUserDao> exemptUserDao = repository.findByUserId(userId);
+            if (exemptUserDao.isPresent()) {
+                logger.infoContext(userId, "Retrieved exempt user by user id: ", logMap);
+            } else {
+                logger.infoContext(userId, "No such exempt user with user id: ", logMap);
+            }
+            return exemptUserDao;
+        } catch (IncorrectResultSizeDataAccessException exception) {
+            logger.errorContext(userId, "Non-unique exempt user query result by user id", exception, logMap);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, DATA_INTEGRITY_MESSAGE, exception);
+        } catch (DataAccessException | MongoException exception) {
+            logger.errorContext(userId, "Failed to retrieve exempt user by user id", exception, logMap);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, DATA_ACCESS_MESSAGE, exception);
+        }
+    }
+
+    @Override
     public Optional<ExemptUserDao> getExemptUserById(String id) {
         Map<String, Object> logMap = Map.of("id", id);
         try {
@@ -76,6 +96,18 @@ public class ExemptUserServiceImpl implements ExemptUserService {
             return repository.existsByEmail(email);
         } catch (DataAccessException | MongoException exception) {
             logger.errorContext(email, "Failed to check exempt user existence by email", exception, logMap);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    EXISTENCE_CHECK_DATA_ACCESS_MESSAGE, exception);
+        }
+    }
+
+    @Override
+    public boolean isExemptUserByUserId(String userId) {
+        Map<String, Object> logMap = Map.of("user_id", userId);
+        try {
+            return repository.existsByUserId(userId);
+        } catch (DataAccessException | MongoException exception) {
+            logger.errorContext(userId, "Failed to check exempt user existence by user id", exception, logMap);
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     EXISTENCE_CHECK_DATA_ACCESS_MESSAGE, exception);
         }
