@@ -91,6 +91,19 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
+    void returnsExemptUserByUserId() {
+        ExemptUserDao mockUser = new ExemptUserDao();
+        mockUser.setUserId("user-123");
+
+        when(repository.findByUserId("user-123")).thenReturn(Optional.of(mockUser));
+        Optional<ExemptUserDao> result = service.getExemptUserByUserId("user-123");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getUserId()).isEqualTo("user-123");
+        verify(repository).findByUserId("user-123");
+    }
+
+    @Test
     void returnsTrueWhenExemptUserByEmail() {
         when(repository.existsByEmail("test@example.com")).thenReturn(true);
         boolean result = service.isExemptUserByEmail("test@example.com");
@@ -124,6 +137,15 @@ class ExemptUserServiceImplTest {
 
         assertThat(result).isFalse();
         verify(repository).existsById("id");
+    }
+
+    @Test
+    void returnsTrueWhenExemptUserByUserId() {
+        when(repository.existsByUserId("user-123")).thenReturn(true);
+        boolean result = service.isExemptUserByUserId("user-123");
+
+        assertThat(result).isTrue();
+        verify(repository).existsByUserId("user-123");
     }
 
 
@@ -217,6 +239,18 @@ class ExemptUserServiceImplTest {
                 .thenThrow(new MongoException("mongo unavailable"));
 
         assertThatThrownBy(() -> service.isExemptUserByEmail("test@example.com"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                    assertThat(exception.getReason()).isEqualTo("Unable to check exempt user existence");
+                });
+    }
+
+    @Test
+    void mapsDataAccessFailureToServiceUnavailableWhenCheckingByUserId() {
+        when(repository.existsByUserId("user-123"))
+                .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.isExemptUserByUserId("user-123"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                     assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
                     assertThat(exception.getReason()).isEqualTo("Unable to check exempt user existence");
