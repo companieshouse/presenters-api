@@ -104,6 +104,20 @@ class ExemptUserServiceImplTest {
     }
 
     @Test
+    void returnsNoSuchExemptUserWhenGettingByUserId() {
+        when(repository.findByUserId("missing-user-id")).thenReturn(Optional.empty());
+
+        Optional<ExemptUserDao> result = service.getExemptUserByUserId("missing-user-id");
+
+        assertThat(result).isEmpty();
+        verify(repository).findByUserId("missing-user-id");
+        verify(logger).infoContext(
+                "missing-user-id",
+                "No such exempt user with user id: ",
+                Map.of("user_id", "missing-user-id"));
+    }
+
+    @Test
     void returnsTrueWhenExemptUserByEmail() {
         when(repository.existsByEmail("test@example.com")).thenReturn(true);
         boolean result = service.isExemptUserByEmail("test@example.com");
@@ -145,6 +159,15 @@ class ExemptUserServiceImplTest {
         boolean result = service.isExemptUserByUserId("user-123");
 
         assertThat(result).isTrue();
+        verify(repository).existsByUserId("user-123");
+    }
+
+    @Test
+    void returnsFalseWhenNoExemptUserByUserId() {
+        when(repository.existsByUserId("user-123")).thenReturn(false);
+        boolean result = service.isExemptUserByUserId("user-123");
+
+        assertThat(result).isFalse();
         verify(repository).existsByUserId("user-123");
     }
 
@@ -208,6 +231,25 @@ class ExemptUserServiceImplTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
     }
+    @Test
+    void mapsDataAccessFailureToServiceUnavailableWhenGettingByUserId() {
+        when(repository.findByUserId("user-123"))
+            .thenThrow(new DataAccessResourceFailureException("mongo unavailable"));
+
+        assertThatThrownBy(() -> service.getExemptUserByUserId("user-123"))
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+    @Test
+    void mapsDataIntegrityFailureToInternalServerErrorWhenGettingByUserId() {
+        when(repository.findByUserId("user-123"))
+            .thenThrow(new IncorrectResultSizeDataAccessException(1,2));
+
+        assertThatThrownBy(() -> service.getExemptUserByUserId("user-123"))
+            .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
 
     @Test
     void mapsDataAccessFailureToServiceUnavailableWhenCheckingById() {
