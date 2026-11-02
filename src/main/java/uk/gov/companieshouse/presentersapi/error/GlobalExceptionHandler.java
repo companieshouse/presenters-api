@@ -18,6 +18,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import uk.gov.companieshouse.api.error.ApiError;
 import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.presentersapi.exception.DataObjectTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.InternalServerError;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
@@ -65,6 +66,7 @@ public class GlobalExceptionHandler{
     @ExceptionHandler({
         PresenterNotFoundException.class,
         FormTypeNotFoundException.class,
+        DataObjectTypeNotFoundException.class,
         StatementNotFoundException.class,
         PresenterTypeNotFoundException.class
     })

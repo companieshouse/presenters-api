@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.FileSystemResource;
+import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 
 class GeneratedBindingConverterTest {
 
@@ -131,7 +132,7 @@ class GeneratedBindingConverterTest {
 
             final var failure = assertThrows(InvocationTargetException.class,
                 () -> converterType.getMethod("convert", String.class).invoke(converter, code));
-            assertInvalidCodeFailure(failure, "Unknown FormType: " + code);
+            assertInvalidCodeFailure(failure, FormTypeNotFoundException.class, "Form Type: " + code);
         }
     }
 
@@ -140,9 +141,9 @@ class GeneratedBindingConverterTest {
         replaceResource("4.13(NI)", "unknown");
 
         try (final var loader = classLoader()) {
-            runner(loader).run(context -> {
-                assertInvalidCodeFailure(context.getStartupFailure(), "Unknown FormType: unknown");
-            });
+            runner(loader).run(context -> assertInvalidCodeFailure(context.getStartupFailure(),
+                                                                   FormTypeNotFoundException.class,
+                                                                   "Form Type: unknown"));
         }
     }
 
@@ -151,9 +152,9 @@ class GeneratedBindingConverterTest {
         replaceResource("firm-delivery:", "unknown-group:");
 
         try (final var loader = classLoader()) {
-            runner(loader).run(context -> {
-                assertInvalidCodeFailure(context.getStartupFailure(), "Unknown FormGroup: unknown-group");
-            });
+            runner(loader).run(context -> assertInvalidCodeFailure(context.getStartupFailure(),
+                                                                   IllegalArgumentException.class,
+                                                                   "Unknown FormGroup: unknown-group"));
         }
     }
 
@@ -177,9 +178,10 @@ class GeneratedBindingConverterTest {
         }
     }
 
-    private static void assertInvalidCodeFailure(final Throwable failure, final String message) {
+    private static void assertInvalidCodeFailure(final Throwable failure,
+            final Class<? extends Throwable> exceptionType, final String message) {
         assertThat(failure, is(notNullValue()));
-        assertThat(ExceptionUtils.getRootCause(failure), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(ExceptionUtils.getRootCause(failure), is(instanceOf(exceptionType)));
         assertThat(ExceptionUtils.getStackTrace(failure), containsString(message));
     }
 
