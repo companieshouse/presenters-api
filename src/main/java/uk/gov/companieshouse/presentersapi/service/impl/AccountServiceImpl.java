@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import java.io.IOException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
