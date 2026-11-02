@@ -47,7 +47,7 @@ class PrivateApiClientFactoryTest {
     }
 
     @Test
-    void createsInternalClientWithInternalBasePath() throws Exception {
+    void createsInternalClientWithInternalBasePath() {
         InternalApiClient apiClient = mock(InternalApiClient.class);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {

@@ -54,7 +54,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
         // Call out to ExemptUser service
 
-        if (isExemptUser(oauthUserId, passthroughToken)) {
+        if (isExemptUser(oauthUserId)) {
             presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
         }
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
@@ -86,7 +86,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             && membership.getAcspStatus() == AcspStatusEnum.ACTIVE;
     }
 
-    private boolean isExemptUser(final String userId, final String passthroughToken) {
+    private boolean isExemptUser(final String userId) {
         final Map<String, Object> logMap = Map.of("user_id", userId);
         try {
             final String email = accountService.getUserEmailByUserId(userId);

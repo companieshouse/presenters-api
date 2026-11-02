@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponseException;
+
 import java.io.IOException;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,15 +56,15 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void mapsClientCreationIoFailuresToBadGateway() throws IOException {
-        final IOException cause = new IOException("Connection timed out");
+    void mapsClientCreationIoFailuresToBadGateway() {
+        final IllegalStateException cause = new IllegalStateException("CHS_INTERNAL_API_KEY not set");
         when(apiClientFactory.createInternal()).thenThrow(cause);
 
         assertResponseStatus(HttpStatus.BAD_GATEWAY, cause);
     }
 
     @Test
-    void propagatesDownstreamApiErrorStatus() throws IOException {
+    void propagatesDownstreamApiErrorStatus() throws IOException, URIValidationException {
         final ApiErrorResponseException cause = new ApiErrorResponseException(
                 new HttpResponseException.Builder(401, "Unauthorized", new HttpHeaders()));
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
