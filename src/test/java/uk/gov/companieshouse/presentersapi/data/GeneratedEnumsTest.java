@@ -20,6 +20,10 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
+import uk.gov.companieshouse.presentersapi.exception.DataObjectTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
 
 /**
  * Exercises the generated enums' code lookup: every constant round-trips through its code,
@@ -63,8 +67,24 @@ class GeneratedEnumsTest {
     @ArgumentsSource(GeneratedEnums.class)
     <E extends Enum<E>> void shouldRejectCodeWhenCodeIsUnknown(
             final String name, final E[] constants, final Function<String, E> from, final Function<E, String> code) {
-        final var exception = assertThrows(IllegalArgumentException.class, () -> from.apply("no-such-code"));
+        final var exceptionType = switch (name) {
+            case "FormType" -> FormTypeNotFoundException.class;
+            case "PresenterType" -> PresenterTypeNotFoundException.class;
+            case "DataObjectType" -> DataObjectTypeNotFoundException.class;
+            case "DeliveryStatementType", "VerificationStatementType", "AssociationStatementType" ->
+                StatementNotFoundException.class;
+            default -> IllegalArgumentException.class;
+        };
+        final var exception = assertThrows(exceptionType, () -> from.apply("no-such-code"));
 
-        assertThat(exception.getMessage(), containsString("Unknown " + name + ": no-such-code"));
+        final var expectedMessage = switch (name) {
+            case "FormType" -> "Form Type: no-such-code";
+            case "PresenterType" -> "Presenter Type: no-such-code";
+            case "DataObjectType" -> "Data Object Type: no-such-code";
+            case "DeliveryStatementType", "VerificationStatementType", "AssociationStatementType" ->
+                "Statement: no-such-code";
+            default -> "Unknown " + name + ": no-such-code";
+        };
+        assertThat(exception.getMessage(), containsString(expectedMessage));
     }
 }

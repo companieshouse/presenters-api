@@ -68,11 +68,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     }
 
     private static FormType toFormType(final String formType) {
-        try {
-            return FormType.from(formType);
-        } catch (final IllegalArgumentException exception) {
-            throw new FormTypeNotFoundException("Form Type: %s".formatted(formType));
-        }
+        return FormType.from(formType);
     }
 
     private boolean isValidAcsp(final String userId, final String passthroughToken) {
