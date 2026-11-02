@@ -67,9 +67,9 @@ class PrivateApiClientFactoryTest {
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
             sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenThrow(new IllegalStateException("CHS_INTERNAL_API_KEY not set"));
+            final PrivateApiClientFactory factory = new PrivateApiClientFactory(INTERNAL_API_URL);
 
-            assertThatThrownBy(() ->
-                    new PrivateApiClientFactory(INTERNAL_API_URL).createInternal())
+            assertThatThrownBy(factory::createInternal)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("CHS_INTERNAL_API_KEY");
         }

@@ -173,7 +173,7 @@ class PresenterTypesServiceImplTest {
     @DisplayName("should return OFFICIAL_RECEIVER when user is exempt")
     void shouldReturnOfficialReceiverWhenUserIsExempt() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
-        when(accountService.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(USER_EMAIL);
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(true);
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
@@ -184,7 +184,7 @@ class PresenterTypesServiceImplTest {
     @DisplayName("should not return OFFICIAL_RECEIVER when user is not exempt")
     void shouldNotReturnOfficialReceiverWhenUserIsNotExempt() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
-        when(accountService.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(USER_EMAIL);
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(false);
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
@@ -196,7 +196,7 @@ class PresenterTypesServiceImplTest {
     @DisplayName("should not return OFFICIAL_RECEIVER when exempt lookup fails")
     void shouldNotReturnOfficialReceiverWhenExemptLookupFails() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
-        when(accountService.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN))
+        when(accountService.getUserEmailByUserId(USER_ID))
                 .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Downstream unavailable"));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);

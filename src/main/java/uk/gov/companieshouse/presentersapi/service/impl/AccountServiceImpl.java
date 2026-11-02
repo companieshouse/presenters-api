@@ -16,6 +16,7 @@ import uk.gov.companieshouse.presentersapi.service.AccountService;
 @Service
 public class AccountServiceImpl implements AccountService {
 
+    private final String USER_ID = "user_id";
     private static final String USER_DETAILS_URI_TEMPLATE = "/users/%s";
 
     private final Logger logger;
@@ -27,8 +28,8 @@ public class AccountServiceImpl implements AccountService {
     }
 
 
-    public User getUserById(final String userId, final String passthroughToken) throws URIValidationException {
-        final Map<String, Object> logMap = Map.of("user_id", userId);
+    public User getUserById(final String userId) throws URIValidationException {
+        final Map<String, Object> logMap = Map.of(USER_ID, userId);
         try {
             final User user = apiClientFactory.createInternal()
                     .privateAccountsUserResourceHandler()
@@ -54,11 +55,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public String getUserEmailByUserId(final String userId, final String passthroughToken)
+    public String getUserEmailByUserId(final String userId)
             throws URIValidationException {
-        final Map<String, Object> logMap = Map.of("user_id", userId);
-        final User user = getUserById(userId, passthroughToken);
-        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+        final Map<String, Object> logMap = Map.of(USER_ID, userId);
+        final User user = getUserById(userId);
+        if (user == null || user.getEmail().isBlank()) {
             logger.error("No account email found for user", logMap);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No account email found for user");
         }
@@ -72,7 +73,7 @@ public class AccountServiceImpl implements AccountService {
             logger.errorContext(userId,
                     "Accounts API returned an invalid HTTP status code",
                     invalidStatusCodeException,
-                    Map.of("user_id", userId, "status_code", exception.getStatusCode()));
+                    Map.of(USER_ID, userId, "status_code", exception.getStatusCode()));
             return HttpStatus.BAD_GATEWAY;
         }
     }

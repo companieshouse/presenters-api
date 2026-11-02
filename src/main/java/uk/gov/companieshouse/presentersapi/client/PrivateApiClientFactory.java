@@ -26,7 +26,7 @@ public class PrivateApiClientFactory {
         return apiClient;
     }
 
-    public InternalApiClient createInternal() throws IOException {
+    public InternalApiClient createInternal() {
         final InternalApiClient apiClient = ApiSdkManager.getInternalSDK();
         // ApiSdkManager only sets the public base path; private handlers use this path.
         apiClient.setInternalBasePath(internalApiUrl);

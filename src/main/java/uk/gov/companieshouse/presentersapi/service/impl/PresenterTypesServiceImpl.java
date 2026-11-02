@@ -89,7 +89,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private boolean isExemptUser(final String userId, final String passthroughToken) {
         final Map<String, Object> logMap = Map.of("user_id", userId);
         try {
-            final String email = accountService.getUserEmailByUserId(userId, passthroughToken);
+            final String email = accountService.getUserEmailByUserId(userId);
             return exemptUserService.isExemptUserByEmail(email);
         } catch (final ResponseStatusException | IOException | URIValidationException exception) {
             logger.errorContext(userId, "Failed to resolve exempt user status; defaulting to non-exempt",

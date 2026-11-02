@@ -29,8 +29,6 @@ class AccountServiceImplTest {
 
     private static final String USER_ID = "user-123";
     private static final String USER_DETAILS_URI = "/users/%s";
-    private static final String PASSTHROUGH_TOKEN =
-            "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
     private final PrivateApiClientFactory apiClientFactory = mock(PrivateApiClientFactory.class);
     private final Logger logger = mock(Logger.class);
@@ -39,7 +37,7 @@ class AccountServiceImplTest {
     private AccountServiceImpl service;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         when(apiClientFactory.createInternal()).thenReturn(apiClient);
         service = new AccountServiceImpl(logger, apiClientFactory);
     }
@@ -51,13 +49,13 @@ class AccountServiceImplTest {
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
                 .thenReturn(new ApiResponse<>(200, Map.of(), user));
 
-        final String email = service.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN);
+        final String email = service.getUserEmailByUserId(USER_ID);
 
         assertThat(email).isEqualTo("user@example.com");
     }
 
     @Test
-    void mapsClientCreationIoFailuresToBadGateway() throws Exception {
+    void mapsClientCreationIoFailuresToBadGateway() throws IOException {
         final IOException cause = new IOException("Connection timed out");
         when(apiClientFactory.createInternal()).thenThrow(cause);
 
@@ -65,7 +63,7 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void propagatesDownstreamApiErrorStatus() throws Exception {
+    void propagatesDownstreamApiErrorStatus() throws IOException {
         final ApiErrorResponseException cause = new ApiErrorResponseException(
                 new HttpResponseException.Builder(401, "Unauthorized", new HttpHeaders()));
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
@@ -96,7 +94,7 @@ class AccountServiceImplTest {
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
                 .thenThrow(cause);
 
-        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN))
+        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
                 .isSameAs(cause);
     }
 
@@ -106,7 +104,7 @@ class AccountServiceImplTest {
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
                 .thenReturn(new ApiResponse<>(200, Map.of(), user));
 
-        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN))
+        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -118,13 +116,13 @@ class AccountServiceImplTest {
         when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
                 .thenReturn(new ApiResponse<>(200, Map.of(), user));
 
-        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN))
+        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     private void assertResponseStatus(final HttpStatus expectedStatus, final Exception cause) {
-        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID, PASSTHROUGH_TOKEN))
+        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                     assertThat(exception.getStatusCode()).isEqualTo(expectedStatus);
                     assertThat(exception.getCause()).isSameAs(cause);
