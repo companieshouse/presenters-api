@@ -45,4 +45,33 @@ class PrivateApiClientFactoryTest {
                     .isInstanceOf(IOException.class);
         }
     }
+
+    @Test
+    void createsInternalClientWithInternalBasePath() throws Exception {
+        InternalApiClient apiClient = mock(InternalApiClient.class);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK)
+                    .thenReturn(apiClient);
+
+            InternalApiClient result =
+                    new PrivateApiClientFactory(INTERNAL_API_URL).createInternal();
+
+            assertThat(result).isSameAs(apiClient);
+            verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
+        }
+    }
+
+    @Test
+    void propagatesInternalSdkFailures() {
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK)
+                    .thenThrow(new IllegalStateException("CHS_INTERNAL_API_KEY not set"));
+
+            assertThatThrownBy(() ->
+                    new PrivateApiClientFactory(INTERNAL_API_URL).createInternal())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("CHS_INTERNAL_API_KEY");
+        }
+    }
 }
