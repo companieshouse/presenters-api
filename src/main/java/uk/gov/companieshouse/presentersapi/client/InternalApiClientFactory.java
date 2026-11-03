@@ -29,13 +29,12 @@ public class InternalApiClientFactory {
     }
 
     /**
-     * Creates a client authenticated with the provided ERIC passthrough token.
+     * Creates a private API client that acts on behalf of the calling user by forwarding the
+     * supplied passthrough token. The client's base path is set to the configured internal API URL.
      *
-     * <p>Use this overload for downstream APIs that accept OAuth user-context authorisation.</p>
-     *
-     * @param passthroughToken JSON ERIC passthrough token header value
-     * @return configured internal API client
-     * @throws IOException if the passthrough token cannot be parsed by the SDK
+     * @param passthroughToken the passthrough token supplied by ERIC for the calling user
+     * @return an {@link InternalApiClient} authorised with the passthrough token
+     * @throws IOException if the SDK client cannot be created
      */
     public InternalApiClient create(final String passthroughToken) throws IOException {
         final InternalApiClient apiClient = ApiSdkManager.getPrivateSDK(passthroughToken);
@@ -45,12 +44,10 @@ public class InternalApiClientFactory {
     }
 
     /**
-     * Creates a client authenticated as an internal app using {@code CHS_INTERNAL_API_KEY}.
+     * Creates an internal API client that authenticates as the service itself, rather than on behalf
+     * of a user. The client's base path is set to the configured internal API URL.
      *
-     * <p>Use this overload for downstream APIs/endpoints that require internal-api-key
-     * authentication and reject OAuth passthrough identity types.</p>
-     *
-     * @return configured internal API client
+     * @return an {@link InternalApiClient} using the service's own credentials
      */
     public InternalApiClient create() {
         final InternalApiClient apiClient = ApiSdkManager.getInternalSDK();
