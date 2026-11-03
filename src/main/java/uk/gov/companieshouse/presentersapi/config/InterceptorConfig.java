@@ -2,7 +2,6 @@ package uk.gov.companieshouse.presentersapi.config;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -18,7 +17,6 @@ import uk.gov.companieshouse.presentersapi.interceptor.RequestLoggingInterceptor
  * Configuration class for setting up interceptors in the application.
  */
 @Configuration
-@ComponentScan("uk.gov.companieshouse.presentersapi")
 public class InterceptorConfig implements WebMvcConfigurer {
     @SuppressWarnings("java:S1075") // Suppress SonarQube warning for hardcoded paths
     private static final String BASE_PATH = "/presenters";
