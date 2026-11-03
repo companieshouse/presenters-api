@@ -58,7 +58,7 @@ public class AccountServiceImpl implements AccountService {
             throws URIValidationException {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
         final User user = getUserById(userId);
-        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+        if (user == null || user.getEmail().isBlank()) {
             logger.error("No account email found for user", logMap);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No account email found for user");
         }

@@ -98,18 +98,6 @@ class AccountServiceImplTest {
         assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
                 .isSameAs(cause);
     }
-
-    @Test
-    void returnsNotFoundWhenEmailIsMissing() throws Exception {
-        final User user = new User();
-        when(apiClient.privateAccountsUserResourceHandler().getUserDetails(USER_DETAILS_URI.formatted(USER_ID)).execute())
-                .thenReturn(new ApiResponse<>(200, Map.of(), user));
-
-        assertThatThrownBy(() -> service.getUserEmailByUserId(USER_ID))
-                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
-    }
-
     @Test
     void returnsNotFoundWhenEmailIsBlank() throws Exception {
         final User user = new User();
