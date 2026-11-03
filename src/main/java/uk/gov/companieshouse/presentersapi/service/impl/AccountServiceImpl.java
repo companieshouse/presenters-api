@@ -40,25 +40,25 @@ public class AccountServiceImpl implements AccountService {
         } catch (final URIValidationException exception) {
             logger.errorContext(userId, "Invalid accounts user URI", exception, logMap);
             throw exception;
-        } catch (final ApiErrorResponseException exception) {
-            logger.errorContext(userId, "Accounts API returned an error", exception, logMap);
-            throw new ResponseStatusException(
-                    toHttpStatusCode(exception, userId),
-                    "Accounts API request failed",
-                    exception);
         } catch (final IllegalStateException exception) {
             logger.errorContext(userId, "Accounts API client configuration is unavailable", exception, logMap);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Accounts API is unavailable", exception);
+         } catch (final ApiErrorResponseException exception) {
+				 logger.errorContext(userId, "Accounts API returned an error", exception, logMap);
+				 throw new ResponseStatusException(
+					 toHttpStatusCode(exception, userId),
+					 "Accounts API request failed",
+					 exception);
         }
-    }
+	}
 
     @Override
     public String getUserEmailByUserId(final String userId)
             throws URIValidationException {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
         final User user = getUserById(userId);
-        if (user == null || user.getEmail().isBlank()) {
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
             logger.error("No account email found for user", logMap);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No account email found for user");
         }
