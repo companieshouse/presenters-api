@@ -22,7 +22,7 @@ import uk.gov.companieshouse.api.interceptor.TokenPermissionsInterceptor;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.interceptor.RequestLoggingInterceptor;
 
-@SpringBootTest
+@SpringBootTest(properties = "feature.endpoints-enabled=true")
 class PresentersApiApplicationIT {
 
     @Autowired
