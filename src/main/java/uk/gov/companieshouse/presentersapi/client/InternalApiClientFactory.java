@@ -11,11 +11,11 @@ import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
  * passthrough token supplied by ERIC.
  */
 @Component
-public class PrivateApiClientFactory {
+public class InternalApiClientFactory {
 
     private final String internalApiUrl;
 
-    public PrivateApiClientFactory(@Value("${internal.api.url}") final String internalApiUrl) {
+    public InternalApiClientFactory(@Value("${internal.api.url}") final String internalApiUrl) {
         this.internalApiUrl = internalApiUrl;
     }
 
@@ -26,7 +26,7 @@ public class PrivateApiClientFactory {
         return apiClient;
     }
 
-    public InternalApiClient createInternal() {
+    public InternalApiClient create() {
         final InternalApiClient apiClient = ApiSdkManager.getInternalSDK();
         // ApiSdkManager only sets the public base path; private handlers use this path.
         apiClient.setInternalBasePath(internalApiUrl);

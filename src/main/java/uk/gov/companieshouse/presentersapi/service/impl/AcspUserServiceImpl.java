@@ -12,16 +12,16 @@ import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembershipsList;
 import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 
 @Service
 public class AcspUserServiceImpl implements AcspUserService {
 
-    private final PrivateApiClientFactory apiClientFactory;
+    private final InternalApiClientFactory apiClientFactory;
     private final Logger logger;
 
-    public AcspUserServiceImpl(final PrivateApiClientFactory apiClientFactory, final Logger logger) {
+    public AcspUserServiceImpl(final InternalApiClientFactory apiClientFactory, final Logger logger) {
         this.apiClientFactory = apiClientFactory;
         this.logger = logger;
     }

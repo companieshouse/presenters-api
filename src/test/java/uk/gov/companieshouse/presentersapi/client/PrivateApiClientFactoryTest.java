@@ -27,7 +27,7 @@ class PrivateApiClientFactoryTest {
                     .thenReturn(apiClient);
 
             InternalApiClient result =
-                    new PrivateApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN);
+                    new InternalApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN);
 
             assertThat(result).isSameAs(apiClient);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -41,7 +41,7 @@ class PrivateApiClientFactoryTest {
                     .thenThrow(new IOException("Connection timed out"));
 
             assertThatThrownBy(() ->
-                    new PrivateApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN))
+                    new InternalApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN))
                     .isInstanceOf(IOException.class);
         }
     }
@@ -55,7 +55,7 @@ class PrivateApiClientFactoryTest {
                     .thenReturn(apiClient);
 
             InternalApiClient result =
-                    new PrivateApiClientFactory(INTERNAL_API_URL).createInternal();
+                    new InternalApiClientFactory(INTERNAL_API_URL).create();
 
             assertThat(result).isSameAs(apiClient);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -67,9 +67,9 @@ class PrivateApiClientFactoryTest {
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
             sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenThrow(new IllegalStateException("CHS_INTERNAL_API_KEY not set"));
-            final PrivateApiClientFactory factory = new PrivateApiClientFactory(INTERNAL_API_URL);
+            final InternalApiClientFactory factory = new InternalApiClientFactory(INTERNAL_API_URL);
 
-            assertThatThrownBy(factory::createInternal)
+            assertThatThrownBy(factory::create)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("CHS_INTERNAL_API_KEY");
         }

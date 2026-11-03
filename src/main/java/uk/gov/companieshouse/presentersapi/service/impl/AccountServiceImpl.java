@@ -9,7 +9,7 @@ import uk.gov.companieshouse.api.accounts.user.model.User;
 import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 
 @Service
@@ -19,9 +19,9 @@ public class AccountServiceImpl implements AccountService {
     private static final String USER_DETAILS_URI_TEMPLATE = "/users/%s";
 
     private final Logger logger;
-    private final PrivateApiClientFactory apiClientFactory;
+    private final InternalApiClientFactory apiClientFactory;
 
-    public AccountServiceImpl(final Logger logger, final PrivateApiClientFactory apiClientFactory) {
+    public AccountServiceImpl(final Logger logger, final InternalApiClientFactory apiClientFactory) {
         this.logger = logger;
         this.apiClientFactory = apiClientFactory;
     }
@@ -30,7 +30,7 @@ public class AccountServiceImpl implements AccountService {
     public User getUserById(final String userId) throws URIValidationException {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
         try {
-            final User user = apiClientFactory.createInternal()
+            final User user = apiClientFactory.create()
                     .privateAccountsUserResourceHandler()
                     .getUserDetails(USER_DETAILS_URI_TEMPLATE.formatted(userId))
                     .execute()

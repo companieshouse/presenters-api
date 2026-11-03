@@ -24,14 +24,14 @@ import uk.gov.companieshouse.api.error.ApiErrorResponseException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 
 class AccountServiceImplTest {
 
     private static final String USER_ID = "user-123";
     private static final String USER_DETAILS_URI = "/users/%s";
 
-    private final PrivateApiClientFactory apiClientFactory = mock(PrivateApiClientFactory.class);
+    private final InternalApiClientFactory apiClientFactory = mock(InternalApiClientFactory.class);
     private final Logger logger = mock(Logger.class);
     private final InternalApiClient apiClient = mock(InternalApiClient.class, RETURNS_DEEP_STUBS);
 
@@ -39,7 +39,7 @@ class AccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(apiClientFactory.createInternal()).thenReturn(apiClient);
+        when(apiClientFactory.create()).thenReturn(apiClient);
         service = new AccountServiceImpl(logger, apiClientFactory);
     }
 
@@ -58,7 +58,7 @@ class AccountServiceImplTest {
     @Test
     void mapsClientCreationIoFailuresToBadGateway() {
         final IllegalStateException cause = new IllegalStateException("CHS_INTERNAL_API_KEY not set");
-        when(apiClientFactory.createInternal()).thenThrow(cause);
+        when(apiClientFactory.create()).thenThrow(cause);
 
         assertResponseStatus(HttpStatus.BAD_GATEWAY, cause);
     }

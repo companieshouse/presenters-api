@@ -13,7 +13,7 @@ import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 
 @Service
@@ -22,10 +22,10 @@ public class IndividualUserServiceImpl implements IndividualUserService {
     private static final String IDENTITY_BY_USER_ID_URI = "/verification/identities";
     private static final String UVIDS_BY_IDENTITY_ID_URI = "/verification/identities/%s/uvids";
 
-    private final PrivateApiClientFactory apiClientFactory;
+    private final InternalApiClientFactory apiClientFactory;
     private final Logger logger;
 
-    public IndividualUserServiceImpl(PrivateApiClientFactory apiClientFactory, Logger logger) {
+    public IndividualUserServiceImpl(InternalApiClientFactory apiClientFactory, Logger logger) {
         this.apiClientFactory = apiClientFactory;
         this.logger = logger;
     }
