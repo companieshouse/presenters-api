@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Map;
 import org.springframework.stereotype.Service;
@@ -86,7 +85,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         try {
             final String email = accountService.getUserEmailByUserId(userId);
             return exemptUserService.isExemptUserByEmail(email);
-        } catch (final ResponseStatusException | IOException | URIValidationException exception) {
+        } catch (final ResponseStatusException | URIValidationException exception) {
             logger.errorContext(userId, "Failed to resolve exempt user status; defaulting to non-exempt",
                     exception, logMap);
             return false;
