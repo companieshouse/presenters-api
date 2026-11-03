@@ -27,7 +27,7 @@ import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.api.model.identityverification.PrivateUvidListApi;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 
 class IndividualUserServiceImplTest {
@@ -38,7 +38,7 @@ class IndividualUserServiceImplTest {
 
     private static IndividualUserServiceImpl newService() {
         return new IndividualUserServiceImpl(
-                new PrivateApiClientFactory(INTERNAL_API_URL), mock(Logger.class));
+                new InternalApiClientFactory(INTERNAL_API_URL), mock(Logger.class));
     }
 
     @Test

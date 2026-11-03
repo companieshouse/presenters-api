@@ -12,7 +12,7 @@ import org.mockito.MockedStatic;
 import uk.gov.companieshouse.api.InternalApiClient;
 import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 
-class PrivateApiClientFactoryTest {
+class InternalApiClientFactoryTest {
 
     private static final String INTERNAL_API_URL = "http://api.chs.local:4001";
     private static final String PASSTHROUGH_TOKEN =
