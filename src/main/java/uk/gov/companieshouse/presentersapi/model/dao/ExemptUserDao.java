@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 public class ExemptUserDao {
 
     private static final String EMAIL_FIELD_NAME = "email";
-    private static final String USER_ID_FIELD_NAME = "user_id";
     private static final String ORGANISATION_FIELD_NAME = "organisation";
     private static final String CREATED_AT_FIELD_NAME = "created_at";
     private static final String UPDATED_AT_FIELD_NAME = "updated_at";
@@ -23,9 +22,6 @@ public class ExemptUserDao {
 
     @Field(EMAIL_FIELD_NAME)
     private String email;
-
-    @Field(USER_ID_FIELD_NAME)
-    private String userId;
 
     @Field(ORGANISATION_FIELD_NAME)
     private String organisation;
@@ -61,10 +57,6 @@ public class ExemptUserDao {
         return email;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
     public String getId(){
         return id;
     }
@@ -87,10 +79,6 @@ public class ExemptUserDao {
 
     public void setEmail(String email){
         this.email = email;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 
     public void setId(String id){

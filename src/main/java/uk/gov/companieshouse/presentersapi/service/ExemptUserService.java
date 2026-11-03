@@ -10,13 +10,9 @@ public interface ExemptUserService {
 
     Optional<ExemptUserDao> getExemptUserByEmail(String email);
 
-    Optional<ExemptUserDao> getExemptUserByUserId(String userId);
-
     Optional<ExemptUserDao> getExemptUserById(String id);
 
     boolean isExemptUserByEmail(String email);
-
-    boolean isExemptUserByUserId(String userId);
 
     boolean isExemptUserById(String id);
 }

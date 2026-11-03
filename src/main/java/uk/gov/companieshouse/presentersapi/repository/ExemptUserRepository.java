@@ -11,10 +11,6 @@ public interface ExemptUserRepository extends MongoRepository<ExemptUserDao, Str
 
     Optional<ExemptUserDao> findByEmail(String email);
 
-    Optional<ExemptUserDao> findByUserId(String userId);
-
     boolean existsByEmail(String email);
-
-    boolean existsByUserId(String userId);
 
 }
