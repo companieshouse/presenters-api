@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterDetailsRequestApi;
@@ -12,6 +13,7 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidExcept
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 
 @RestController
+@ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
 public class PresenterDetailsControllerImpl implements PresenterDetailsRequestApi {
 
     private final PresenterDetailsService presenterDetailsService;

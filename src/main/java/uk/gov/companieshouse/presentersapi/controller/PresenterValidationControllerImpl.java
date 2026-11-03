@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterValidationRequestApi;
@@ -12,6 +13,7 @@ import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
 
 @RestController
+@ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
 public class PresenterValidationControllerImpl implements PresenterValidationRequestApi {
 
     private final PresenterValidationService presenterValidationService;

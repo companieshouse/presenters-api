@@ -1,15 +1,18 @@
 # presenters-api
+
 The service provides presenter details and statements for CHS filings.
 
 Configuration
 -------------
-System properties for presenters-api are defined in `application.properties`. These are normally configured per environment.
+System properties for presenters-api are defined in `application.properties`. These are normally configured per
+environment.
 
-Certain form types will be sent by presenters-api to FES while other form types will be emailed to the relevant org unit. Properties relevant to either scenario are labelled accordingly.
+Certain form types will be sent by presenters-api to FES while other form types will be emailed to the relevant org
+unit. Properties relevant to either scenario are labelled accordingly.
 
-| Variable                                     | Description                                                                                                                                 | Example                                             |Mandatory (always, email, FES, local)|
-----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|--------|
- CHS_API_KEY                     | The internal api key for calling internal services                                                            | dummy-key                                  |always
- DOCUMENT_API_LOCAL_URL                        | A URL for calling the Document API. Unused by presenters-api but required by the SDK                                    | dummy-key                                           |always
- INTERNAL_CHS_API_KEY                        | An api key for calling services without an internal privilege constraint                                                       | dummy-internal-key                                  |always
-
+| Variable                       | Description                                                                                                                                                         | Example            | Mandatory (always, email, FES, local) |
+|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|---------------------------------------|
+| CHS_API_KEY                    | The internal api key for calling internal services                                                                                                                  | dummy-key          | always                                |
+| DOCUMENT_API_LOCAL_URL         | A URL for calling the Document API. Unused by presenters-api but required by the SDK                                                                                | dummy-key          | always                                |
+| FEATURE_FLAG_PRESENTERS_230926 | Enables the presenter REST endpoints only when set to `true`. Defaults to `false`; all endpoints are disabled (requests will respond with HTTP 404). Does not affect the healthcheck. | true               | no                                    |
+| INTERNAL_CHS_API_KEY           | An api key for calling services without an internal privilege constraint                                                                                            | dummy-internal-key | always                                |
