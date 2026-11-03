@@ -50,8 +50,8 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         final Map<String, Object> logMap = Map.of(
             "user_id", userId, "form_type", formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
-        // Call out to ExemptUser service
 
+        // Call out to ExemptUser service
         if (isExemptUser(oauthUserId)) {
             presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
         }

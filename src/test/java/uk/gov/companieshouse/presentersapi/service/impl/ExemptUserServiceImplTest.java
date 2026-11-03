@@ -89,6 +89,7 @@ class ExemptUserServiceImplTest {
                 "No Such exempt user with id: ",
                 Map.of("id", "missing-id"));
     }
+
     @Test
     void returnsTrueWhenExemptUserByEmail() {
         when(repository.existsByEmail("test@example.com")).thenReturn(true);
@@ -184,6 +185,7 @@ class ExemptUserServiceImplTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
     }
+
     @Test
     void mapsDataAccessFailureToServiceUnavailableWhenCheckingById() {
         when(repository.existsById("id"))
