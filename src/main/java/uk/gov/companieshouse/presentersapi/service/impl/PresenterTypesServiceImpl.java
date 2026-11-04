@@ -30,6 +30,8 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private final IndividualUserService individualUserService;
     private final Logger logger;
 
+    private static final String USER_ID = "user_id";
+
     // Create a list of Exempt User presenter types for more flexibility
     private static final EnumSet<PresenterType> EXEMPT_USER_PRESENTER_TYPES = EnumSet.of(PresenterType.OFFICIAL_RECEIVER);
 
@@ -52,7 +54,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum));
         final String oauthUserId = RequestHelper.getChsUserId();
         final Map<String, Object> logMap = Map.of(
-            "user_id", userId, "form_type", formType, "presenter_types", presenterTypes.toString());
+            USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
         // Call out to ExemptUser service
@@ -92,7 +94,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     }
 
     private boolean isExemptUser(final String userId) {
-        final Map<String, Object> logMap = Map.of("user_id", userId);
+        final Map<String, Object> logMap = Map.of(USER_ID, userId);
         try {
             final String email = accountService.getUserEmailByUserId(userId);
             return exemptUserService.isExemptUserByEmail(email);
@@ -110,7 +112,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             return true;
         } catch (final ResponseStatusException exception) {
             if (exception.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
-                logger.debugContext(userId, "No verified identity or active UVID found for user", Map.of("user_id", userId));
+                logger.debugContext(userId, "No verified identity or active UVID found for user", Map.of(USER_ID, userId));
                 return false;
             }
             throw exception;
