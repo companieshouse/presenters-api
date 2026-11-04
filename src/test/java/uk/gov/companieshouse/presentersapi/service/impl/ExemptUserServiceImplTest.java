@@ -126,7 +126,6 @@ class ExemptUserServiceImplTest {
         verify(repository).existsById("id");
     }
 
-
     @Test
     void mapsDataAccessFailureToServiceUnavailableWhenGettingByEmail() {
         when(repository.findByEmail("test@example.com"))

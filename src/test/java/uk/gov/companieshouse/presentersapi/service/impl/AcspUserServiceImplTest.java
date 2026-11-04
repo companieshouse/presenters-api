@@ -33,7 +33,7 @@ import uk.gov.companieshouse.api.handler.acspmanageusersapi.request.PrivateAcspM
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.client.PrivateApiClientFactory;
+import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -44,7 +44,7 @@ class AcspUserServiceImplTest {
             "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
     @Mock
-    private PrivateApiClientFactory apiClientFactory;
+    private InternalApiClientFactory apiClientFactory;
     @Mock
     private PrivateAcspManageUsersApiUserAcspMembershipsGet request;
     @Mock

@@ -3,11 +3,14 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 import java.util.Optional;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStatusEnum;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.MembershipStatusEnum;
@@ -23,14 +29,18 @@ import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
+import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
+import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterTypesServiceImpl tests")
 class PresenterTypesServiceImplTest {
 
     private static final String USER_ID = "user123";
+    private static final String USER_EMAIL = "user@example.com";
     private static final String PASSTHROUGH_TOKEN = "passthrough-token";
     private static final String FORM_TYPE_CODE = "AA01";
 
@@ -39,13 +49,26 @@ class PresenterTypesServiceImplTest {
     @Mock
     private AcspUserService acspUserService;
     @Mock
+    private ExemptUserService exemptUserService;
+    @Mock
+    private AccountService accountService;
+    @Mock
     private Logger logger;
+
+    private MockedStatic<RequestHelper> requestHelperMock;
 
     private PresenterTypesServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, logger);
+        requestHelperMock = mockStatic(RequestHelper.class);
+        requestHelperMock.when(RequestHelper::getChsUserId).thenReturn(USER_ID);
+        service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, exemptUserService,accountService, logger);
+    }
+
+    @AfterEach
+    void tearDown() {
+        requestHelperMock.close();
     }
 
     @Test
@@ -148,6 +171,40 @@ class PresenterTypesServiceImplTest {
         verifyNoInteractions(presenterTypeMatrixService, acspUserService);
     }
 
+    @Test
+    @DisplayName("should return OFFICIAL_RECEIVER when user is exempt")
+    void shouldReturnOfficialReceiverWhenUserIsExempt() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+        when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(true);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result, is(EnumSet.of(PresenterType.OFFICIAL_RECEIVER)));
+    }
+    @Test
+    @DisplayName("should not return OFFICIAL_RECEIVER when user is not exempt")
+    void shouldNotReturnOfficialReceiverWhenUserIsNotExempt() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+        when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(false);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+    }
+
+    @Test
+    @DisplayName("should not return OFFICIAL_RECEIVER when exempt lookup fails")
+    void shouldNotReturnOfficialReceiverWhenExemptLookupFails() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(accountService.getUserEmailByUserId(USER_ID))
+                .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Downstream unavailable"));
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+    }
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) {
         when(presenterTypeMatrixService.presenterTypesFor(FormType.from(FORM_TYPE_CODE)))

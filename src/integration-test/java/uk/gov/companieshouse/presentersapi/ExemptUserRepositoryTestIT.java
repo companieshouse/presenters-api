@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.presentersapi.repository;
+package uk.gov.companieshouse.presentersapi;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import uk.gov.companieshouse.presentersapi.TestUtils.ExemptUserTestObjects;
 import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
+import uk.gov.companieshouse.presentersapi.repository.ExemptUserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +59,7 @@ class ExemptUserRepositoryTestIT {
         Optional<ExemptUserDao> exemptUser = repository.findByEmail(exemptUserTestEmail);
 
         assertThat(exemptUser).isNotNull();
+        assertThat(exemptUser.isPresent()).isTrue();
         assertThat(exemptUser.get().getEmail()).isEqualTo(exemptUserTestEmail);
     }
 
@@ -66,6 +68,7 @@ class ExemptUserRepositoryTestIT {
         String objectId = savedExemptUsers.getFirst().getId();
         Optional<ExemptUserDao> exemptUser = repository.findById(objectId);
         assertThat(exemptUser).isNotNull();
+        assertThat(exemptUser.isPresent()).isTrue();
         assertThat(exemptUser.get().getId()).isEqualTo(objectId);
     }
 
