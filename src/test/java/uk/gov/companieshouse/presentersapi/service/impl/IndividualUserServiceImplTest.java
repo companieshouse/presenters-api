@@ -56,12 +56,12 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenReturn(response);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
 
             IndividualUserServiceImpl service = newService();
 
-            Identity identity = service.getIdentityByUserId("user-123", PASSTHROUGH_TOKEN);
+            Identity identity = service.getIdentityByUserId("user-123");
 
             assertThat(identity).isSameAs(expectedIdentity);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -70,15 +70,26 @@ class IndividualUserServiceImplTest {
     }
 
     @Test
-    void mapsIdentityTransportFailuresToBadGateway() {
+    void shouldPreserveSdkStatusWhenIdentityRequestHasTransportFailure() throws Exception {
+        final var apiClient = mock(InternalApiClient.class);
+        final var handler = mock(PrivateIdentityVerificationResourceHandler.class);
+        final var request = mock(PrivateFindIdentityByUserIdGet.class);
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findIdentityByUserId("/verification/identities", "user-123"))
+                .thenReturn(request);
+        final var transportException = ApiErrorResponseException.fromIOException(
+                new IOException("Connection timed out"));
+        when(request.execute()).thenThrow(transportException);
+
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
-                    .thenThrow(new IOException("Connection timed out"));
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getIdentityByUserId("user-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getIdentityByUserId("user-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR))
+                    .hasCause(transportException);
         }
     }
 
@@ -97,11 +108,11 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenThrow(downstreamException);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getIdentityByUserId("user-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getIdentityByUserId("user-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                             assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
         }
@@ -121,11 +132,11 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenThrow(uriException);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getIdentityByUserId("user-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getIdentityByUserId("user-123"))
                     .isSameAs(uriException);
         }
     }
@@ -148,13 +159,13 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenReturn(response);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
 
             IndividualUserServiceImpl service = newService();
 
             Uvid uvid = service.getActiveUvidByIdentityId(
-                    "identity-123", PASSTHROUGH_TOKEN);
+                    "identity-123");
 
             assertThat(uvid).isSameAs(expectedUvid);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -164,16 +175,27 @@ class IndividualUserServiceImplTest {
     }
 
     @Test
-    void mapsTransportFailuresToBadGateway() {
+    void shouldPreserveSdkStatusWhenUvidRequestHasTransportFailure() throws Exception {
+        final var apiClient = mock(InternalApiClient.class);
+        final var handler = mock(PrivateIdentityVerificationResourceHandler.class);
+        final var request = mock(PrivateFindUvidsByIdentityIdGet.class);
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        final var transportException = ApiErrorResponseException.fromIOException(
+                new IOException("Connection timed out"));
+        when(request.execute()).thenThrow(transportException);
+
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
-                    .thenThrow(new IOException("Connection timed out"));
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
             assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
-                    "identity-123", PASSTHROUGH_TOKEN))
+                    "identity-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+                            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR))
+                    .hasCause(transportException);
         }
     }
 
@@ -192,12 +214,11 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenThrow(downstreamException);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
-                    "identity-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId("identity-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                             assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
         }
@@ -233,12 +254,11 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenThrow(uriException);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
-                    "identity-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId("identity-123"))
                     .isSameAs(uriException);
         }
     }
@@ -258,12 +278,11 @@ class IndividualUserServiceImplTest {
         when(request.execute()).thenReturn(response);
 
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
-            sdkManager.when(() -> ApiSdkManager.getPrivateSDK(PASSTHROUGH_TOKEN))
+            sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenReturn(apiClient);
             IndividualUserServiceImpl service = newService();
 
-            assertThatThrownBy(() -> service.getActiveUvidByIdentityId(
-                    "identity-123", PASSTHROUGH_TOKEN))
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId("identity-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                             assertThat(exception.getStatusCode()).isEqualTo(expectedStatus));
         }

@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -31,10 +30,10 @@ public class IndividualUserServiceImpl implements IndividualUserService {
     }
 
     @Override
-    public Identity getIdentityByUserId(String userId, String passthroughToken) throws URIValidationException {
+    public Identity getIdentityByUserId(String userId) throws URIValidationException {
         Map<String, Object> logMap = Map.of("user_id", userId);
         try {
-            InternalApiClient apiClient = apiClientFactory.create(passthroughToken);
+            InternalApiClient apiClient = apiClientFactory.create();
             Identity identity = apiClient.privateIdentityVerificationResourceHandler()
                     .findIdentityByUserId(IDENTITY_BY_USER_ID_URI, userId)
                     .execute()
@@ -50,20 +49,15 @@ public class IndividualUserServiceImpl implements IndividualUserService {
                     HttpStatusCode.valueOf(exception.getStatusCode()),
                     "Identity-verification API request failed",
                     exception);
-        } catch (IOException exception) {
-            logger.errorContext(userId, "Unable to retrieve identity-verification details",
-                    exception, logMap);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Identity-verification API is unavailable", exception);
         }
     }
 
     @Override
-    public Uvid getActiveUvidByIdentityId(String identityId, String passthroughToken)
+    public Uvid getActiveUvidByIdentityId(String identityId)
             throws URIValidationException {
         Map<String, Object> logMap = Map.of("identity_id", identityId);
         try {
-            InternalApiClient apiClient = apiClientFactory.create(passthroughToken);
+            InternalApiClient apiClient = apiClientFactory.create();
             List<Uvid> activeUvids = apiClient.privateIdentityVerificationResourceHandler()
                     .findUvidsByIdentityId(UVIDS_BY_IDENTITY_ID_URI.formatted(identityId), true)
                     .execute()
@@ -92,10 +86,6 @@ public class IndividualUserServiceImpl implements IndividualUserService {
                     HttpStatusCode.valueOf(exception.getStatusCode()),
                     "Identity-verification API request failed",
                     exception);
-        } catch (IOException exception) {
-            logger.errorContext(identityId, "Unable to retrieve active UVID", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Identity-verification API is unavailable", exception);
         }
     }
 }
