@@ -15,13 +15,24 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 /**
  * Handles all validation logic for enum and bimap generation.
  *
+ * <p>In the seven-phase pipeline:
+ *   <ul>
+ *       <li>{@link EnumGenerator#generateEnumsFromSources()} performs
+ * Phase 1 and calls {@link #validateUniqueness(Map, EnumGeneratorConfig.UniquenessValidation, String)}.
+ *       </li>
+ *     <li>This class performs validation Phases 2-6;</li>
+ *     <li>{@link BiMapGenerator#generateBiMapsFromSources()} performs Phase 7.</li>
+ *   </ul>
+ * </p>
+ *
  * <p>Responsibilities:
- * <ul>
- *   <li>Uniqueness validation (VALUES_PER_KEY, VALUES_PER_KEY_SET)
- *   <li>Cross-source reference validation
- *   <li>Key-value conflict detection within and across sources
- *   <li>Value ownership validation (no foreign enum tokens)
- * </ul>
+ *   <ul>
+ *     <li>Uniqueness validation (VALUES_PER_KEY, VALUES_PER_KEY_SET)</li>
+ *     <li>Cross-source reference validation</li>
+ *     <li>Key-value conflict detection within and across sources</li>
+ *     <li>Value ownership validation (no foreign enum tokens)</li>
+ *   </ul>
+ * </p>
  */
 class GeneratorValidator {
     private static final String APP_NAMESPACE = "presenters-api";
@@ -38,7 +49,7 @@ class GeneratorValidator {
         this.generatedEnums = generatedEnums;
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
     // Phase 2: Validate that dictionary keys and values don't overlap within each source file.
     void validateNoKeyValueConflictsWithinSources() throws IOException {
         try {
@@ -76,7 +87,7 @@ class GeneratorValidator {
         );
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
     // Phase 3: Validate that enum values marked for validation in other sources are actually present as keys there.
     void validateReferencedKeysInOtherSources() throws IOException {
         // Map enum names to their definition source files, grouping by enum name
@@ -144,7 +155,7 @@ class GeneratorValidator {
         }
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
     // Phase 4: Validate that dictionary keys and values don't conflict across different enum roles.
     void validateNoValueConflictsAcrossRoles() throws IOException {
         // First pass: collect all keys by enum
@@ -227,7 +238,7 @@ class GeneratorValidator {
     }
 
     /**
-     * Validates uniqueness constraints on a source's dictionary values.
+     * Phase 1: Validates uniqueness constraints during enum extraction by {@link EnumGenerator}.
      *
      * <p>This method enforces uniqueness validation constraints configured in enum-generator-config.yaml:
      *
@@ -299,7 +310,7 @@ class GeneratorValidator {
         );
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
     // Phase 5: Validate that enum values appear only in sources where they are defined with correct roles (no foreign enums).
     void validateNoForeignEnumValuesInSources() throws IOException {
         // Build global value -> owning enum index and enforce single ownership
@@ -338,6 +349,103 @@ class GeneratorValidator {
         } catch (final WrappedIOException e) {
             throw e.unwrap();
         }
+    }
+
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
+    // Phase 6: Require non-empty target mappings for non-excluded source keys with values.
+    void validateNonEmptyValuesInTargets() throws IOException {
+        for (final var source : config.sources().entrySet()) {
+            validateSourceCoverage(source.getKey(), source.getValue());
+        }
+    }
+
+    private void validateSourceCoverage(
+            final String sourceFile, final EnumGeneratorConfig.Source sourceConfig) throws IOException {
+        if (sourceConfig.requireNonEmptyValuesIn().isEmpty()) {
+            return;
+        }
+
+        final var sourceData = GeneratorData.readYamlData(
+            configDir.resolve(sourceFile), sourceConfig.rootKeys());
+        for (final var requirement : sourceConfig.requireNonEmptyValuesIn()) {
+            validateCoverageRequirement(sourceFile, sourceData, requirement);
+        }
+    }
+
+    private void validateCoverageRequirement(
+            final String sourceFile, final Map<String, List<String>> sourceData,
+            final EnumGeneratorConfig.NonEmptyValuesRequirement requirement) throws IOException {
+        final var targetConfig = validateCoverageTarget(config, sourceFile, requirement);
+        final var targetData = GeneratorData.readYamlData(
+            configDir.resolve(requirement.target()), targetConfig.rootKeys());
+
+        warnAboutStaleCoverageExclusions(sourceFile, sourceData, requirement);
+        final var uncovered = findUncoveredKeys(sourceData, targetData, requirement.excludedKeys());
+        if (!uncovered.isEmpty()) {
+            reportUncoveredKeys(sourceFile, requirement.target(), uncovered);
+        }
+    }
+
+    private void warnAboutStaleCoverageExclusions(
+            final String sourceFile, final Map<String, List<String>> sourceData,
+            final EnumGeneratorConfig.NonEmptyValuesRequirement requirement) {
+        for (final var staleKey : staleExcludedKeys(sourceData, requirement.excludedKeys())) {
+            logger.info("  [Warning] Coverage exclusion '" + staleKey + "' in " + sourceFile
+                + " for target " + requirement.target() + " is absent or has no mapped values. "
+                + "The excluded-keys in enum-generator-config.yaml may need updating if '" + staleKey
+                + "' is no longer needed.");
+        }
+    }
+
+    private static Map<String, List<String>> findUncoveredKeys(
+            final Map<String, List<String>> sourceData, final Map<String, List<String>> targetData,
+            final List<String> excludedKeys) {
+        final var uncovered = new LinkedHashMap<String, List<String>>();
+        sourceData.forEach((key, values) -> {
+            if (!values.isEmpty() && !excludedKeys.contains(key)
+                    && (!targetData.containsKey(key) || targetData.get(key).isEmpty())) {
+                uncovered.put(key, values);
+            }
+        });
+        return uncovered;
+    }
+
+    private static void reportUncoveredKeys(
+            final String sourceFile, final String targetFile, final Map<String, List<String>> uncovered) {
+        throw new IllegalStateException(DATA_VALIDATION_ERROR_IN + sourceFile
+            + ": missing non-empty mappings in target " + targetFile + ".\n"
+            + "  Uncovered keys and affected source values: " + uncovered + "\n"
+            + "  To fix: Add non-empty target mappings for these keys, or explicitly exclude "
+            + "business-approved keys using excluded-keys in enum-generator-config.yaml.");
+    }
+
+    // Phase 6 helper, also used before resource generation to validate targets before path remapping.
+    static EnumGeneratorConfig.Source validateCoverageTarget(
+            final EnumGeneratorConfig config, final String sourceFile,
+            final EnumGeneratorConfig.NonEmptyValuesRequirement requirement) {
+        final var target = requirement.target();
+        if (target == null || target.isBlank() || !config.sources().containsKey(target)) {
+            throw new IllegalStateException("Configuration error in " + sourceFile
+                + ": require-non-empty-values-in target '" + target
+                + "' must identify an entry in sources in enum-generator-config.yaml.");
+        }
+        final var sourceConfig = config.sources().get(sourceFile);
+        final var targetConfig = config.sources().get(target);
+        if (sourceConfig.keyEnum() == null || sourceConfig.keyEnum().isBlank()
+                || !sourceConfig.keyEnum().equals(targetConfig.keyEnum())) {
+            throw new IllegalStateException("Configuration error in " + sourceFile
+                + ": coverage target " + target + " must declare the same non-blank key-enum. "
+                + "Source key-enum: " + sourceConfig.keyEnum() + "; target key-enum: " + targetConfig.keyEnum());
+        }
+        return targetConfig;
+    }
+
+    // Phase 6 helper: Identify exclusions that need a reminder because their source keys are absent or empty.
+    static Set<String> staleExcludedKeys(
+            final Map<String, List<String>> sourceData, final List<String> excludedKeys) {
+        return excludedKeys.stream()
+            .filter(key -> !sourceData.containsKey(key) || sourceData.get(key).isEmpty())
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     // Build a global index mapping each enum value to its owning enum type.

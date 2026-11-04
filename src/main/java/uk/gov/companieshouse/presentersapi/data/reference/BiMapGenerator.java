@@ -3,6 +3,7 @@ package uk.gov.companieshouse.presentersapi.data.reference;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.logging.LoggerFactory;
 
@@ -21,15 +22,17 @@ class BiMapGenerator {
     private static final Logger logger = LoggerFactory.getLogger(APP_NAMESPACE);
 
     private final EnumGeneratorConfig config;
+    private final Path configDir;
     private final Path outputDir;
 
-    BiMapGenerator(final EnumGeneratorConfig config, final Path outputDir) {
+    BiMapGenerator(final EnumGeneratorConfig config, final Path configDir, final Path outputDir) {
         this.config = config;
+        this.configDir = configDir;
         this.outputDir = outputDir;
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
-    // Phase 6: Generate BiMap classes for enum pair mappings to enable bidirectional lookups.
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
+    // Phase 7: Generate BiMap classes for enum pair mappings to enable bidirectional lookups.
     void generateBiMapsFromSources() throws IOException {
         try {
             final var biMapPkg = config.outputPackage().bimapPackage();
@@ -64,8 +67,11 @@ class BiMapGenerator {
                         yamlPropertyName,
                         uniquenessValidation
                     );
+                    final var dictionary = GeneratorData.readYamlData(configDir.resolve(sourceFile), sourceConfig.rootKeys());
+                    final var reverseCount = dictionary.values().stream().flatMap(List::stream).distinct().count();
                     writeBiMapFile(outputDir, biMapPkg, biMapClassName, biMapSource);
-                    logger.info("  [Generated] BiMap '" + biMapClassName + "' for " + keyEnumName + " ↔ " + valueEnumName);
+                    logger.info("  [Generated] BiMap '" + biMapClassName + "' for " + keyEnumName
+                        + " (" + dictionary.size() + " keys) ↔ " + valueEnumName + " (" + reverseCount + " values)");
                 } catch (final IOException e) {
                     throw new GeneratorValidator.WrappedIOException(e);
                 }

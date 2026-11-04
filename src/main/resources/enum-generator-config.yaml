@@ -60,6 +60,9 @@
 #   - root-keys: Two binding keys added around the source dictionary in the generated resource
 #   - key-enum: Enum extracted from dictionary keys (drives BiMap generation if present)
 #   - value-enum: Enum extracted from dictionary values (drives BiMap generation if present)
+#   - require-non-empty-values-in: Coverage requirements for keys with mapped values
+#     - target: Exact key of another configured entry in sources
+#     - excluded-keys: Dictionary keys exempt from this requirement (optional)
 #   - enums: Map of enum names to their extraction rules
 #     - location: DICTIONARY_KEYS or DICTIONARY_VALUES
 #     - dictionary-keys-reference: Enum whose values appear as keys in this file (for validation)
@@ -77,6 +80,10 @@ sources:
     root-keys: [form-types-map, by-form-group]
     key-enum: FormGroup
     value-enum: FormType
+    require-non-empty-values-in:
+      - target: ../../../docs/statement-matrix-docs/form-group-to-presenter-types.yaml
+        # These form groups are excluded by business confirmation.
+        excluded-keys: [unmarked, exempt-form]
     enums:
       FormGroup:
         location: DICTIONARY_KEYS

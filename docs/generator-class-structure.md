@@ -119,6 +119,9 @@ classDiagram
         ~validateReferencedKeysInOtherSources() void
         ~validateNoValueConflictsAcrossRoles() void
         ~validateNoForeignEnumValuesInSources() void
+        ~validateNonEmptyValuesInTargets() void
+        ~validateCoverageTarget(...) Source
+        ~staleExcludedKeys(...) Set
         ~validateUniqueness(Map, UniquenessValidation, String) void
     }
 
@@ -134,6 +137,7 @@ classDiagram
         +record Source
         +record EnumDefinition
         +record EnumValidation
+        +record NonEmptyValuesRequirement
         +enum Location
         +enum UniquenessValidation
     }
@@ -171,7 +175,7 @@ classDiagram
 
 ### EnumBiMapGenerator (Orchestrator)
 
-**Role:** Entry point for the build; runs the 6-phase generation and validation pipeline.
+**Role:** Entry point for the build; runs the 7-phase generation and validation pipeline.
 
 - Parses command-line arguments (`<configFile> <outputDir> [resourcesDir]`); YAML source paths in the config are resolved relative
   to the config file's directory
@@ -179,7 +183,7 @@ classDiagram
 - With `resourcesDir`, generates wrapped YAML resources and points the remaining pipeline at those resources
 - Creates `EnumGenerator` and `BiMapGenerator`, and obtains the shared `GeneratorValidator` from
   `EnumGenerator.getValidator()`
-- Runs the phases in order (see [Generation Pipeline](#generation-pipeline-6-phases))
+- Runs the phases in order (see [Generation Pipeline](#generation-pipeline-7-phases))
 
 ### GeneratorData (Shared Data Utilities)
 
@@ -227,7 +231,7 @@ matching conflates distinct codes such as `4.13(NI)` and `413(NI)`, despite thei
 
 ### BiMapGenerator (BiMap Generation)
 
-**Role:** Writes one BiMap class per source that declares both `key-enum` and `value-enum` (Phase 6).
+**Role:** Writes one BiMap class per source that declares both `key-enum` and `value-enum` (Phase 7).
 
 - Names each class `<KeyEnum><ValueEnum>BiMap`, e.g. `FormGroupFormTypeBiMap`
 - Takes the uniqueness mode from the source's `DICTIONARY_VALUES` enum definition in `EnumGeneratorConfig`
@@ -240,7 +244,7 @@ matching conflates distinct codes such as `4.13(NI)` and `413(NI)`, despite thei
 
 ### GeneratorValidator (Data Validation)
 
-**Role:** Checks the data across all YAML sources (Phases 2–5) and enforces uniqueness rules (during Phase 1).
+**Role:** Checks the data across all YAML sources (Phases 2–6) and enforces uniqueness rules (during Phase 1).
 
 | Phase | Method | Checks |
 |-------|--------|--------|
@@ -248,6 +252,7 @@ matching conflates distinct codes such as `4.13(NI)` and `413(NI)`, despite thei
 | 3 | `validateReferencedKeysInOtherSources()` | For enums with `validate-as-keys-in-other-sources: true`, every other source that declares it as its `dictionary-keys-reference` uses only valid values of that enum as keys (logged as `[Auto-discovery]`) |
 | 4 | `validateNoValueConflictsAcrossRoles()` | No value is used as a key for one enum in one file and as a value for a different enum in another |
 | 5 | `validateNoForeignEnumValuesInSources()` | Every key and value in a source belongs to the enum declared for that role (no values from other enums) |
+| 6 | `validateNonEmptyValuesInTargets()` | Non-excluded source keys with values have non-empty mappings in each explicitly configured target |
 
 `validateUniqueness(Map<String, List<String>>, UniquenessValidation, String)` is the static check that enforces
 the uniqueness modes (see [Uniqueness Modes](#uniqueness-modes-uniquenessvalidation)); `EnumGenerator` calls it in
@@ -284,7 +289,10 @@ rethrown outside the stream. `EnumGenerator` and `BiMapGenerator` use the same p
 **Role:** Jackson-bound model of `enum-generator-config.yaml`.
 
 - `OutputPackage` record: `enums`, `bimaps` target packages
-- `Source` record: `root-keys`, `key-enum`, `value-enum`, and an `enums` map of enum name → `EnumDefinition`
+- `Source` record: `root-keys`, `key-enum`, `value-enum`, an `enums` map of enum name → `EnumDefinition`,
+  and an optional `require-non-empty-values-in` list (defaults to empty)
+- `NonEmptyValuesRequirement` record: `target` (an exact key in `sources`) and optional `excluded-keys`
+  (defaults to empty); exclusions apply only to that target
 - `EnumDefinition` record: `location`, `dictionary-keys-reference`, `validation`
 - `EnumValidation` record: `uniqueness` (`UniquenessValidation`), `validate-as-keys-in-other-sources`
 - `Location` enum: `DICTIONARY_KEYS`, `DICTIONARY_VALUES`
@@ -302,9 +310,14 @@ public record GeneratedEnumDef(
 ) {}
 ```
 
-## Generation Pipeline (6 Phases)
+## Generation Pipeline (7 Phases)
 
-Run in this order by `EnumBiMapGenerator.generate()`:
+Run in this order by `EnumBiMapGenerator.generate()`. Before each phase executes, the generator logs
+`Phase X of 7: <phase name>` at debug level; a failed phase prevents later phase messages. During Phase 7,
+each `[Generated] BiMap` message reports forward mappings (dictionary keys,
+including empty mappings) and reverse mappings (distinct dictionary values), matching the runtime summary
+counting semantics, using the format `[Generated] BiMap '<name>' for <KeyEnum> (<count> keys) ↔ <ValueEnum> (<count> values)`.
+These are build-time data counts, not counts of Spring-bound beans:
 
 ```
 Phase 1: EnumGenerator.generateEnumsFromSources()
@@ -322,12 +335,66 @@ Phase 4: GeneratorValidator.validateNoValueConflictsAcrossRoles()
 Phase 5: GeneratorValidator.validateNoForeignEnumValuesInSources()
          └─ Every value belongs to its declared enum
 
-Phase 6: BiMapGenerator.generateBiMapsFromSources()
+Phase 6: GeneratorValidator.validateNonEmptyValuesInTargets()
+         └─ Populated, non-excluded source keys have non-empty target mappings
+
+Phase 7: BiMapGenerator.generateBiMapsFromSources()
          └─ Write a BiMap class for each key-enum/value-enum pair
 ```
 
 Enum files are written in Phase 1, before validation. If a later phase fails, the build fails, so partially
 validated output is never compiled.
+
+## Cross-Source Coverage Validation
+
+**Why Phase 6 was added:** the business requires every `FormType` to map to **at least one `PresenterType`**,
+except those belonging to the explicitly approved `unmarked` and `exempt-form` groups. The existing uniqueness
+and enum-reference checks did not enforce this relationship: a valid FormType could resolve to a FormGroup
+with no presenter mapping. Phase 6 closes that gap by failing generation for missing or empty presenter mappings
+outside the configured exclusions. Its configurable cross-source check supports this requirement without
+prohibiting intentionally empty statement mappings.
+
+Coverage is explicitly configured per source in `enum-generator-config.yaml`. For example:
+
+```yaml
+sources:
+  ../../../docs/statement-matrix-docs/form-group-to-form.yaml:
+    # Existing root-keys, key-enum, value-enum and enums settings omitted here.
+    require-non-empty-values-in:
+      - target: ../../../docs/statement-matrix-docs/form-group-to-presenter-types.yaml
+        excluded-keys: [unmarked, exempt-form]
+```
+
+The containing source supplies the dictionary keys to check. `target` identifies another configured file by its
+exact key in the `sources` map, not a path relative to the containing YAML dictionary. Both entries must declare
+the same non-blank `key-enum`. Missing, blank or unknown targets and incompatible key enums fail generation.
+
+For each source/target pair, Phase 6 checks every non-excluded source key with one or more values. The target
+must contain that key with a non-empty value list. Both absent keys and empty mappings (including null values,
+which are read as empty lists) fail. Empty source mappings are ignored. All uncovered keys and their affected
+source values are reported in one exception per failing pair, in source dictionary order, with both file paths
+and a correction hint. Generation may stop at the first failing pair; BiMap generation does not run afterwards.
+
+For the configured form/presenter pair, runtime lookup runs in reverse from `FormType` to its `FormGroup`, then
+forwards from `FormGroup` to `PresenterType`. Because `VALUES_PER_KEY_SET` gives each FormType exactly one group,
+checking populated group keys guarantees that every FormType outside the exclusions has at least one presenter.
+The business-approved `unmarked` and `exempt-form` exclusions permit those groups to have no presenter mapping.
+For a source using `VALUES_PER_KEY`, the same key-level rule requires every group of a value to be covered,
+which is stricter than requiring coverage through at least one group.
+
+Each target has its own `excluded-keys`. If an excluded key is absent from the source or has no source values,
+generation continues and emits an advisory `[Warning]` reminder that the exclusions in `enum-generator-config.yaml`
+may need updating if that excluded key is no longer needed. This decision depends only on the source, even if the target has values for that key. A
+populated excluded source key does not trigger a reminder merely because target coverage now exists. Reminders
+use `logger.info` because the CH structured-logging `Logger` has no warning-level method.
+
+Sources without coverage requirements retain their existing behaviour. In particular, statement dictionaries
+can intentionally omit keys or contain empty mappings; no coverage rule is enabled for them. Presenter-to-data-object
+coverage is not enabled either.
+
+With the three-argument generator invocation, `YamlResourceGenerator` checks target references before writing
+resources and remaps them to `data/<filename>` alongside source entries, preserving exclusions. The two-argument
+invocation accepts already-wrapped dictionaries and validates the configured references without this remapping.
 
 ## Uniqueness Modes (UniquenessValidation)
 
@@ -537,9 +604,14 @@ target/generated-sources/java/
 - **Unit tests** (`src/test/java/.../data/reference/`, run by Surefire) cover the generator classes: enum
   normalisation and generation, BiMap source generation, YAML reading, and each validation phase.
   `YamlResourceGeneratorTest` also checks wrapping, scalar/list/null conversion, Spring binding, and preservation
-  of all seven documentation dictionaries.
+  of all seven documentation dictionaries, coverage-target remapping and exclusion preservation.
   It also starts a Spring context to verify every form code binds in both directions using the generated
   converters, including `4.13(NI)` and `413(NI)`.
+- `GeneratorValidatorCoverageTest` covers aggregated missing/empty mappings, per-target exclusions, actual
+  stale-exclusion reminders, invalid target/key-enum configuration and missing-file errors. `EnumGeneratorConfigTest`
+  covers YAML parsing and defaults. `EnumBiMapGeneratorTest` exercises coverage success/failure in both invocation
+  modes, absence of BiMap output on failure and phase logging. Real-data coverage is checked by
+  `YamlResourceGeneratorTest` using the configured exclusions.
 - **Integration test** `BiMapBeansIT` (`src/integration-test/java`, run by Failsafe in `verify`) starts the Spring
   context against the real data files. It checks that every BiMap is bound and populated in both directions, that
   returned sets are defensive copies, and that the summary logger reports all of them.

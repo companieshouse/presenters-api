@@ -46,10 +46,13 @@ class BiMapGeneratorTest {
             EnumGeneratorConfig.Location.DICTIONARY_VALUES, null, validation));
     }
 
-    private BiMapGenerator generatorFor(final Map<String, EnumGeneratorConfig.Source> sources, final Path outputDir) {
+    private BiMapGenerator generatorFor(final Map<String, EnumGeneratorConfig.Source> sources, final Path outputDir) throws IOException {
         final var config = new EnumGeneratorConfig(
             new EnumGeneratorConfig.OutputPackage("uk.test.enums", BIMAP_PACKAGE), sources);
-        return new BiMapGenerator(config, outputDir);
+        for (final var sourceFile : sources.keySet()) {
+            Files.writeString(tempDir.resolve(sourceFile), "root:\n  by-group:\n    group: [item]\n");
+        }
+        return new BiMapGenerator(config, tempDir, outputDir);
     }
 
     @Test
@@ -160,7 +163,7 @@ class BiMapGeneratorTest {
     }
 
     @Test
-    void testNoSourcesGeneratesNothing() {
+    void testNoSourcesGeneratesNothing() throws IOException {
         final var generator = generatorFor(Map.of(), tempDir);
 
         assertDoesNotThrow(generator::generateBiMapsFromSources);

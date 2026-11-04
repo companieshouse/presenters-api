@@ -47,7 +47,7 @@ class EnumGenerator {
         return validator;
     }
 
-    // (Part of 6-phase pipeline in EnumBiMapGenerator.generate())
+    // (Part of 7-phase pipeline in EnumBiMapGenerator.generate())
     // Phase 1: Extract enum values from YAML sources, create enums, merge multi-source enums, write enum files.
     void generateEnumsFromSources() throws IOException {
         try {
