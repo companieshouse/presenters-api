@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -117,6 +118,7 @@ class YamlResourceGeneratorTest {
         assertThat(generator.getGeneratedEnums().get("PresenterType").values(), is(expected));
         assertThat(expected.contains("official-receiver"), is(true));
         generator.getValidator().validateReferencedKeysInOtherSources();
+        generator.getValidator().validateNonEmptyValuesInTargets();
     }
 
     @Test
@@ -179,7 +181,13 @@ class YamlResourceGeneratorTest {
             final var resourceName = "data/" + input.getFileName();
             assertThat(GeneratorData.readYamlData(
                 resources().resolve(resourceName), entry.getValue().rootKeys()), is(expected));
-            assertThat(generated.sources().get(resourceName), is(entry.getValue()));
+            final var source = entry.getValue();
+            final var requirements = source.requireNonEmptyValuesIn().stream()
+                .map(requirement -> new EnumGeneratorConfig.NonEmptyValuesRequirement(
+                    "data/" + Path.of(requirement.target()).getFileName(), requirement.excludedKeys()))
+                .toList();
+            assertThat(generated.sources().get(resourceName), is(new EnumGeneratorConfig.Source(
+                source.rootKeys(), source.keyEnum(), source.valueEnum(), source.enums(), requirements)));
         }
         final var imports = new Properties();
         try (final var reader = Files.newBufferedReader(Path.of("src/main/resources/reference-data.properties"))) {
@@ -224,7 +232,8 @@ class YamlResourceGeneratorTest {
     @Test
     void shouldRejectInvalidRootKeys() {
         final var resourcesDir = resources();
-        for (final var keys : List.of(List.<String>of(), List.of("one"), List.of("one", " "),
+        for (final var keys : Arrays.asList(null, Arrays.asList("one", null),
+                List.<String>of(), List.of("one"), List.of("one", " "),
                 List.of("one", "two", "three"))) {
             final var config = config(Map.of("mapping.yaml", source(keys)));
             assertThrows(IllegalStateException.class, () -> YamlResourceGenerator.generate(
@@ -236,11 +245,44 @@ class YamlResourceGeneratorTest {
     void shouldRejectInvalidDictionaryValuesAndEmptyFiles() throws IOException {
         final var config = config(Map.of("mapping.yaml", source(List.of("items-map", "by-group"))));
         final var resourcesDir = resources();
-        for (final var input : List.of("key: 123\n", "key: [valid, 123]\n", "key: {nested: value}\n", "{}\n")) {
+        for (final var input : List.of("key: 123\n", "key: [valid, 123]\n", "key: {nested: value}\n", "{}\n", "null\n")) {
             Files.writeString(tempDir.resolve("mapping.yaml"), input);
             assertThrows(IllegalStateException.class, () -> YamlResourceGenerator.generate(
                 config, tempDir, resourcesDir));
         }
+    }
+
+    @Test
+    void shouldRemapLaterTargetAndPreserveExclusionsWhenGeneratingResources() throws IOException {
+        final var sources = new LinkedHashMap<String, EnumGeneratorConfig.Source>();
+        sources.put("forms.yaml", new EnumGeneratorConfig.Source(List.of("forms", "by-group"), "Group", "Form",
+            Map.of(), List.of(new EnumGeneratorConfig.NonEmptyValuesRequirement("presenters.yaml", List.of("excluded")))));
+        sources.put("presenters.yaml", new EnumGeneratorConfig.Source(
+            List.of("presenters", "by-group"), "Group", "Presenter", Map.of()));
+        Files.writeString(tempDir.resolve("forms.yaml"), "group: [form]\nexcluded: [other-form]\n");
+        Files.writeString(tempDir.resolve("presenters.yaml"), "group: presenter\n");
+
+        final var generated = YamlResourceGenerator.generate(config(sources), tempDir, resources());
+
+        assertThat(generated.sources().get("data/forms.yaml").requireNonEmptyValuesIn(), is(List.of(
+            new EnumGeneratorConfig.NonEmptyValuesRequirement("data/presenters.yaml", List.of("excluded")))));
+        new GeneratorValidator(generated, resources(), Map.of()).validateNonEmptyValuesInTargets();
+    }
+
+    @Test
+    void shouldRejectUnknownCoverageTargetBeforeWritingResources() throws IOException {
+        Files.writeString(tempDir.resolve("forms.yaml"), "group: [form]\n");
+        final var source = new EnumGeneratorConfig.Source(List.of("forms", "by-group"), "Group", "Form", Map.of(),
+            List.of(new EnumGeneratorConfig.NonEmptyValuesRequirement("unknown.yaml", List.of())));
+        final var config = config(Map.of("forms.yaml", source));
+        final var resourcesDir = resources();
+
+        final var exception = assertThrows(IllegalStateException.class,
+            () -> YamlResourceGenerator.generate(config, tempDir, resourcesDir));
+
+        assertThat(exception.getMessage(), containsString("unknown.yaml"));
+        assertThat(exception.getMessage(), containsString("forms.yaml"));
+        assertThat(Files.exists(resourcesDir), is(false));
     }
 
     @Test

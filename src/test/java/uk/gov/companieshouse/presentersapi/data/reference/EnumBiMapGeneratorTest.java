@@ -5,6 +5,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -13,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit test suite for the EnumBiMapGenerator entry point (main) and its full generation pipeline.
@@ -83,6 +89,89 @@ class EnumBiMapGeneratorTest {
         Files.writeString(tempDir.resolve("config.yaml"), CONFIG);
         Files.writeString(tempDir.resolve("groups.yaml"), groupsYaml);
         Files.writeString(tempDir.resolve("others.yaml"), othersYaml);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldFailBeforeBiMapGenerationWhenCoverageIsMissing(final boolean wrapResources) throws Exception {
+        writeInputs(wrapResources ? "g1: i1\ng2: [i2]\n" : GROUPS_YAML,
+            wrapResources ? "g1: o1\n" : OTHERS_YAML);
+        Files.writeString(tempDir.resolve("config.yaml"), CONFIG.replace(
+            "    value-enum: Item", """
+                value-enum: Item
+                require-non-empty-values-in:
+                  - target: others.yaml""".indent(4).stripTrailing()));
+
+        final var arguments = wrapResources
+            ? new String[] {args()[0], out().toString(), tempDir.resolve("resources").toString()} : args();
+        final var exception = assertThrows(IllegalStateException.class, () -> EnumBiMapGenerator.main(arguments));
+
+        assertThat(exception.getMessage(), containsString("groups.yaml"));
+        assertThat(exception.getMessage(), containsString("others.yaml"));
+        assertThat(exception.getMessage(), containsString("g2=[i2]"));
+        assertThat(Files.exists(out().resolve("uk/test/bimaps/GroupItemBiMap.java")), is(false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldGenerateBiMapsWhenMissingCoverageIsExcluded(final boolean wrapResources) throws Exception {
+        writeInputs(wrapResources ? "g1: i1\ng2: [i2]\n" : GROUPS_YAML,
+            wrapResources ? "g1: o1\n" : OTHERS_YAML);
+        Files.writeString(tempDir.resolve("config.yaml"), CONFIG.replace(
+            "    value-enum: Item", """
+                value-enum: Item
+                require-non-empty-values-in:
+                  - target: others.yaml
+                    excluded-keys: [g2]""".indent(4).stripTrailing()));
+
+        final var arguments = wrapResources
+            ? new String[] {args()[0], out().toString(), tempDir.resolve("resources").toString()} : args();
+        EnumBiMapGenerator.main(arguments);
+
+        assertThat(Files.exists(out().resolve("uk/test/bimaps/GroupItemBiMap.java")), is(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldLogEachPhaseBeforeExecutingIt(final boolean failCoverage) throws Exception {
+        writeInputs(GROUPS_YAML, OTHERS_YAML);
+        if (failCoverage) {
+            Files.writeString(tempDir.resolve("config.yaml"), CONFIG.replace("    value-enum: Item",
+                "    value-enum: Item\n    require-non-empty-values-in:\n      - target: others.yaml"));
+        }
+        final var logger = (Logger) LoggerFactory.getLogger("uk.gov");
+        final var appender = new ListAppender<ILoggingEvent>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            final var args = args();
+            if (failCoverage) {
+                assertThrows(IllegalStateException.class, () -> EnumBiMapGenerator.main(args));
+            } else {
+                EnumBiMapGenerator.main(args);
+            }
+            final var phases = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
+                .filter(message -> message.startsWith("Phase ")).toList();
+            final var expected = List.of(
+                "Phase 1 of 7: Generate enums",
+                "Phase 2 of 7: Validate key-value conflicts within sources",
+                "Phase 3 of 7: Validate referenced keys in other sources",
+                "Phase 4 of 7: Validate value conflicts across roles",
+                "Phase 5 of 7: Validate enum value ownership",
+                "Phase 6 of 7: Validate non-empty target mappings",
+                "Phase 7 of 7: Generate BiMaps");
+            assertThat(phases, is(failCoverage ? expected.subList(0, 6) : expected));
+            assertThat(appender.list.stream().map(ILoggingEvent::getFormattedMessage)
+                .anyMatch(message -> message.contains("[Phase 7 summary]")), is(false));
+            final var summaries = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
+                .filter(message -> message.startsWith("  [Generated] BiMap")).toList();
+            assertThat(summaries, is(failCoverage ? List.of() : List.of(
+                "  [Generated] BiMap 'GroupItemBiMap' for Group (2 keys) ↔ Item (2 values)",
+                "  [Generated] BiMap 'GroupOtherBiMap' for Group (1 keys) ↔ Other (1 values)")));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
     }
 
     @Test

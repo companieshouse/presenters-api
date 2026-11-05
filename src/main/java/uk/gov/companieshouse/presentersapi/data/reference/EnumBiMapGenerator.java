@@ -2,6 +2,8 @@ package uk.gov.companieshouse.presentersapi.data.reference;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.logging.LoggerFactory;
 
 /**
  * Generates runtime YAML resources, Java enum classes and bidirectional maps (BiMaps).
@@ -43,13 +45,15 @@ import java.nio.file.Path;
  */
 public class EnumBiMapGenerator {
 
+    private static final Logger logger = LoggerFactory.getLogger("presenters-api");
+
     private final EnumGenerator enumGenerator;
     private final BiMapGenerator biMapGenerator;
     private final GeneratorValidator validator;
 
     private EnumBiMapGenerator(final EnumGeneratorConfig config, final Path configDir, final Path outputDir) {
         this.enumGenerator = new EnumGenerator(config, configDir, outputDir);
-        this.biMapGenerator = new BiMapGenerator(config, outputDir);
+        this.biMapGenerator = new BiMapGenerator(config, configDir, outputDir);
         this.validator = enumGenerator.getValidator();
     }
 
@@ -71,11 +75,19 @@ public class EnumBiMapGenerator {
     }
 
     private void generate() throws IOException {
+        logger.debug("Phase 1 of 7: Generate enums");
         enumGenerator.generateEnumsFromSources();
+        logger.debug("Phase 2 of 7: Validate key-value conflicts within sources");
         validator.validateNoKeyValueConflictsWithinSources();
+        logger.debug("Phase 3 of 7: Validate referenced keys in other sources");
         validator.validateReferencedKeysInOtherSources();
+        logger.debug("Phase 4 of 7: Validate value conflicts across roles");
         validator.validateNoValueConflictsAcrossRoles();
+        logger.debug("Phase 5 of 7: Validate enum value ownership");
         validator.validateNoForeignEnumValuesInSources();
+        logger.debug("Phase 6 of 7: Validate non-empty target mappings");
+        validator.validateNonEmptyValuesInTargets();
+        logger.debug("Phase 7 of 7: Generate BiMaps");
         biMapGenerator.generateBiMapsFromSources();
     }
 
