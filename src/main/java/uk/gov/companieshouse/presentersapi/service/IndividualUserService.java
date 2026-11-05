@@ -9,7 +9,7 @@ import uk.gov.companieshouse.api.identityverification.model.Uvid;
  */
 public interface IndividualUserService {
 
-    Identity getIdentityByUserId(String userId, String passthroughToken) throws URIValidationException;
+    Identity getIdentityByUserId(String userId) throws URIValidationException;
 
-    Uvid getActiveUvidByIdentityId(String identityId, String passthroughToken) throws URIValidationException;
+    Uvid getActiveUvidByIdentityId(String identityId) throws URIValidationException;
 }
