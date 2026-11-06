@@ -33,6 +33,7 @@ class PresenterTypesControllerImplTest {
 
     private static final String ERIC_ACCESS_TOKEN_HEADER = "ERIC-Access-Token";
     private static final String PASSTHROUGH_TOKEN = "passthrough-token";
+    private static final String DEFAULT_USER_ID = "user123";
 
     @Mock
     private PresenterTypesService presenterTypesService;
@@ -46,7 +47,15 @@ class PresenterTypesControllerImplTest {
     void setUp() {
         request = new MockHttpServletRequest();
         request.addHeader(ERIC_ACCESS_TOKEN_HEADER, PASSTHROUGH_TOKEN);
+        setOauth2User(DEFAULT_USER_ID);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+
+    private void setOauth2User(final String userId) {
+        request.removeHeader("ERIC-Identity");
+        request.addHeader("ERIC-Identity", userId);
+        request.removeHeader("ERIC-Identity-Type");
+        request.addHeader("ERIC-Identity-Type", "oauth2");
     }
 
     @AfterEach
@@ -59,7 +68,7 @@ class PresenterTypesControllerImplTest {
     void shouldThrowFormTypeNotFoundException() {
         FormTypeNotFoundException exception = assertThrows(
             FormTypeNotFoundException.class,
-            () -> controller.getPresenterTypes("user123", "formTypeNotFound"));
+            () -> controller.getPresenterTypes("formTypeNotFound"));
 
         assertEquals("Form Type: formTypeNotFound", exception.getMessage());
         verifyNoInteractions(presenterTypesService);
@@ -68,9 +77,10 @@ class PresenterTypesControllerImplTest {
     @Test
     @DisplayName("should throw PresenterNotFoundException when userId is presenterNotFound")
     void shouldThrowPresenterNotFoundException() {
+        setOauth2User("presenterNotFound");
         PresenterNotFoundException exception = assertThrows(
             PresenterNotFoundException.class,
-            () -> controller.getPresenterTypes("presenterNotFound", "AD01"));
+            () -> controller.getPresenterTypes("presenterNotFound"));
 
         assertEquals("Presenter not found with UserId: presenterNotFound", exception.getMessage());
         verifyNoInteractions(presenterTypesService);
@@ -79,9 +89,10 @@ class PresenterTypesControllerImplTest {
     @Test
     @DisplayName("should throw InternalServerError when userId is internalServerError")
     void shouldThrowInternalServerError() {
+        setOauth2User("internalServerError");
         InternalServerError exception = assertThrows(
             InternalServerError.class,
-            () -> controller.getPresenterTypes("internalServerError", "AD01"));
+            () -> controller.getPresenterTypes("AD01"));
 
         assertEquals("An unexpected error occurred while processing the request.", exception.getMessage());
         verifyNoInteractions(presenterTypesService);
@@ -94,7 +105,7 @@ class PresenterTypesControllerImplTest {
         when(presenterTypesService.getPresenterTypes("user123", "AD01", PASSTHROUGH_TOKEN))
             .thenReturn(serviceResponse);
 
-        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("user123", "AD01");
+        ResponseEntity<PresenterTypes> response = controller.getPresenterTypes("AD01");
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -111,7 +122,7 @@ class PresenterTypesControllerImplTest {
 
         ResponseStatusException exception = assertThrows(
             ResponseStatusException.class,
-            () -> controller.getPresenterTypes("user123", "AD01"));
+            () -> controller.getPresenterTypes("AD01"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         verifyNoInteractions(presenterTypesService);

@@ -58,7 +58,7 @@ class PresentersApiApplicationIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/presenters/presenter-type", "/presenters/presenter-details"})
+    @ValueSource(strings = {"/presenters/presenter-types", "/presenters/presenter-details"})
     void shouldApplyLoggingAndPermissionInterceptorsInOrderWhenPresenterRequestHandled(
         final String path
     ) throws Exception {
