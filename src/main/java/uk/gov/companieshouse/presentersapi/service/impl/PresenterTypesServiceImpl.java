@@ -18,7 +18,6 @@ import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
-import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 
 @Service
 public class PresenterTypesServiceImpl implements PresenterTypesService {
@@ -52,15 +51,16 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
         final var formTypeEnum = toFormType(formType);
         final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum));
-        final String oauthUserId = RequestHelper.getChsUserId();
+
         final Map<String, Object> logMap = Map.of(
             USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
         // Call out to ExemptUser service
-        if (isExemptUser(oauthUserId)) {
+        if (isExemptUser(userId)) {
             presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
         }
+
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
             presenterTypes.remove(PresenterType.ACSP);
