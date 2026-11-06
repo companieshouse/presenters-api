@@ -38,7 +38,7 @@ class IndividualUserServiceImplTest {
 
     private static IndividualUserServiceImpl newService() {
         return new IndividualUserServiceImpl(
-                new InternalApiClientFactory(INTERNAL_API_URL), mock(Logger.class));
+                new InternalApiClientFactory(INTERNAL_API_URL, "http://account.chs.local:4001"), mock(Logger.class));
     }
 
     @Test
