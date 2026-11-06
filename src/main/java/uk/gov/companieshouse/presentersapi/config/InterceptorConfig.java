@@ -21,7 +21,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @SuppressWarnings("java:S1075") // Suppress SonarQube warning for hardcoded paths
     private static final String BASE_PATH = "/presenters";
     private static final String VALIDATION_PATH = "%s/validation".formatted(BASE_PATH);
-    private static final String PRESENTER_TYPE_PATH = "%s/presenter-type".formatted(BASE_PATH);
+    private static final String PRESENTER_TYPES_PATH = "%s/presenter-types".formatted(BASE_PATH);
     private static final String PRESENTER_DETAILS_PATH = "%s/presenter-details".formatted(BASE_PATH);
 
     private final Logger logger;
@@ -52,7 +52,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
 
     private void addTokenPermissionsInterceptor(final @NonNull InterceptorRegistry registry) {
         registry.addInterceptor(tokenPermissionsInterceptor())
-                .addPathPatterns(PRESENTER_TYPE_PATH, PRESENTER_DETAILS_PATH)
+                .addPathPatterns(PRESENTER_TYPES_PATH, PRESENTER_DETAILS_PATH)
                 .order(2);
     }
 
@@ -60,11 +60,11 @@ public class InterceptorConfig implements WebMvcConfigurer {
         // Both user_profile and acsp_associations permissions are required
         registry
             .addInterceptor(userProfileInterceptor(httpGetWithReadPermissionsMapping()))
-            .addPathPatterns(PRESENTER_TYPE_PATH, PRESENTER_DETAILS_PATH)
+            .addPathPatterns(PRESENTER_TYPES_PATH, PRESENTER_DETAILS_PATH)
             .order(3);
         registry
             .addInterceptor(acspAssociationsInterceptor(httpGetWithReadPermissionsMapping()))
-            .addPathPatterns(PRESENTER_TYPE_PATH, PRESENTER_DETAILS_PATH)
+            .addPathPatterns(PRESENTER_TYPES_PATH, PRESENTER_DETAILS_PATH)
             .order(4);
     }
 
