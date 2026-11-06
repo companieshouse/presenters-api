@@ -11,6 +11,7 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedExcepti
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 
 @RestController
 @ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
@@ -23,7 +24,9 @@ public class PresenterDetailsControllerImpl implements PresenterDetailsRequestAp
     }
 
     @Override
-    public ResponseEntity<PresenterDetails> getPresenterDetails(String userId, String formType, String presenterType) {
+    public ResponseEntity<PresenterDetails> getPresenterDetails(String formType, String presenterType) {
+
+        final var userId = RequestHelper.getChsUserId();
 
         // Mock scenarios to be removed
         applyMockScenarios(presenterType);
