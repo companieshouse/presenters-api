@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -51,7 +52,8 @@ class RequestHelperTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    void rejectsMissingOrBlankUserId(String userId) {
+    @ValueSource(strings = {" "})
+    void rejectsMissingOrBlankUserId(final String userId) {
         when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
         when(request.getHeader(ERIC_IDENTITY)).thenReturn(userId);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
