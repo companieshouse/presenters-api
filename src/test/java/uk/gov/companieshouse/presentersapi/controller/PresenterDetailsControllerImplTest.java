@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import uk.gov.companieshouse.api.presenters.model.Exempt;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
@@ -41,6 +45,11 @@ class PresenterDetailsControllerImplTest {
 
     @BeforeEach
     void setUp() {
+        final var request = new MockHttpServletRequest();
+        request.addHeader("ERIC-Identity", "user123");
+        request.addHeader("ERIC-Identity-Type", "oauth2");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
         final var testExempt = new Exempt();
         testExempt.setOrganisationName("Test Organisation");
         testExempt.setName("Test Presenter");
@@ -49,6 +58,11 @@ class PresenterDetailsControllerImplTest {
         testPresenterDetails = new PresenterDetails();
         testPresenterDetails.setStatements(List.of("exempt-statement", "delivery-on-behalf-of-firm"));
         testPresenterDetails.setExempt(testExempt);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @Test
@@ -61,7 +75,7 @@ class PresenterDetailsControllerImplTest {
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
             .thenReturn(testPresenterDetails);
 
-        final var response = controller.getPresenterDetails(userId, formType, presenterType);
+        final var response = controller.getPresenterDetails(formType, presenterType);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -77,13 +91,17 @@ class PresenterDetailsControllerImplTest {
     @DisplayName("should pass userId, formType, and presenterType parameters to service")
     void testParametersPassedToService() {
         final var userId = "user456";
+        final var request = new MockHttpServletRequest();
+        request.addHeader("ERIC-Identity", userId);
+        request.addHeader("ERIC-Identity-Type", "oauth2");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         final var formType = "form-xyz";
         final var presenterType = "corporate-officer-employee";
 
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
             .thenReturn(testPresenterDetails);
 
-        controller.getPresenterDetails(userId, formType, presenterType);
+        controller.getPresenterDetails(formType, presenterType);
 
         verify(presenterDetailsService).getPresenterDetails(userId, formType, presenterType);
     }
@@ -94,7 +112,7 @@ class PresenterDetailsControllerImplTest {
         when(presenterDetailsService.getPresenterDetails(anyString(), anyString(), anyString()))
             .thenReturn(testPresenterDetails);
 
-        final var response = controller.getPresenterDetails("user123", "form-abc", "officer-employee");
+        final var response = controller.getPresenterDetails("form-abc", "officer-employee");
 
         assertNotNull(response);
         assertNotNull(response.getBody());
@@ -108,7 +126,7 @@ class PresenterDetailsControllerImplTest {
     void shouldThrowPresenterTypeNotValidException() {
         PresenterTypeNotValidException exception = assertThrows(
             PresenterTypeNotValidException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotValid"));
+            () -> controller.getPresenterDetails("form-abc", "presenterTypeNotValid"));
 
         assertEquals("Presenter Type is not valid for Form Type", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
@@ -119,7 +137,7 @@ class PresenterDetailsControllerImplTest {
     void shouldThrowPresenterNotVerifiedException() {
         PresenterNotVerifiedException exception = assertThrows(
             PresenterNotVerifiedException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotVerified"));
+            () -> controller.getPresenterDetails("form-abc", "presenterTypeNotVerified"));
 
         assertEquals("User has not completed their identity verification", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
@@ -130,7 +148,7 @@ class PresenterDetailsControllerImplTest {
     void shouldThrowPresenterNotValidAcspException() {
         PresenterNotValidAcspException exception = assertThrows(
             PresenterNotValidAcspException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterNotValidAcsp"));
+            () -> controller.getPresenterDetails("form-abc", "presenterNotValidAcsp"));
 
         assertEquals("User is not associated with an ACSP", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
@@ -141,7 +159,7 @@ class PresenterDetailsControllerImplTest {
     void shouldThrowPresenterNotFoundException() {
         PresenterNotFoundException exception = assertThrows(
             PresenterNotFoundException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterNotFound"));
+            () -> controller.getPresenterDetails("form-abc", "presenterNotFound"));
 
         assertEquals("User not found", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
@@ -152,7 +170,7 @@ class PresenterDetailsControllerImplTest {
     void shouldThrowPresenterTypeNotFoundException() {
         PresenterTypeNotFoundException exception = assertThrows(
             PresenterTypeNotFoundException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotFound"));
+            () -> controller.getPresenterDetails("form-abc", "presenterTypeNotFound"));
 
         assertEquals("presenter type not found", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
