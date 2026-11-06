@@ -29,14 +29,14 @@ public final class RequestHelper {
      * Retrieves the CHS User ID from the request bound to the current thread.
      *
      * @return the CHS User ID
-     * @throws ResponseStatusException with status 401 if the user is not an OAuth2 user or the user ID is blank
+     * @throws ResponseStatusException with status 401 if the user is not an OAuth2 user or the user ID is missing or blank
      * @throws IllegalStateException   if no request is bound to the current thread
      */
     public static String getChsUserId() {
         HttpServletRequest request = currentRequest();
         String userId = AuthorisationUtil.getAuthorisedIdentity(request);
 
-        if (!AuthorisationUtil.isOauth2User(request) || userId.isBlank()) {
+        if (!AuthorisationUtil.isOauth2User(request) || userId == null || userId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "An OAuth2 user is required");
         }
 
