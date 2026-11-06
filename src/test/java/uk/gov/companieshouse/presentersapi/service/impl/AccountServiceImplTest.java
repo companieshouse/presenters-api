@@ -39,7 +39,7 @@ class AccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(apiClientFactory.create()).thenReturn(apiClient);
+        when(apiClientFactory.createAccountClient()).thenReturn(apiClient);
         service = new AccountServiceImpl(logger, apiClientFactory);
     }
 
@@ -58,7 +58,7 @@ class AccountServiceImplTest {
     @Test
     void mapsClientCreationIoFailuresToBadGateway() {
         final IllegalStateException cause = new IllegalStateException("CHS_INTERNAL_API_KEY not set");
-        when(apiClientFactory.create()).thenThrow(cause);
+        when(apiClientFactory.createAccountClient()).thenThrow(cause);
 
         assertResponseStatus(HttpStatus.BAD_GATEWAY, cause);
     }

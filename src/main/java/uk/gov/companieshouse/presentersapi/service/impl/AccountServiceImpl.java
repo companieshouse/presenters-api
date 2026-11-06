@@ -30,7 +30,7 @@ public class AccountServiceImpl implements AccountService {
     public User getUserById(final String userId) throws URIValidationException {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
         try {
-            final User user = apiClientFactory.create()
+            final User user = apiClientFactory.createAccountClient()
                     .privateAccountsUserResourceHandler()
                     .getUserDetails(USER_DETAILS_URI_TEMPLATE.formatted(userId))
                     .execute()
