@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -47,10 +49,11 @@ class RequestHelperTest {
                 .hasMessageContaining("An OAuth2 user is required");
     }
 
-    @Test
-    void rejectsBlankUserId() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void rejectsMissingOrBlankUserId(String userId) {
         when(request.getHeader(ERIC_IDENTITY_TYPE)).thenReturn("oauth2");
-        when(request.getHeader(ERIC_IDENTITY)).thenReturn(" ");
+        when(request.getHeader(ERIC_IDENTITY)).thenReturn(userId);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         assertThatThrownBy(RequestHelper::getChsUserId)
