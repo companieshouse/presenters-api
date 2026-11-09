@@ -2,11 +2,16 @@ package uk.gov.companieshouse.presentersapi.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.IOException;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import uk.gov.companieshouse.api.InternalApiClient;
@@ -15,6 +20,7 @@ import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 class InternalApiClientFactoryTest {
 
     private static final String INTERNAL_API_URL = "http://api.chs.local:4001";
+    private static final String ACCOUNT_API_URL = "http://account.chs.local:4001";
     private static final String PASSTHROUGH_TOKEN =
             "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
@@ -27,7 +33,7 @@ class InternalApiClientFactoryTest {
                     .thenReturn(apiClient);
 
             InternalApiClient result =
-                    new InternalApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN);
+                    new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL).create(PASSTHROUGH_TOKEN);
 
             assertThat(result).isSameAs(apiClient);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -41,7 +47,7 @@ class InternalApiClientFactoryTest {
                     .thenThrow(new IOException("Connection timed out"));
 
             assertThatThrownBy(() ->
-                    new InternalApiClientFactory(INTERNAL_API_URL).create(PASSTHROUGH_TOKEN))
+                    new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL).create(PASSTHROUGH_TOKEN))
                     .isInstanceOf(IOException.class);
         }
     }
@@ -55,7 +61,7 @@ class InternalApiClientFactoryTest {
                     .thenReturn(apiClient);
 
             InternalApiClient result =
-                    new InternalApiClientFactory(INTERNAL_API_URL).create();
+                    new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL).create();
 
             assertThat(result).isSameAs(apiClient);
             verify(apiClient).setInternalBasePath(INTERNAL_API_URL);
@@ -67,11 +73,40 @@ class InternalApiClientFactoryTest {
         try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
             sdkManager.when(ApiSdkManager::getInternalSDK)
                     .thenThrow(new IllegalStateException("CHS_INTERNAL_API_KEY not set"));
-            final InternalApiClientFactory factory = new InternalApiClientFactory(INTERNAL_API_URL);
+            final InternalApiClientFactory factory = new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL);
 
             assertThatThrownBy(factory::create)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("CHS_INTERNAL_API_KEY");
+        }
+    }
+
+    @Test
+    void shouldUseAccountBasePathWhenCreatingAccountClient() {
+        final var apiClient = mock(InternalApiClient.class);
+
+        try (final var sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
+            final var factory = new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL);
+
+            final var result = factory.createAccountClient();
+
+            MatcherAssert.assertThat(result, is(sameInstance(apiClient)));
+            verify(apiClient).setInternalBasePath(ACCOUNT_API_URL);
+            verifyNoMoreInteractions(apiClient);
+        }
+    }
+
+    @Test
+    void shouldPropagateSdkFailureWhenCreatingAccountClient() {
+        final var cause = new IllegalStateException("CHS_INTERNAL_API_KEY not set");
+        try (final var sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenThrow(cause);
+            final var factory = new InternalApiClientFactory(INTERNAL_API_URL, ACCOUNT_API_URL);
+
+            final var exception = assertThrows(IllegalStateException.class, factory::createAccountClient);
+
+            MatcherAssert.assertThat(exception, is(sameInstance(cause)));
         }
     }
 }

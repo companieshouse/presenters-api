@@ -9,23 +9,28 @@ import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 /**
  * Creates {@link InternalApiClient} instances for both supported authentication modes.
  *
- * <p>This factory intentionally overloads {@code create(...)} so callers can select the correct
- * downstream authentication behaviour for each API:</p>
+ * <p>Callers can select the correct downstream authentication behaviour and base URL for each API:</p>
  * <ul>
  *     <li>{@link #create(String)}: uses ERIC OAuth passthrough context via
  *     {@link ApiSdkManager#getPrivateSDK(String)} for APIs that authorise user-context calls.</li>
  *     <li>{@link #create()}: uses internal API-key context via
  *     {@link ApiSdkManager#getInternalSDK()} for APIs that require internal-app authentication
  *     rather than OAuth passthrough.</li>
+ *     <li>{@link #createAccountClient()}: uses internal API-key context via
+ *     {@link ApiSdkManager#getInternalSDK()} with the configured Account API URL for account
+ *     user lookups.</li>
  * </ul>
  */
 @Component
 public class InternalApiClientFactory {
 
     private final String internalApiUrl;
+    private final String accountsApiUrl;
 
-    public InternalApiClientFactory(@Value("${internal.api.url}") final String internalApiUrl) {
+    public InternalApiClientFactory(@Value("${internal.api.url}") final String internalApiUrl,
+            @Value("${accounts.api.url}") final String accountsApiUrl) {
         this.internalApiUrl = internalApiUrl;
+        this.accountsApiUrl = accountsApiUrl;
     }
 
     /**
@@ -54,5 +59,16 @@ public class InternalApiClientFactory {
         // ApiSdkManager only sets the public base path; private handlers use this path.
         apiClient.setInternalBasePath(internalApiUrl);
         return apiClient;
+    }
+
+    /**
+     * Creates an internal API client using the service's own credentials and the Accounts API URL.
+     *
+     * @return an {@link InternalApiClient} configured for Accounts API requests
+     */
+    public InternalApiClient createAccountClient() {
+        final var internalApiClient = ApiSdkManager.getInternalSDK();
+        internalApiClient.setInternalBasePath(accountsApiUrl);
+        return internalApiClient;
     }
 }
