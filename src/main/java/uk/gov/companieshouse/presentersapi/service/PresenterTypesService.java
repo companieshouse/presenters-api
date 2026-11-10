@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service;
 
 import java.util.EnumSet;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.service.ServiceResult;
 
 public interface PresenterTypesService {
 
@@ -17,5 +18,5 @@ public interface PresenterTypesService {
      * @return the available presenter types
      * @throws uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException if the form type is unknown
      */
-    EnumSet<PresenterType> getPresenterTypes(String userId, String formType, String passthroughToken);
+    ServiceResult<EnumSet<PresenterType>> getPresenterTypes(String userId, String formType, String passthroughToken);
 }

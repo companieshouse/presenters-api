@@ -4,12 +4,13 @@ import org.springframework.stereotype.Service;
 import uk.gov.companieshouse.api.presenters.model.ValidationRequest;
 import uk.gov.companieshouse.api.presenters.model.ValidationResponse;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
+import uk.gov.companieshouse.service.ServiceResult;
 
 @Service
 public class PresenterValidationServiceImpl implements PresenterValidationService {
 
     @Override
-    public ValidationResponse validatePresenterDetails(ValidationRequest validationRequest) {
+    public ServiceResult<ValidationResponse> validatePresenterDetails(ValidationRequest validationRequest) {
 
         ValidationResponse validationResponse = new ValidationResponse();
 
@@ -22,6 +23,6 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
             validationResponse.setReason("Statement form type mismatch");
         }
 
-        return validationResponse;
+        return ServiceResult.found(validationResponse);
     }
 }

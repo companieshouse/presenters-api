@@ -11,12 +11,13 @@ import uk.gov.companieshouse.api.presenters.model.PersonName;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.service.ServiceResult;
 
 @Service
 public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
     @Override
-    public PresenterDetails getPresenterDetails(String userId, String formType, String presenterType) {
+    public ServiceResult<PresenterDetails> getPresenterDetails(String userId, String formType, String presenterType) {
 
         PresenterDetails presenterDetails = new PresenterDetails();
 
@@ -79,6 +80,6 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
             default -> throw new PresenterTypeNotFoundException(
                 String.format("Presenter Type: %s is not found", presenterType));
         }
-        return presenterDetails;
+        return ServiceResult.found(presenterDetails);
     }
 }

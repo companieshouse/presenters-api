@@ -61,7 +61,7 @@ class InterceptorConfigTest {
     }
 
     private static Stream<Arguments> interceptorRegistrations() {
-        final var permissionPaths = List.of("/presenters/presenter-type", "/presenters/presenter-details");
+        final var permissionPaths = List.of("/presenters/presenter-types", "/presenters/presenter-details");
         return Stream.of(
             Arguments.of(0, RequestLoggingInterceptor.class, List.of("/presenters/**")),
             Arguments.of(1, InternalUserInterceptor.class, List.of("/presenters/validation")),

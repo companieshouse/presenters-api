@@ -27,10 +27,11 @@ class PresenterValidationServiceImplTest {
     @Test
     @DisplayName("should return valid response")
     void testValidatePresenterDetailsReturnsValid() {
-        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+        final var result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertEquals(ValidationResponse.ResultEnum.VALID, result.getResult());
+        final var data = result.getData();
+        assertEquals(ValidationResponse.ResultEnum.VALID, data.getResult());
     }
 
     @Test
@@ -38,11 +39,12 @@ class PresenterValidationServiceImplTest {
     void testValidatePresenterDetailsReturnsInvalidForAd02() {
         validationRequest.setFormType("AD02");
 
-        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+        final var result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertEquals(ValidationResponse.ResultEnum.INVALID, result.getResult());
-        assertEquals("Statement form type mismatch", result.getReason());
+        final var data = result.getData();
+        assertEquals(ValidationResponse.ResultEnum.INVALID, data.getResult());
+        assertEquals("Statement form type mismatch", data.getReason());
     }
 
     @Test
@@ -50,11 +52,12 @@ class PresenterValidationServiceImplTest {
     void testValidatePresenterDetailsReturnsEmptyForUnsupportedFormType() {
         validationRequest.setFormType("AA01");
 
-        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+        final var result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertNull(result.getResult());
-        assertNull(result.getReason());
+        final var data = result.getData();
+        assertNull(data.getResult());
+        assertNull(data.getReason());
     }
 
     @Test
@@ -62,10 +65,11 @@ class PresenterValidationServiceImplTest {
     void testValidatePresenterDetailsReturnsEmptyForNullFormType() {
         validationRequest.setFormType(null);
 
-        ValidationResponse result = service.validatePresenterDetails(validationRequest);
+        final var result = service.validatePresenterDetails(validationRequest);
 
         assertNotNull(result);
-        assertNull(result.getResult());
-        assertNull(result.getReason());
+        final var data = result.getData();
+        assertNull(data.getResult());
+        assertNull(data.getReason());
     }
 }

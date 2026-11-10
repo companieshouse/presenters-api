@@ -1,10 +1,9 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -18,14 +17,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import uk.gov.companieshouse.api.presenters.model.Exempt;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
-import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.ServiceResultStatus;
+import uk.gov.companieshouse.service.rest.err.Err;
+import uk.gov.companieshouse.service.rest.response.ChResponseBody;
+import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterDetailsControllerImpl tests")
@@ -33,6 +33,9 @@ class PresenterDetailsControllerImplTest {
 
     @Mock
     private PresenterDetailsService presenterDetailsService;
+
+    @Mock
+    private PluggableResponseEntityFactory responseEntityFactory;
 
     @InjectMocks
     private PresenterDetailsControllerImpl controller;
@@ -52,109 +55,89 @@ class PresenterDetailsControllerImplTest {
     }
 
     @Test
-    @DisplayName("should return presenter details with status 200")
-    void testGetPresenterDetailsSuccess() {
-        final var userId = "user123";
+    @DisplayName("should return presenter details from the service result")
+    void shouldReturnPresenterDetailsFromServiceResult() {
         final var formType = "form-abc";
         final var presenterType = "officer-employee";
+        final ResponseEntity<ChResponseBody<PresenterDetails>> expectedResponse = ResponseEntity.ok().build();
 
-        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
+        when(presenterDetailsService.getPresenterDetails(null, formType, presenterType))
+            .thenReturn(ServiceResult.found(testPresenterDetails));
+        when(responseEntityFactory.<PresenterDetails>createResponse(any())).thenReturn(expectedResponse);
 
-        final var response = controller.getPresenterDetails(userId, formType, presenterType);
+        final var actualResponse = controller.getPresenterDetails(formType, presenterType);
 
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().getStatements().size());
-        assertNotNull(response.getBody().getExempt());
-
-        verify(presenterDetailsService, times(1))
-            .getPresenterDetails(userId, formType, presenterType);
+        assertThat(actualResponse.getStatusCode(), is(HttpStatus.OK));
+        assertThat(actualResponse, is(expectedResponse));
+        verify(presenterDetailsService).getPresenterDetails(null, formType, presenterType);
+        verify(responseEntityFactory).createResponse(argThat((ServiceResult<PresenterDetails> result) ->
+            result.getStatus() == ServiceResultStatus.FOUND
+                && result.getData().getStatements().equals(List.of("exempt-statement", "delivery-on-behalf-of-firm"))
+                && result.getData().getExempt().getOrganisationName().equals("Test Organisation")));
     }
 
     @Test
-    @DisplayName("should pass userId, formType, and presenterType parameters to service")
-    void testParametersPassedToService() {
-        final var userId = "user456";
-        final var formType = "form-xyz";
-        final var presenterType = "corporate-officer-employee";
+    @DisplayName("should return an invalid response for an unsupported presenter type")
+    void shouldReturnInvalidResponseForUnsupportedPresenterType() {
+        final var error = Err.invalidBodyBuilderWithLocation("presenter_type")
+            .withError("Presenter Type not supported")
+            .addErrorValue("presenter_type", "presenterTypeNotValid")
+            .build();
 
-        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
-
-        controller.getPresenterDetails(userId, formType, presenterType);
-
-        verify(presenterDetailsService).getPresenterDetails(userId, formType, presenterType);
+        assertInvalidMockScenario("presenterTypeNotValid", error);
     }
 
     @Test
-    @DisplayName("should return response entity with presenter details")
-    void testResponseEntityStructure() {
-        when(presenterDetailsService.getPresenterDetails(anyString(), anyString(), anyString()))
-            .thenReturn(testPresenterDetails);
+    @DisplayName("should return an invalid response when identity verification is incomplete")
+    void shouldReturnInvalidResponseWhenIdentityVerificationIsIncomplete() {
+        final var error = Err.invalidBodyBuilderWithLocation("user_identity_verification")
+            .withError("User identity verification not completed")
+            .build();
 
-        final var response = controller.getPresenterDetails("user123", "form-abc", "officer-employee");
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody().getStatements());
-        assertNotNull(response.getBody().getExempt());
+        assertInvalidMockScenario("presenterTypeNotVerified", error);
     }
 
     @Test
-    @DisplayName("should throw PresenterTypeNotValidException for presenterTypeNotValid")
-    void shouldThrowPresenterTypeNotValidException() {
-        PresenterTypeNotValidException exception = assertThrows(
-            PresenterTypeNotValidException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotValid"));
+    @DisplayName("should return an invalid response when the user is not associated with an ACSP")
+    void shouldReturnInvalidResponseWhenUserIsNotAssociatedWithAcsp() {
+        final var error = Err.invalidBodyBuilderWithLocation("ascsp_association")
+            .withError("User is not associated with an ACSP")
+            .build();
 
-        assertEquals("Presenter Type is not valid for Form Type", exception.getMessage());
+        assertInvalidMockScenario("presenterNotValidAcsp", error);
+    }
+
+    @Test
+    @DisplayName("should return an invalid response when the user is not found")
+    void shouldReturnInvalidResponseWhenUserIsNotFound() {
+        final var error = Err.invalidBodyBuilderWithLocation("user_not_found")
+            .withError("User not found")
+            .build();
+
+        assertInvalidMockScenario("presenterNotFound", error);
+    }
+
+    @Test
+    @DisplayName("should return an invalid response for a presenter type that is not found")
+    void shouldReturnInvalidResponseForPresenterTypeThatIsNotFound() {
+        final var error = Err.invalidBodyBuilderWithLocation("presenter_type")
+            .withError("Presenter Type not supported")
+            .addErrorValue("presenter_type", "presenterTypeNotFound")
+            .build();
+
+        assertInvalidMockScenario("presenterTypeNotFound", error);
+    }
+
+    private void assertInvalidMockScenario(final String presenterType, final Err expectedError) {
+        final ResponseEntity<ChResponseBody<PresenterDetails>> expectedResponse = ResponseEntity.badRequest().build();
+
+        when(responseEntityFactory.<PresenterDetails>createResponse(any())).thenReturn(expectedResponse);
+
+        final var actualResponse = controller.getPresenterDetails("form-abc", presenterType);
+
+        assertThat(actualResponse, is(expectedResponse));
         verifyNoInteractions(presenterDetailsService);
-    }
-
-    @Test
-    @DisplayName("should throw PresenterNotVerifiedException for presenterTypeNotVerified")
-    void shouldThrowPresenterNotVerifiedException() {
-        PresenterNotVerifiedException exception = assertThrows(
-            PresenterNotVerifiedException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotVerified"));
-
-        assertEquals("User has not completed their identity verification", exception.getMessage());
-        verifyNoInteractions(presenterDetailsService);
-    }
-
-    @Test
-    @DisplayName("should throw PresenterNotValidAcspException for presenterNotValidAcsp")
-    void shouldThrowPresenterNotValidAcspException() {
-        PresenterNotValidAcspException exception = assertThrows(
-            PresenterNotValidAcspException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterNotValidAcsp"));
-
-        assertEquals("User is not associated with an ACSP", exception.getMessage());
-        verifyNoInteractions(presenterDetailsService);
-    }
-
-    @Test
-    @DisplayName("should throw PresenterNotFoundException for presenterNotFound")
-    void shouldThrowPresenterNotFoundException() {
-        PresenterNotFoundException exception = assertThrows(
-            PresenterNotFoundException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterNotFound"));
-
-        assertEquals("User not found", exception.getMessage());
-        verifyNoInteractions(presenterDetailsService);
-    }
-
-    @Test
-    @DisplayName("should throw PresenterTypeNotFoundException for presenterTypeNotFound")
-    void shouldThrowPresenterTypeNotFoundException() {
-        PresenterTypeNotFoundException exception = assertThrows(
-            PresenterTypeNotFoundException.class,
-            () -> controller.getPresenterDetails("user123", "form-abc", "presenterTypeNotFound"));
-
-        assertEquals("presenter type not found", exception.getMessage());
-        verifyNoInteractions(presenterDetailsService);
+        verify(responseEntityFactory).createResponse(argThat((ServiceResult<PresenterDetails> result) ->
+            result.getErrors().containsError(expectedError)));
     }
 }
