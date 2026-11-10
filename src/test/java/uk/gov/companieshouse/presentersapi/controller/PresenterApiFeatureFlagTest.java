@@ -64,7 +64,7 @@ class PresenterApiFeatureFlagTest {
 
             assertThat(paths, is(List.of(
                 "/presenters/presenter-details",
-                "/presenters/presenter-type",
+                "/presenters/presenter-types",
                 "/presenters/validation"
             )));
         });
@@ -81,7 +81,7 @@ class PresenterApiFeatureFlagTest {
 
             final var mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
             mockMvc.perform(get("/presenters/presenter-details")).andExpect(status().isNotFound());
-            mockMvc.perform(get("/presenters/presenter-type")).andExpect(status().isNotFound());
+            mockMvc.perform(get("/presenters/presenter-types")).andExpect(status().isNotFound());
             mockMvc.perform(post("/presenters/validation")
                 .contentType("application/json").content("{}")).andExpect(status().isNotFound());
         });

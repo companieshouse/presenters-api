@@ -3,7 +3,7 @@ package uk.gov.companieshouse.presentersapi.controller;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import uk.gov.companieshouse.api.presenters.api.PresenterTypeRequestApi;
+import uk.gov.companieshouse.api.presenters.api.PresenterTypesRequestApi;
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
@@ -14,7 +14,7 @@ import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 
 @RestController
 @ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
-public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
+public class PresenterTypesControllerImpl implements PresenterTypesRequestApi {
 
     private final PresenterTypesService presenterTypesService;
 
@@ -23,8 +23,9 @@ public class PresenterTypesControllerImpl implements PresenterTypeRequestApi {
     }
 
     @Override
-    public ResponseEntity<PresenterTypes> getPresenterTypes(String userId, String formType) {
+    public ResponseEntity<PresenterTypes> getPresenterTypes(String formType) {
 
+        final var userId = RequestHelper.getChsUserId();
         final var passthroughToken = RequestHelper.requirePassthroughToken();
 
         // Mock scenarios to be removed
