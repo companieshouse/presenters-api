@@ -11,30 +11,34 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException
 import uk.gov.companieshouse.presentersapi.exception.PresenterValidationException;
 import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.response.ChResponseBody;
+import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @RestController
 @ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
 public class PresenterValidationControllerImpl implements PresenterValidationRequestApi {
 
     private final PresenterValidationService presenterValidationService;
+    private final PluggableResponseEntityFactory responseEntityFactory;
 
-    public PresenterValidationControllerImpl(final PresenterValidationService presenterValidationService) {
+    public PresenterValidationControllerImpl(final PresenterValidationService presenterValidationService, final PluggableResponseEntityFactory responseEntityFactory) {
         this.presenterValidationService = presenterValidationService;
+        this.responseEntityFactory = responseEntityFactory;
     }
 
     @Override
-    public ResponseEntity<ValidationResponse> validatePresenterDetails(@Valid ValidationRequest validationRequest) {
+    public ResponseEntity<ChResponseBody<ValidationResponse>> validatePresenterDetails(@Valid final ValidationRequest validationRequest) {
 
         // Mock scenarios to be removed
         applyMockScenarios(validationRequest);
 
-        ValidationResponse validationResponse =
-            presenterValidationService.validatePresenterDetails(validationRequest);
+        final var validationResponse = presenterValidationService.validatePresenterDetails(validationRequest);
 
-        return ResponseEntity.ok(validationResponse);
+        return responseEntityFactory.createResponse(ServiceResult.found(validationResponse));
     }
 
-    private static void applyMockScenarios(ValidationRequest validationRequest) {
+    private static void applyMockScenarios(final ValidationRequest validationRequest) {
 
         if (validationRequest.getStatementIds().contains("statementNotFound")) {
             throw new StatementNotFoundException("Statement not valid statement");
