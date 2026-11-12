@@ -28,6 +28,7 @@
         <!-- CH-dependencies -->
         <ch-dependency-bom.version>0.1.40</ch-dependency-bom.version>
         <ch-test-bom.version>0.1.40</ch-test-bom.version>
+        <rest-service-common-library.version>2.0.16</rest-service-common-library.version>
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
@@ -69,7 +70,7 @@
             <dependency>
                 <groupId>uk.gov.companieshouse</groupId>
                 <artifactId>rest-service-common-library</artifactId>
-                <version>unversioned</version>
+                <version>${rest-service-common-library.version}</version>
             </dependency>
 
             <!--Spring dependencies-->
