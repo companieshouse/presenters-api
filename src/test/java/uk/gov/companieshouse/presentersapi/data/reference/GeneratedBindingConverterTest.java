@@ -26,7 +26,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.FileSystemResource;
-import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 
 class GeneratedBindingConverterTest {
 
@@ -132,7 +131,7 @@ class GeneratedBindingConverterTest {
 
             final var failure = assertThrows(InvocationTargetException.class,
                 () -> converterType.getMethod("convert", String.class).invoke(converter, code));
-            assertInvalidCodeFailure(failure, FormTypeNotFoundException.class, "Form Type: " + code);
+            assertInvalidCodeFailure(failure, IllegalArgumentException.class, "Unknown FormType: " + code);
         }
     }
 
@@ -142,8 +141,8 @@ class GeneratedBindingConverterTest {
 
         try (final var loader = classLoader()) {
             runner(loader).run(context -> assertInvalidCodeFailure(context.getStartupFailure(),
-                                                                   FormTypeNotFoundException.class,
-                                                                   "Form Type: unknown"));
+                                                                   IllegalArgumentException.class,
+                                                                   "Unknown FormType: unknown"));
         }
     }
 

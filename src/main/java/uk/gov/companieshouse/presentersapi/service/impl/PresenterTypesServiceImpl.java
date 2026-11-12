@@ -12,6 +12,7 @@ import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
@@ -79,7 +80,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     }
 
     private static FormType toFormType(final String formType) {
-        return FormType.from(formType);
+        return FormType.find(formType).orElseThrow(() -> new FormTypeNotFoundException("Form Type: " + formType));
     }
 
     private boolean isValidAcsp(final String userId, final String passthroughToken) {

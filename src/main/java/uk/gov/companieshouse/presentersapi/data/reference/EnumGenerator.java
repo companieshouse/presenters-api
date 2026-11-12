@@ -153,10 +153,11 @@ class EnumGenerator {
 
                 @Override
                 public %s convert(final String source) {
-                    return %s.from(source);
+                    return %s.find(source)
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown %s: " + source));
                 }
             }
-            """.formatted(pkg, enumName, enumName, enumName, enumName);
+            """.formatted(pkg, enumName, enumName, enumName, enumName, enumName);
     }
 
     static String buildEnumSource(final String pkg, final String enumName, final Set<String> codes, final Set<String> sourceFiles) {
@@ -183,17 +184,15 @@ class EnumGenerator {
         final var constantsBlock = constantToCode.entrySet().stream()
                                                   .map(e -> "    " + e.getKey() + "(\"" + GeneratorData.escapeForJavaStringLiteral(e.getValue()) + "\")")
                                                   .collect(java.util.stream.Collectors.joining(",\n"));
-        final var lookupFailure = lookupFailureFor(enumName);
 
         return """
             package %s;
 
-            import com.fasterxml.jackson.annotation.JsonCreator;
             import com.fasterxml.jackson.annotation.JsonValue;
-            %s
 
             import java.util.Arrays;
             import java.util.Map;
+            import java.util.Optional;
             import java.util.function.Function;
             import java.util.stream.Collectors;
 
@@ -214,46 +213,26 @@ class EnumGenerator {
                 private static final Map<String, %s> BY_CODE =
                     Arrays.stream(values()).collect(Collectors.toUnmodifiableMap(%s::code, Function.identity()));
 
-                @JsonCreator
-                public static %s from(String v) {
-                    final var e = BY_CODE.get(v);
-                    if (e == null) throw new %s("%s" + v);
-                    return e;
+                /**
+                 * Looks up a constant by its code without throwing.
+                 *
+                 * @param v the code to look up, may be null
+                 * @return the matching constant, or empty when v is null or unknown
+                 */
+                public static Optional<%s> find(String v) {
+                    return Optional.ofNullable(v).map(BY_CODE::get);
                 }
             }
             """.formatted(
             pkg,
-            lookupFailure.importStatement(),
             enumName,
             constantsBlock,
             enumName,
             enumName,
             enumName,
-            enumName,
-            lookupFailure.exceptionType(),
-            lookupFailure.messagePrefix()
+            enumName
         );
     }
-
-    private static LookupFailure lookupFailureFor(final String enumName) {
-        return switch (enumName) {
-            case "FormType" -> new LookupFailure(
-                "FormTypeNotFoundException", "Form Type: ",
-                "import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;");
-            case "PresenterType" -> new LookupFailure(
-                "PresenterTypeNotFoundException", "Presenter Type: ",
-                "import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;");
-            case "DataObjectType" -> new LookupFailure(
-                "DataObjectTypeNotFoundException", "Data Object Type: ",
-                "import uk.gov.companieshouse.presentersapi.exception.DataObjectTypeNotFoundException;");
-            case "DeliveryStatementType", "VerificationStatementType", "AssociationStatementType" -> new LookupFailure(
-                "StatementNotFoundException", "Statement: ",
-                "import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;");
-            default -> new LookupFailure("IllegalArgumentException", "Unknown " + enumName + ": ", "");
-        };
-    }
-
-    private record LookupFailure(String exceptionType, String messagePrefix, String importStatement) {}
 
     static String toEnumConstant(final String raw) {
         var s = raw.trim().toUpperCase(java.util.Locale.ROOT);

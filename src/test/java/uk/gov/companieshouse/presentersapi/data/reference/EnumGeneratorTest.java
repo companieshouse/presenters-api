@@ -133,12 +133,12 @@ class EnumGeneratorTest {
                   result, containsString("PSC01(\"PSC01\")"));
         assertThat("Generated code should include JSON serialization annotation",
                   result, containsString("@JsonValue"));
-        assertThat("Generated code should include JSON deserialization annotation",
-                  result, containsString("@JsonCreator"));
         assertThat("Generated code should include code getter method",
                   result, containsString("public String code()"));
-        assertThat("Generated code should include from() factory method",
-                  result, containsString("public static FormType from(String v)"));
+        assertThat("Generated code should include non-throwing find() lookup",
+                  result, containsString("public static Optional<FormType> find(String v)"));
+        assertThat("Generated code should import Optional",
+                  result, containsString("import java.util.Optional;"));
     }
 
     @Test
@@ -199,7 +199,7 @@ class EnumGeneratorTest {
         assertThat(source, containsString("@Component"));
         assertThat(source, containsString("@ConfigurationPropertiesBinding"));
         assertThat(source, containsString("class FormTypeBindingConverter implements Converter<String, FormType>"));
-        assertThat(source, containsString("return FormType.from(source);"));
+        assertThat(source, containsString("return FormType.find(source)"));
     }
 
     @Test
@@ -215,43 +215,20 @@ class EnumGeneratorTest {
     }
 
     @Test
-    void testBuildEnumSourceFromMethodThrowsOnUnknownCode() {
+    void testBuildEnumSourceFindMethodIsNullSafe() {
         final var codes = new LinkedHashSet<>(Set.of("AD01"));
-        final var sourceFiles = Set.of("test.yaml");
 
-        final var result = EnumGenerator.buildEnumSource("uk.test", "TestEnum", codes, sourceFiles);
+        final var result = EnumGenerator.buildEnumSource("uk.test", "TestEnum", codes, Set.of("test.yaml"));
 
-        // Assert - verify generated from() method includes error handling
-        assertThat("Generated from() method should throw IllegalArgumentException for unknown values",
-                  result, containsString("IllegalArgumentException"));
-        assertThat("Error message should indicate unknown value",
-                  result, containsString("Unknown"));
+        assertThat(result, containsString("Optional.ofNullable(v).map(BY_CODE::get)"));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "FormType,FormTypeNotFoundException",
-        "PresenterType,PresenterTypeNotFoundException",
-        "DataObjectType,DataObjectTypeNotFoundException",
-        "DeliveryStatementType,StatementNotFoundException",
-        "VerificationStatementType,StatementNotFoundException",
-        "AssociationStatementType,StatementNotFoundException"
-    })
-    void testBuildEnumSourceUsesDedicatedLookupException(
-            final String enumName, final String exceptionType) {
-        final var codes = new LinkedHashSet<>(Set.of("AD01"));
-        final var source = EnumGenerator.buildEnumSource("uk.test", enumName, codes, Set.of("test.yaml"));
-        final var messagePrefix = switch (enumName) {
-            case "FormType" -> "Form Type: ";
-            case "PresenterType" -> "Presenter Type: ";
-            case "DataObjectType" -> "Data Object Type: ";
-            default -> "Statement: ";
-        };
+    @Test
+    void testBuildBindingConverterRejectsUnknownCodes() {
+        final var source = EnumGenerator.buildBindingConverterSource("uk.test.enums", "FormType");
 
-        assertThat(source, containsString("import uk.gov.companieshouse.presentersapi.exception." + exceptionType + ";"));
-        assertThat(source, containsString("if (e == null) throw new " + exceptionType + "(\"" + messagePrefix + "\" + v);"));
+        assertThat(source, containsString("new IllegalArgumentException(\"Unknown FormType: \" + source)"));
     }
-
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 3: Edge Cases and Error Scenarios
