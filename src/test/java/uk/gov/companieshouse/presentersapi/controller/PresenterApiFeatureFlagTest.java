@@ -24,6 +24,7 @@ import org.springframework.core.io.support.ResourcePropertySource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
@@ -115,7 +116,7 @@ class PresenterApiFeatureFlagTest {
     @TestConfiguration(proxyBeanMethods = false)
     @EnableWebMvc
     @Import({PresenterDetailsControllerImpl.class, PresenterTypesControllerImpl.class,
-        PresenterValidationControllerImpl.class})
+        PresenterValidationControllerImpl.class, ResponseEntityFactoryConfig.class})
     static class ControllerConfiguration {
     }
 }

@@ -29,8 +29,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
 
 /**
- * Unit tests for the generated BiMap constructors, covering the paths the Spring-bound data never takes:
- * no bound map, an empty value set, and the VALUES_PER_KEY_SET duplicate-value check.
+ * Unit tests for generated BiMap lookups, entry counts, and constructor edge cases.
  * Relies on the BiMaps produced from enum-generator-config.yaml.
  */
 class GeneratedBiMapsTest {
@@ -108,6 +107,86 @@ class GeneratedBiMapsTest {
         final var biMap = new FormGroupFormTypeBiMap(data);
 
         assertThat(biMap.formGroupFor(forms[1]), org.hamcrest.CoreMatchers.is(GROUP_2));
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForFormGroupFormTypeBiMap() {
+        final var forms = FormType.values();
+        final var biMap = new FormGroupFormTypeBiMap(Map.of(
+            GROUP_1, EnumSet.of(forms[0], forms[1]),
+            GROUP_2, EnumSet.of(forms[2])
+        ));
+        assertThat(biMap.formTypesFor(GROUP_1), contains(forms[0], forms[1]));
+        assertThat(biMap.formGroupFor(forms[2]), is(GROUP_2));
+        assertEntryCounts(biMap, 2, 3);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForFormGroupPresenterTypeBiMap() {
+        final var biMap = new FormGroupPresenterTypeBiMap(valueUnderBothFormGroups(PRESENTER));
+        assertThat(biMap.presenterTypesFor(GROUP_1), contains(PRESENTER));
+        assertThat(biMap.formGroupsFor(PRESENTER), contains(GROUP_1, GROUP_2));
+        assertEntryCounts(biMap, 2, 1);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForFormGroupDeliveryStatementTypeBiMap() {
+        final var deliveryStatement = DeliveryStatementType.values()[0];
+        final var biMap = new FormGroupDeliveryStatementTypeBiMap(valueUnderBothFormGroups(deliveryStatement));
+        assertThat(biMap.deliveryStatementTypesFor(GROUP_1), contains(deliveryStatement));
+        assertThat(biMap.formGroupsFor(deliveryStatement), contains(GROUP_1, GROUP_2));
+        assertEntryCounts(biMap, 2, 1);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForPresenterTypeDeliveryStatementTypeBiMap() {
+        final var deliveryStatement = DeliveryStatementType.values()[0];
+        final var biMap = new PresenterTypeDeliveryStatementTypeBiMap(valueUnderPresenter(deliveryStatement));
+        assertThat(biMap.deliveryStatementTypesFor(PRESENTER), contains(deliveryStatement));
+        assertThat(biMap.presenterTypesFor(deliveryStatement), contains(PRESENTER));
+        assertEntryCounts(biMap, 1, 1);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForPresenterTypeVerificationStatementTypeBiMap() {
+        final var verificationStatement = VerificationStatementType.values()[0];
+        final var biMap = new PresenterTypeVerificationStatementTypeBiMap(valueUnderPresenter(verificationStatement));
+        assertThat(biMap.verificationStatementTypesFor(PRESENTER), contains(verificationStatement));
+        assertThat(biMap.presenterTypesFor(verificationStatement), contains(PRESENTER));
+        assertEntryCounts(biMap, 1, 1);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForPresenterTypeAssociationStatementTypeBiMap() {
+        final var associationStatement = AssociationStatementType.values()[0];
+        final var biMap = new PresenterTypeAssociationStatementTypeBiMap(valueUnderPresenter(associationStatement));
+        assertThat(biMap.associationStatementTypesFor(PRESENTER), contains(associationStatement));
+        assertThat(biMap.presenterTypesFor(associationStatement), contains(PRESENTER));
+        assertEntryCounts(biMap, 1, 1);
+    }
+
+    @Test
+    void shouldPopulateLookupsAndEntryCountsForPresenterTypeDataObjectTypeBiMap() {
+        final var dataObject = DataObjectType.values()[0];
+        final var biMap = new PresenterTypeDataObjectTypeBiMap(valueUnderPresenter(dataObject));
+        assertThat(biMap.dataObjectTypesFor(PRESENTER), contains(dataObject));
+        assertThat(biMap.presenterTypesFor(dataObject), contains(PRESENTER));
+        assertEntryCounts(biMap, 1, 1);
+    }
+
+    private static <V extends Enum<V>> Map<FormGroup, Set<V>> valueUnderBothFormGroups(final V value) {
+        return Map.of(GROUP_1, EnumSet.of(value), GROUP_2, EnumSet.of(value));
+    }
+
+    private static <V extends Enum<V>> Map<PresenterType, Set<V>> valueUnderPresenter(final V value) {
+        return Map.of(PRESENTER, EnumSet.of(value));
+    }
+
+    private static void assertEntryCounts(
+        final ReferenceBiMap biMap, final int expectedForwardCount, final int expectedReverseCount
+    ) {
+        assertThat("Forward entry count", biMap.forwardEntryCount(), is(expectedForwardCount));
+        assertThat("Reverse entry count", biMap.reverseEntryCount(), is(expectedReverseCount));
     }
 
     // ── VALUES_PER_KEY (plural reverse mapping) ──

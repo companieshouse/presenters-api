@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -24,12 +23,14 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import uk.gov.companieshouse.api.presenters.model.Exempt;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
+import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterDetailsControllerImpl tests")
@@ -38,10 +39,12 @@ class PresenterDetailsControllerImplTest {
     @Mock
     private PresenterDetailsService presenterDetailsService;
 
-    @InjectMocks
     private PresenterDetailsControllerImpl controller;
 
     private PresenterDetails testPresenterDetails;
+
+    private final PluggableResponseEntityFactory responseEntityFactory =
+        new ResponseEntityFactoryConfig().createResponseFactory();
 
     @BeforeEach
     void setUp() {
@@ -58,6 +61,7 @@ class PresenterDetailsControllerImplTest {
         testPresenterDetails = new PresenterDetails();
         testPresenterDetails.setStatements(List.of("exempt-statement", "delivery-on-behalf-of-firm"));
         testPresenterDetails.setExempt(testExempt);
+        controller = new PresenterDetailsControllerImpl(presenterDetailsService, responseEntityFactory);
     }
 
     @AfterEach
@@ -66,7 +70,7 @@ class PresenterDetailsControllerImplTest {
     }
 
     @Test
-    @DisplayName("should return presenter details with status 200")
+    @DisplayName("should return presenter details with HTTP 200")
     void testGetPresenterDetailsSuccess() {
         final var userId = "user123";
         final var formType = "form-abc";
@@ -80,8 +84,8 @@ class PresenterDetailsControllerImplTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().getStatements().size());
-        assertNotNull(response.getBody().getExempt());
+        assertEquals(2, response.getBody().getSuccessBody().getStatements().size());
+        assertNotNull(response.getBody().getSuccessBody().getExempt());
 
         verify(presenterDetailsService, times(1))
             .getPresenterDetails(userId, formType, presenterType);
@@ -117,14 +121,14 @@ class PresenterDetailsControllerImplTest {
         assertNotNull(response);
         assertNotNull(response.getBody());
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody().getStatements());
-        assertNotNull(response.getBody().getExempt());
+        assertNotNull(response.getBody().getSuccessBody().getStatements());
+        assertNotNull(response.getBody().getSuccessBody().getExempt());
     }
 
     @Test
     @DisplayName("should throw PresenterTypeNotValidException for presenterTypeNotValid")
     void shouldThrowPresenterTypeNotValidException() {
-        PresenterTypeNotValidException exception = assertThrows(
+        final var exception = assertThrows(
             PresenterTypeNotValidException.class,
             () -> controller.getPresenterDetails("form-abc", "presenterTypeNotValid"));
 
@@ -135,7 +139,7 @@ class PresenterDetailsControllerImplTest {
     @Test
     @DisplayName("should throw PresenterNotVerifiedException for presenterTypeNotVerified")
     void shouldThrowPresenterNotVerifiedException() {
-        PresenterNotVerifiedException exception = assertThrows(
+        final var exception = assertThrows(
             PresenterNotVerifiedException.class,
             () -> controller.getPresenterDetails("form-abc", "presenterTypeNotVerified"));
 
@@ -146,7 +150,7 @@ class PresenterDetailsControllerImplTest {
     @Test
     @DisplayName("should throw PresenterNotValidAcspException for presenterNotValidAcsp")
     void shouldThrowPresenterNotValidAcspException() {
-        PresenterNotValidAcspException exception = assertThrows(
+        final var exception = assertThrows(
             PresenterNotValidAcspException.class,
             () -> controller.getPresenterDetails("form-abc", "presenterNotValidAcsp"));
 
@@ -157,7 +161,7 @@ class PresenterDetailsControllerImplTest {
     @Test
     @DisplayName("should throw PresenterNotFoundException for presenterNotFound")
     void shouldThrowPresenterNotFoundException() {
-        PresenterNotFoundException exception = assertThrows(
+        final var exception = assertThrows(
             PresenterNotFoundException.class,
             () -> controller.getPresenterDetails("form-abc", "presenterNotFound"));
 
@@ -168,7 +172,7 @@ class PresenterDetailsControllerImplTest {
     @Test
     @DisplayName("should throw PresenterTypeNotFoundException for presenterTypeNotFound")
     void shouldThrowPresenterTypeNotFoundException() {
-        PresenterTypeNotFoundException exception = assertThrows(
+        final var exception = assertThrows(
             PresenterTypeNotFoundException.class,
             () -> controller.getPresenterDetails("form-abc", "presenterTypeNotFound"));
 

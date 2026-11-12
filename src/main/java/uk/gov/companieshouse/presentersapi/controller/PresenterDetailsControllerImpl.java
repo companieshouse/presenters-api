@@ -12,31 +12,36 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundExcept
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.response.ChResponseBody;
+import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @RestController
 @ConditionalOnProperty(prefix = "feature", name = "endpoints-enabled", havingValue = "true")
 public class PresenterDetailsControllerImpl implements PresenterDetailsRequestApi {
 
     private final PresenterDetailsService presenterDetailsService;
+    private final PluggableResponseEntityFactory responseEntityFactory;
 
-    public PresenterDetailsControllerImpl(final PresenterDetailsService presenterDetailsService) {
+    public PresenterDetailsControllerImpl(final PresenterDetailsService presenterDetailsService, final PluggableResponseEntityFactory responseEntityFactory) {
         this.presenterDetailsService = presenterDetailsService;
+        this.responseEntityFactory = responseEntityFactory;
     }
 
     @Override
-    public ResponseEntity<PresenterDetails> getPresenterDetails(String formType, String presenterType) {
+    public ResponseEntity<ChResponseBody<PresenterDetails>> getPresenterDetails(final String formType, final String presenterType) {
 
         final var userId = RequestHelper.getChsUserId();
 
         // Mock scenarios to be removed
         applyMockScenarios(presenterType);
 
-        PresenterDetails presenterDetails = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
+        final var presenterDetails = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
 
-        return ResponseEntity.ok(presenterDetails);
+        return responseEntityFactory.createResponse(ServiceResult.found(presenterDetails));
     }
 
-    private static void applyMockScenarios(String presenterType) {
+    private static void applyMockScenarios(final String presenterType) {
 
         if ("presenterTypeNotValid".equals(presenterType)) {
             throw new PresenterTypeNotValidException("Presenter Type is not valid for Form Type");
