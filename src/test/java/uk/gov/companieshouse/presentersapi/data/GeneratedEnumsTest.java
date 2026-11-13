@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -28,7 +29,7 @@ class GeneratedEnumsTest {
 
     static class GeneratedEnums implements ArgumentsProvider {
         @Override
-        public Stream<? extends Arguments> provideArguments(final ParameterDeclarations parameters, final ExtensionContext context) {
+        public @NonNull Stream<? extends Arguments> provideArguments(final @NonNull ParameterDeclarations parameters, final @NonNull ExtensionContext context) {
             return Stream.of(
                 enumArguments("FormGroup", FormGroup.values(), FormGroup::find, FormGroup::code),
                 enumArguments("FormType", FormType.values(), FormType::find, FormType::code),
@@ -51,28 +52,14 @@ class GeneratedEnumsTest {
 
     @ParameterizedTest(name = "{0}")
     @ArgumentsSource(GeneratedEnums.class)
-    <E extends Enum<E>> void shouldFindSameConstantWhenLookingUpItsCode(
+    <E extends Enum<E>> void shouldFindKnownCodesAndReturnEmptyForUnknownOrNull(
             final String name, final E[] constants, final Function<String, Optional<E>> find,
             final Function<E, String> code) {
         assertThat(constants.length > 0, is(true));
         for (final var constant : constants) {
             assertThat(find.apply(code.apply(constant)), is(Optional.of(constant)));
         }
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @ArgumentsSource(GeneratedEnums.class)
-    <E extends Enum<E>> void shouldReturnEmptyWhenCodeIsUnknown(
-            final String name, final E[] constants, final Function<String, Optional<E>> find,
-            final Function<E, String> code) {
         assertThat(find.apply("no-such-code"), is(Optional.empty()));
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @ArgumentsSource(GeneratedEnums.class)
-    <E extends Enum<E>> void shouldReturnEmptyWhenCodeIsNull(
-            final String name, final E[] constants, final Function<String, Optional<E>> find,
-            final Function<E, String> code) {
         assertThat(find.apply(null), is(Optional.empty()));
     }
 }

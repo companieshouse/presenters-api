@@ -128,9 +128,10 @@ class GeneratedBindingConverterTest {
         try (final var loader = classLoader()) {
             final var converterType = loader.loadClass(PACKAGE + ".enums.FormTypeBindingConverter");
             final var converter = converterType.getConstructor().newInstance();
+            final var convert = converterType.getMethod("convert", String.class);
 
             final var failure = assertThrows(InvocationTargetException.class,
-                () -> converterType.getMethod("convert", String.class).invoke(converter, code));
+                () -> convert.invoke(converter, code));
             assertInvalidCodeFailure(failure, IllegalArgumentException.class, "Unknown FormType: " + code);
         }
     }

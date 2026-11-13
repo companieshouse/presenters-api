@@ -390,9 +390,12 @@ class GeneratorValidatorPhasesTest {
             "validateDictionaryKeysMatch", Map.class, Set.class, String.class, Path.class, boolean.class, Set.class);
         method.setAccessible(true);
         final Map<String, Set<String>> yamlData = Map.of("bad", Set.of("x"));
+        final var allowed = Set.of("good");
+        final var file = tempDir.resolve("f.yaml");
+        final var sources = Set.of("keys.yaml");
 
         final var thrown = assertThrows(java.lang.reflect.InvocationTargetException.class,
-            () -> method.invoke(null, yamlData, Set.of("good"), "Group", tempDir.resolve("f.yaml"), false, Set.of("keys.yaml")));
+            () -> method.invoke(null, yamlData, allowed, "Group", file, false, sources));
 
         final var message = thrown.getCause().getMessage();
         assertThat(message, containsString("invalid value(s)"));
