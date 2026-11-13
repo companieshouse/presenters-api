@@ -50,106 +50,106 @@ class BiMapBeansIT {
 
     @Test
     void shouldPopulateFormGroupFormTypeInBothDirectionsWhenContextStarts() {
-        assertThat(formGroupFormType.formTypesFor(FormGroup.from("self-delivery")),
-            containsInAnyOrder(FormType.from("DS01"), FormType.from("LL DS01"), FormType.from("ACSP01-Sole")));
-        assertThat(formGroupFormType.formGroupFor(FormType.from("DS01")), is(FormGroup.from("self-delivery")));
-        assertThat(formGroupFormType.formGroupFor(FormType.from("PSC01")), is(FormGroup.from("firm-delivery")));
+        assertThat(formGroupFormType.formTypesFor(FormGroup.find("self-delivery").orElseThrow()),
+            containsInAnyOrder(FormType.find("DS01").orElseThrow(), FormType.find("LL DS01").orElseThrow(), FormType.find("ACSP01-Sole").orElseThrow()));
+        assertThat(formGroupFormType.formGroupFor(FormType.find("DS01").orElseThrow()), is(FormGroup.find("self-delivery").orElseThrow()));
+        assertThat(formGroupFormType.formGroupFor(FormType.find("PSC01").orElseThrow()), is(FormGroup.find("firm-delivery").orElseThrow()));
     }
 
     @Test
     void shouldPopulateFormGroupPresenterTypeInBothDirectionsWhenContextStarts() {
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("acsp-only")),
-            containsInAnyOrder(PresenterType.from("acsp")));
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("unmarked")),
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.find("acsp-only").orElseThrow()),
+            containsInAnyOrder(PresenterType.find("acsp").orElseThrow()));
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.find("unmarked").orElseThrow()),
             is(empty()));
-        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.from("official-receiver")), is(empty()));
-        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.from("wu-sub-forms")),
-            containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
-                PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("acsp"), PresenterType.from("individual-representing")));
+        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.find("official-receiver").orElseThrow()), is(empty()));
+        assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.find("wu-sub-forms").orElseThrow()),
+            containsInAnyOrder(PresenterType.find("officer-employee").orElseThrow(), PresenterType.find("corporate-officer-employee").orElseThrow(),
+                PresenterType.find("judicial-factor").orElseThrow(), PresenterType.find("officer-employee-same-group").orElseThrow(),
+                PresenterType.find("acsp").orElseThrow(), PresenterType.find("individual-representing").orElseThrow()));
     }
 
     @Test
     void shouldPopulateFormGroupDeliveryStatementTypeInBothDirectionsWhenContextStarts() {
-        final var firm = DeliveryStatementType.from("delivery-on-behalf-of-firm");
-        final var individual = DeliveryStatementType.from("delivery-on-behalf-of-individual");
+        final var firm = DeliveryStatementType.find("delivery-on-behalf-of-firm").orElseThrow();
+        final var individual = DeliveryStatementType.find("delivery-on-behalf-of-individual").orElseThrow();
 
-        assertThat(formGroupDeliveryStatement.deliveryStatementTypesFor(FormGroup.from("multi-delivery")),
+        assertThat(formGroupDeliveryStatement.deliveryStatementTypesFor(FormGroup.find("multi-delivery").orElseThrow()),
             containsInAnyOrder(firm, individual));
         assertThat(formGroupDeliveryStatement.formGroupsFor(firm),
-            containsInAnyOrder(FormGroup.from("firm-delivery"), FormGroup.from("multi-delivery"),
-                FormGroup.from("officer-only"), FormGroup.from("wu-sub-forms")));
+            containsInAnyOrder(FormGroup.find("firm-delivery").orElseThrow(), FormGroup.find("multi-delivery").orElseThrow(),
+                FormGroup.find("officer-only").orElseThrow(), FormGroup.find("wu-sub-forms").orElseThrow()));
     }
 
     @Test
     void shouldPopulatePresenterTypeDeliveryStatementTypeInBothDirectionsWhenContextStarts() {
-        final var firm = DeliveryStatementType.from("delivery-on-behalf-of-firm");
+        final var firm = DeliveryStatementType.find("delivery-on-behalf-of-firm").orElseThrow();
 
-        assertThat(presenterTypeDeliveryStatement.deliveryStatementTypesFor(PresenterType.from("individual-filing-for-self")),
+        assertThat(presenterTypeDeliveryStatement.deliveryStatementTypesFor(PresenterType.find("individual-filing-for-self").orElseThrow()),
             is(empty()));
-        assertThat(presenterTypeDeliveryStatement.deliveryStatementTypesFor(PresenterType.from("judicial-factor")),
+        assertThat(presenterTypeDeliveryStatement.deliveryStatementTypesFor(PresenterType.find("judicial-factor").orElseThrow()),
             containsInAnyOrder(firm));
         assertThat(presenterTypeDeliveryStatement.deliveryStatementTypesFor(
-            PresenterType.from("officer-employee-same-group")), containsInAnyOrder(firm));
+            PresenterType.find("officer-employee-same-group").orElseThrow()), containsInAnyOrder(firm));
         assertThat(presenterTypeDeliveryStatement.presenterTypesFor(firm),
-            containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
-                PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group")));
+            containsInAnyOrder(PresenterType.find("officer-employee").orElseThrow(), PresenterType.find("corporate-officer-employee").orElseThrow(),
+                PresenterType.find("judicial-factor").orElseThrow(), PresenterType.find("officer-employee-same-group").orElseThrow()));
     }
 
     @Test
     void shouldPopulatePresenterTypeVerificationStatementTypeInBothDirectionsWhenContextStarts() {
-        final var verified = VerificationStatementType.from("verified-statement");
+        final var verified = VerificationStatementType.find("verified-statement").orElseThrow();
 
-        assertThat(presenterTypeVerificationStatement.verificationStatementTypesFor(PresenterType.from("acsp")),
+        assertThat(presenterTypeVerificationStatement.verificationStatementTypesFor(PresenterType.find("acsp").orElseThrow()),
             is(empty()));
         assertThat(presenterTypeVerificationStatement.presenterTypesFor(verified),
-            containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
-                PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("individual-filing-for-self"), PresenterType.from("individual-representing")));
-        assertThat(presenterTypeVerificationStatement.verificationStatementTypesFor(PresenterType.from("official-receiver")),
+            containsInAnyOrder(PresenterType.find("officer-employee").orElseThrow(), PresenterType.find("corporate-officer-employee").orElseThrow(),
+                PresenterType.find("judicial-factor").orElseThrow(), PresenterType.find("officer-employee-same-group").orElseThrow(),
+                PresenterType.find("individual-filing-for-self").orElseThrow(), PresenterType.find("individual-representing").orElseThrow()));
+        assertThat(presenterTypeVerificationStatement.verificationStatementTypesFor(PresenterType.find("official-receiver").orElseThrow()),
             is(empty()));
     }
 
     @Test
     void shouldPopulatePresenterTypeAssociationStatementTypeInBothDirectionsWhenContextStarts() {
-        final var acsp = AssociationStatementType.from("acsp-statement");
+        final var acsp = AssociationStatementType.find("acsp-statement").orElseThrow();
 
-        assertThat(presenterTypeAssociationStatement.associationStatementTypesFor(PresenterType.from("acsp")),
+        assertThat(presenterTypeAssociationStatement.associationStatementTypesFor(PresenterType.find("acsp").orElseThrow()),
             containsInAnyOrder(acsp));
         assertThat(presenterTypeAssociationStatement.presenterTypesFor(acsp),
-            containsInAnyOrder(PresenterType.from("acsp")));
-        assertThat(presenterTypeAssociationStatement.associationStatementTypesFor(PresenterType.from("judicial-factor")),
-            containsInAnyOrder(AssociationStatementType.from("judicial-factor-statement")));
+            containsInAnyOrder(PresenterType.find("acsp").orElseThrow()));
+        assertThat(presenterTypeAssociationStatement.associationStatementTypesFor(PresenterType.find("judicial-factor").orElseThrow()),
+            containsInAnyOrder(AssociationStatementType.find("judicial-factor-statement").orElseThrow()));
     }
 
     @Test
     void shouldPopulatePresenterTypeDataObjectTypeInBothDirectionsWhenContextStarts() {
-        assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.from("individual-filing-for-self")),
-            containsInAnyOrder(DataObjectType.from("personal-code"), DataObjectType.from("name")));
-        assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.from("official-receiver")),
-            containsInAnyOrder(DataObjectType.from("email")));
-        assertThat(presenterTypeDataObject.presenterTypesFor(DataObjectType.from("date-of-birth")),
-            containsInAnyOrder(PresenterType.from("officer-employee"), PresenterType.from("corporate-officer-employee"),
-                PresenterType.from("judicial-factor"), PresenterType.from("officer-employee-same-group"),
-                PresenterType.from("individual-representing")));
+        assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.find("individual-filing-for-self").orElseThrow()),
+            containsInAnyOrder(DataObjectType.find("personal-code").orElseThrow(), DataObjectType.find("name").orElseThrow()));
+        assertThat(presenterTypeDataObject.dataObjectTypesFor(PresenterType.find("official-receiver").orElseThrow()),
+            containsInAnyOrder(DataObjectType.find("email").orElseThrow()));
+        assertThat(presenterTypeDataObject.presenterTypesFor(DataObjectType.find("date-of-birth").orElseThrow()),
+            containsInAnyOrder(PresenterType.find("officer-employee").orElseThrow(), PresenterType.find("corporate-officer-employee").orElseThrow(),
+                PresenterType.find("judicial-factor").orElseThrow(), PresenterType.find("officer-employee-same-group").orElseThrow(),
+                PresenterType.find("individual-representing").orElseThrow()));
     }
 
     @Test
     void shouldNotExposeInternalSetsWhenCallersMutateReturnedSets() {
-        final var selfDelivery = FormGroup.from("self-delivery");
-        final var officer = PresenterType.from("officer-employee");
+        final var selfDelivery = FormGroup.find("self-delivery").orElseThrow();
+        final var officer = PresenterType.find("officer-employee").orElseThrow();
 
         formGroupFormType.formTypesFor(selfDelivery).clear();
         formGroupPresenterType.presenterTypesFor(selfDelivery).clear();
         formGroupPresenterType.formGroupsFor(officer).clear();
 
         assertThat(formGroupFormType.formTypesFor(selfDelivery),
-            containsInAnyOrder(FormType.from("DS01"), FormType.from("LL DS01"), FormType.from("ACSP01-Sole")));
+            containsInAnyOrder(FormType.find("DS01").orElseThrow(), FormType.find("LL DS01").orElseThrow(), FormType.find("ACSP01-Sole").orElseThrow()));
         assertThat(formGroupPresenterType.presenterTypesFor(selfDelivery),
-            containsInAnyOrder(PresenterType.from("individual-filing-for-self")));
+            containsInAnyOrder(PresenterType.find("individual-filing-for-self").orElseThrow()));
         assertThat(formGroupPresenterType.formGroupsFor(officer),
-            containsInAnyOrder(FormGroup.from("firm-delivery"), FormGroup.from("multi-delivery"),
-                FormGroup.from("officer-only"), FormGroup.from("wu-sub-forms")));
+            containsInAnyOrder(FormGroup.find("firm-delivery").orElseThrow(), FormGroup.find("multi-delivery").orElseThrow(),
+                FormGroup.find("officer-only").orElseThrow(), FormGroup.find("wu-sub-forms").orElseThrow()));
     }
 
     @Test

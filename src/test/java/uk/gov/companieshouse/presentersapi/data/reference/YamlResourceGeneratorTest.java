@@ -67,8 +67,8 @@ class YamlResourceGeneratorTest {
                 assertThat("Application context should start successfully", context.getStartupFailure(), is(nullValue()));
                 final var bound = context.getBean(FormGroupFormTypeBiMap.class);
                 for (final var entry : dictionary.entrySet()) {
-                    final var group = FormGroup.from(entry.getKey());
-                    final var expected = entry.getValue().stream().map(FormType::from)
+                    final var group = FormGroup.find(entry.getKey()).orElseThrow();
+                    final var expected = entry.getValue().stream().map(code -> FormType.find(code).orElseThrow())
                         .collect(java.util.stream.Collectors.toSet());
                     assertThat(bound.formTypesFor(group), is(expected));
                     for (final var form : expected) {

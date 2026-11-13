@@ -361,7 +361,7 @@ class PresenterTypesServiceImplTest {
     }
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) throws URIValidationException {
-        when(presenterTypeMatrixService.presenterTypesFor(FormType.from(FORM_TYPE_CODE)))
+        when(presenterTypeMatrixService.presenterTypesFor(FormType.find(FORM_TYPE_CODE).orElseThrow()))
             .thenReturn(presenterTypes);
         if (presenterTypes.stream().anyMatch(presenterType ->
             presenterType != PresenterType.OFFICIAL_RECEIVER && presenterType != PresenterType.ACSP)) {
