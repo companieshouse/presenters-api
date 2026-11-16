@@ -64,6 +64,23 @@ public final class Guards {
             return Guarded.invalid(missing.get());
         }
 
+        final var resolution = resolveCodes(codes, find);
+        if (!resolution.invalidCodes().isEmpty()) {
+            final var rejected = String.join(", ",
+                resolution.invalidCodes().stream().map(String::valueOf).toList());
+            return Guarded.invalid(notValid.apply(rejected));
+        }
+
+        final var duplicateCodes = findDuplicateCodes(codes, resolution.resolved());
+        if (!duplicateCodes.isEmpty()) {
+            return Guarded.invalid(duplicated.apply(String.join(", ", duplicateCodes)));
+        }
+        return Guarded.valid(List.copyOf(resolution.resolved()));
+    }
+
+    private static <E> CodeResolution<E> resolveCodes(
+        final List<String> codes,
+        final Function<String, Optional<? extends E>> find) {
         final var resolved = new ArrayList<E>(codes.size());
         final var invalidCodes = new LinkedHashSet<String>();
         for (final var code : codes) {
@@ -74,12 +91,12 @@ public final class Guards {
                 resolved.add(constant.get());
             }
         }
+        return new CodeResolution<>(resolved, new ArrayList<>(invalidCodes));
+    }
 
-        if (!invalidCodes.isEmpty()) {
-            return Guarded.invalid(notValid.apply(
-                String.join(", ", invalidCodes.stream().map(String::valueOf).toList())));
-        }
-
+    private static <E> List<String> findDuplicateCodes(
+        final List<String> codes,
+        final List<E> resolved) {
         final var counts = new HashMap<E, Integer>();
         resolved.forEach(constant -> counts.merge(constant, 1, Integer::sum));
         final var reported = new HashSet<E>();
@@ -90,9 +107,9 @@ public final class Guards {
                 duplicateCodes.add(codes.get(index));
             }
         }
-        if (!duplicateCodes.isEmpty()) {
-            return Guarded.invalid(duplicated.apply(String.join(", ", duplicateCodes)));
-        }
-        return Guarded.valid(List.copyOf(resolved));
+        return duplicateCodes;
+    }
+
+    private record CodeResolution<E>(List<E> resolved, List<String> invalidCodes) {
     }
 }
