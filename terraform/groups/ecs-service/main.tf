@@ -61,11 +61,15 @@ module "ecs_service" {
   # Service Healthcheck configuration
 
   # Service performance and scaling configs
-  use_fargate        = true
-  fargate_subnets    = local.application_subnet_ids
-  desired_task_count = var.desired_task_count
-  required_cpus      = var.required_cpus
-  required_memory    = var.required_memory
+  use_fargate                = true
+  fargate_subnets            = local.application_subnet_ids
+  desired_task_count         = var.desired_task_count
+  required_cpus              = var.required_cpus
+  required_memory            = var.required_memory
+  service_autoscale_enabled  = var.service_autoscale_enabled
+  service_scaledown_schedule = var.service_scaledown_schedule
+  service_scaleup_schedule   = var.service_scaleup_schedule
+
 
   # Service environment variable and secret configs
   task_environment          = local.task_environment

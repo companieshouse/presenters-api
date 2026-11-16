@@ -52,6 +52,27 @@ variable "eric_memory" {
   description = "The required memory for the eric reverse proxy sidecar. Combined with required_memory this must equal a valid Fargate task memory value"
   default     = 512 # override for staging/live if needed to keep required_memory + eric_memory at a valid Fargate total
 }
+variable "service_autoscale_enabled" {
+  type        = bool
+  description = "Whether to enable service autoscaling, including scheduled autoscaling"
+  default     = true
+}
+variable "service_scaledown_schedule" {
+  type        = string
+  description = "The schedule to use when scaling down the number of tasks to zero."
+  # Typically used to stop all tasks in a service to save resource costs overnight.
+  # E.g. a value of '55 19 * * ? *' would be Mon-Sun 7:55pm.  An empty string indicates that no schedule should be created.
+
+  default = ""
+}
+variable "service_scaleup_schedule" {
+  type        = string
+  description = "The schedule to use when scaling up the number of tasks to their normal desired level."
+  # Typically used to start all tasks in a service after it has been shutdown overnight.
+  # E.g. a value of '5 6 * * ? *' would be Mon-Sun 6:05am.  An empty string indicates that no schedule should be created.
+
+  default = ""
+}
 
 # ------------------------------------------------------------------------------
 # Service environment variable configs
