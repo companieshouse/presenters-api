@@ -16,7 +16,7 @@ public final class FormTypeGuard {
      * @param code the form type code from the request body, may be null
      * @return the recognised form type or a request body error
      */
-    public static Guarded<FormType> body(final String code) {
+    public static Guarded<FormType> fromBody(final String code) {
         return Guards.requiredCode(code, FormType::find,
             RequestBodyErrors::formTypeRequired, () -> RequestBodyErrors.formTypeInvalid(code));
     }
@@ -25,7 +25,7 @@ public final class FormTypeGuard {
      * @param code the form type code from a query parameter, may be null
      * @return the recognised form type or a query parameter error
      */
-    public static Guarded<FormType> query(final String code) {
+    public static Guarded<FormType> fromQuery(final String code) {
         return Guards.requiredCode(code, FormType::find,
             RequestParamErrors::formTypeRequired, () -> RequestParamErrors.formTypeInvalid(code));
     }

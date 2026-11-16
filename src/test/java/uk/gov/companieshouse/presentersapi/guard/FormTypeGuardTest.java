@@ -14,8 +14,8 @@ import uk.gov.companieshouse.service.rest.err.Err;
 class FormTypeGuardTest {
 
     private enum FormGuard {
-        BODY(FormTypeGuard::body, Err.LOCATION_TYPE_BODY),
-        QUERY(FormTypeGuard::query, Err.LOCATION_TYPE_QUERY);
+        BODY(FormTypeGuard::fromBody, Err.LOCATION_TYPE_BODY),
+        QUERY(FormTypeGuard::fromQuery, Err.LOCATION_TYPE_QUERY);
 
         private final Function<String, Guarded<FormType>> guard;
         private final String locationType;
