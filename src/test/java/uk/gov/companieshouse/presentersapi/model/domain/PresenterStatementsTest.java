@@ -3,13 +3,13 @@ package uk.gov.companieshouse.presentersapi.model.domain;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -75,16 +75,10 @@ class PresenterStatementsTest {
     }
 
     @Test
-    void comparesByValue() {
-        final var first = new PresenterStatements(association, delivery, verification);
-        final var second = new PresenterStatements(
-            EnumSet.copyOf(association), EnumSet.copyOf(delivery), EnumSet.copyOf(verification));
-        final var different = new PresenterStatements(
-            EnumSet.noneOf(AssociationStatementType.class), delivery, verification);
-
-        assertThat(first, is(equalTo(second)));
-        assertThat(first.hashCode(), is(second.hashCode()));
-        assertThat(first, is(not(equalTo(different))));
+    void shouldMeetEqualsAndHashCodeContract() {
+        EqualsVerifier.forClass(PresenterStatements.class)
+            .withNonnullFields("associationStatements", "deliveryStatements", "verificationStatements")
+            .verify();
     }
 
     @Test

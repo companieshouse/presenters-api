@@ -248,8 +248,9 @@ class EnumBiMapGeneratorTest {
     @Test
     void testMainWithBareConfigFileNameResolvesAgainstCurrentDirectory() {
         // A config path without a parent falls back to "."; the file does not exist, so reading it fails
+        final var arguments = new String[] {"no-such-config-file.yaml", out().toString()};
         assertThrows(NoSuchFileException.class,
-            () -> EnumBiMapGenerator.main(new String[] {"no-such-config-file.yaml", out().toString()}));
+            () -> EnumBiMapGenerator.main(arguments));
     }
 
     @Test
