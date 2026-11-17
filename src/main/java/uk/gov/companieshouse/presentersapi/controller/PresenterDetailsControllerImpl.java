@@ -13,6 +13,7 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidExcept
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.ServiceResultStatus;
 import uk.gov.companieshouse.service.rest.response.ChResponseBody;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
@@ -36,9 +37,16 @@ public class PresenterDetailsControllerImpl implements PresenterDetailsRequestAp
         // Mock scenarios to be removed
         applyMockScenarios(presenterType);
 
-        final var presenterDetails = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
+        final var serviceResult = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
 
-        return responseEntityFactory.createResponse(ServiceResult.found(presenterDetails));
+        if (ServiceResultStatus.FOUND == serviceResult.getStatus()) {
+            final var presenterDetails = serviceResult.getData();
+            return responseEntityFactory.createResponse(ServiceResult.found(presenterDetails));
+        }
+        else {
+            // convert the 'error' result to a response entity with the same status and errors
+            return responseEntityFactory.createResponse(new ServiceResult<>(serviceResult.getStatus(), serviceResult.getErrors()));
+        }
     }
 
     private static void applyMockScenarios(final String presenterType) {

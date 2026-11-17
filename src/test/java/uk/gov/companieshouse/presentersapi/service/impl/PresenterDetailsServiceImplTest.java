@@ -1,95 +1,219 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.Test;
+import java.time.LocalDate;
+import java.util.EnumSet;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import uk.gov.companieshouse.api.handler.exception.URIValidationException;
+import uk.gov.companieshouse.api.identityverification.model.CurrentName;
+import uk.gov.companieshouse.api.identityverification.model.Identity;
+import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
+import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
+import uk.gov.companieshouse.presentersapi.data.enums.AssociationStatementType;
+import uk.gov.companieshouse.presentersapi.data.enums.DeliveryStatementType;
+import uk.gov.companieshouse.presentersapi.data.enums.FormType;
+import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
+import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
+import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
+import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
+import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
+import uk.gov.companieshouse.service.ServiceResult;
 
+@ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterDetailsServiceImpl tests")
 class PresenterDetailsServiceImplTest {
 
-    private final PresenterDetailsServiceImpl service = new PresenterDetailsServiceImpl();
+    private static final String USER_ID = "user123";
+    private static final String FORM_TYPE = "AD01";
+    private static final String IDENTITY_ID = "identity-123";
+    private static final String PERSONAL_CODE = "123456-123456";
+
+    @Mock
+    private StatementTypeMatrixService statementTypeMatrixService;
+    @Mock
+    private IndividualUserService individualUserService;
+    @Mock
+    private PresenterTypeMatrixService presenterTypeMatrixService;
+    @Mock
+    private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
+
+    private PresenterDetailsServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        final var formTypeGuard = new FormTypeGuard(formGroupFormTypeBiMap);
+        service = new PresenterDetailsServiceImpl(
+            statementTypeMatrixService, individualUserService, presenterTypeMatrixService, formTypeGuard);
+    }
 
     @Test
-    @DisplayName("should return individual details")
-    void shouldReturnIndividualPresenterDetails() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "individual-filing-for-self");
+    void shouldMapIdentityDetailsToIndividualForSelfFiling() throws URIValidationException {
+        givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
+        givenIdentityDetails();
+        givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF,
+            new PresenterStatements(
+                EnumSet.noneOf(AssociationStatementType.class),
+                EnumSet.noneOf(DeliveryStatementType.class),
+                EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT)));
 
-        assertNotNull(result);
-        assertEquals("user123", result.getUserId());
-        assertEquals(1, result.getStatements().size());
-        assertEquals("verified-statement", result.getStatements().getFirst());
-        assertNotNull(result.getIndividual());
-        assertEquals("123456", result.getIndividual().getPersonalCode());
-        assertEquals("1234", result.getIndividual().getVerificationId());
+        final PresenterDetails result = service.getPresenterDetails(
+            USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()).getData();
+
+        assertThat(result.getUserId(), is(USER_ID));
+        assertThat(result.getStatements(), is(List.of("verified-statement")));
+        assertThat(result.getIndividual().getPersonalCode(), is(PERSONAL_CODE));
+        assertThat(result.getIndividual().getVerificationId(), is(IDENTITY_ID));
+        assertThat(result.getIndividual().getName().getForenames(), is(List.of("Ada", "Grace")));
+        assertThat(result.getIndividual().getName().getSurname(), is("Lovelace"));
+        assertThat(result.getIndividual().getDateOfBirth().getDay(), is(10));
+        assertThat(result.getIndividual().getDateOfBirth().getMonth(), is(12));
+        assertThat(result.getIndividual().getDateOfBirth().getYear(), is(1815));
         assertNull(result.getAcsp());
         assertNull(result.getExempt());
+        verify(individualUserService).getIdentityByUserId(USER_ID);
+        verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
     }
 
     @Test
-    @DisplayName("should return individual details no DOB")
-    void shouldReturnIndividualPresenterDetailsNoDOB() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "officer-employee");
+    void shouldReturnAcspDetailsWithoutLookingUpIdentity() {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
 
-        assertNotNull(result);
-        assertEquals("user123", result.getUserId());
-        assertEquals(3, result.getStatements().size());
-        assertEquals("officer-employee-statement", result.getStatements().get(0));
-        assertEquals("verified-statement", result.getStatements().get(1));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(2));
-        assertNotNull(result.getIndividual());
-        assertEquals("123456", result.getIndividual().getPersonalCode());
-        assertEquals("1234", result.getIndividual().getVerificationId());
-        assertEquals(1, result.getIndividual().getDateOfBirth().getDay());
-        assertEquals(1, result.getIndividual().getDateOfBirth().getMonth());
-        assertEquals(1980, result.getIndividual().getDateOfBirth().getYear());
+        final PresenterDetails result = service.getPresenterDetails(
+            USER_ID, FORM_TYPE, PresenterType.ACSP.code()).getData();
+
+        assertThat(result.getUserId(), is(USER_ID));
+        assertThat(result.getStatements(), is(List.of()));
+        assertThat(result.getAcsp().getAcspCode(), is("123456-123456"));
+        assertThat(result.getAcsp().getAcspName(), is("Mr ACSP Ltd"));
+        verifyNoInteractions(individualUserService);
     }
 
     @Test
-    @DisplayName("should return acsp presenter details")
-    void shouldReturnAcspPresenterDetails() {
-        PresenterDetails result = service.getPresenterDetails("user456", "form-abc", "acsp");
+    void shouldReturnOfficialReceiverDetailsWithoutLookingUpIdentity() {
+        givenPresenterTypes(PresenterType.OFFICIAL_RECEIVER);
+        givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
 
-        assertNotNull(result);
-        assertEquals("user456", result.getUserId());
-        assertEquals(1, result.getStatements().size());
-        assertEquals("acsp-statement", result.getStatements().getFirst());
-        assertNotNull(result.getAcsp());
-        assertEquals("123456-123456", result.getAcsp().getAcspCode());
-        assertEquals("Mr ACSP Ltd", result.getAcsp().getAcspName());
-        assertEquals("me@myacsp.co.uk", result.getAcsp().getAcspEmployeeEmail());
-        assertNull(result.getIndividual());
-        assertNull(result.getExempt());
+        final PresenterDetails result = service.getPresenterDetails(
+            USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code()).getData();
+
+        assertThat(result.getStatements(), is(List.of()));
+        assertThat(result.getExempt().getOrganisationName(), is("Exemption LTD"));
+        verifyNoInteractions(individualUserService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PresenterType.class, names = {"OFFICIAL_RECEIVER", "ACSP"}, mode = EnumSource.Mode.EXCLUDE)
+    void shouldLookUpIdentityForEveryIndividualPresenterType(final PresenterType presenterType)
+        throws URIValidationException {
+        givenPresenterTypes(presenterType);
+        givenIdentityDetails();
+        givenStatements(presenterType, emptyStatements());
+
+        final PresenterDetails result = service.getPresenterDetails(
+            USER_ID, FORM_TYPE, presenterType.code()).getData();
+
+        assertThat(result.getIndividual().getPersonalCode(), is(PERSONAL_CODE));
+        assertThat(result.getIndividual().getVerificationId(), is(IDENTITY_ID));
+        verify(individualUserService).getIdentityByUserId(USER_ID);
+        verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
     }
 
     @Test
-    @DisplayName("should return exempt presenter details")
-    void shouldReturnExemptPresenterDetails() {
-        PresenterDetails result = service.getPresenterDetails("user123", "form-abc", "official-receiver");
+    void shouldRejectPresenterTypeNotAvailableForForm() {
+        givenPresenterTypes(PresenterType.ACSP);
 
-        assertNotNull(result);
-        assertEquals(2, result.getStatements().size());
-        assertEquals("official-receiver-statement", result.getStatements().get(0));
-        assertEquals("delivery-on-behalf-of-firm", result.getStatements().get(1));
-        assertNotNull(result.getExempt());
-        assertEquals("me@iamexempt.co.uk", result.getExempt().getEmail());
-        assertEquals("Exemption LTD", result.getExempt().getOrganisationName());
-        assertEquals("Mr Test Exemption", result.getExempt().getName());
-        assertNull(result.getAcsp());
-        assertNull(result.getIndividual());
+        assertThrows(PresenterTypeNotValidException.class,
+            () -> service.getPresenterDetails(
+                USER_ID, FORM_TYPE, PresenterType.OFFICER_EMPLOYEE.code()));
+
+        verifyNoInteractions(individualUserService, statementTypeMatrixService);
     }
 
     @Test
-    @DisplayName("should throw exception when presenter type is unsupported")
     void shouldThrowExceptionWhenPresenterTypeIsUnsupported() {
-        PresenterTypeNotFoundException exception = assertThrows(PresenterTypeNotFoundException.class,
-            () -> service.getPresenterDetails("user123", "form-abc", "unsupported-type"));
+        givenPresenterTypes(PresenterType.ACSP);
 
-        assertEquals("Presenter Type: unsupported-type is not found", exception.getMessage());
+        final var exception = assertThrows(PresenterTypeNotFoundException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, "unsupported-type"));
+
+        assertThat(exception.getMessage(), is("Presenter Type: unsupported-type"));
+        verifyNoInteractions(individualUserService, statementTypeMatrixService);
     }
 
+    @Test
+    void shouldReturnInternalServerErrorWhenIdentityLookupUriIsInvalid() throws URIValidationException {
+        givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
+        givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
+        final var cause = new URIValidationException("Invalid URI");
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenThrow(cause);
 
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(
+                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getCause(), is(cause));
+    }
+
+    @Test
+    void shouldReturnBadGatewayWhenIdentityDetailsAreIncomplete() throws URIValidationException {
+        givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
+        givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(new Identity());
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(
+                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
+    }
+
+    private void givenPresenterTypes(final PresenterType... presenterTypes) {
+        when(presenterTypeMatrixService.presenterTypesFor(FormType.AD01))
+            .thenReturn(EnumSet.of(presenterTypes[0], presenterTypes));
+    }
+
+    private void givenIdentityDetails() throws URIValidationException {
+        final var identity = new Identity()
+            .id(IDENTITY_ID)
+            .currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname("Lovelace"))
+            .dateOfBirth(LocalDate.of(1815, 12, 10));
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(identity);
+        when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID))
+            .thenReturn(new Uvid().uvid(PERSONAL_CODE));
+    }
+
+    private void givenStatements(final PresenterType presenterType, final PresenterStatements statements) {
+        when(statementTypeMatrixService.statementTypesFor(presenterType, FormType.AD01)).thenReturn(statements);
+    }
+
+    private static PresenterStatements emptyStatements() {
+        return new PresenterStatements(
+            EnumSet.noneOf(AssociationStatementType.class),
+            EnumSet.noneOf(DeliveryStatementType.class),
+            EnumSet.noneOf(VerificationStatementType.class));
+    }
 }

@@ -30,6 +30,7 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedExcepti
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.service.ServiceResult;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +78,7 @@ class PresenterDetailsControllerImplTest {
         final var presenterType = "officer-employee";
 
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
         final var response = controller.getPresenterDetails(formType, presenterType);
 
@@ -103,7 +104,7 @@ class PresenterDetailsControllerImplTest {
         final var presenterType = "corporate-officer-employee";
 
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
         controller.getPresenterDetails(formType, presenterType);
 
@@ -114,7 +115,7 @@ class PresenterDetailsControllerImplTest {
     @DisplayName("should return response entity with presenter details")
     void testResponseEntityStructure() {
         when(presenterDetailsService.getPresenterDetails(anyString(), anyString(), anyString()))
-            .thenReturn(testPresenterDetails);
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
         final var response = controller.getPresenterDetails("form-abc", "officer-employee");
 
