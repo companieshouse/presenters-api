@@ -3,12 +3,14 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,15 +31,20 @@ import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.Membersh
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
+import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
-import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.error.RequestParamErrors;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.ServiceResultStatus;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterTypesServiceImpl tests")
@@ -51,6 +58,8 @@ class PresenterTypesServiceImplTest {
 
     @Mock
     private PresenterTypeMatrixService presenterTypeMatrixService;
+    @Mock
+    private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
     @Mock
     private AcspUserService acspUserService;
     @Mock
@@ -71,14 +80,12 @@ class PresenterTypesServiceImplTest {
         requestHelperMock = mockStatic(RequestHelper.class);
         requestHelperMock.when(RequestHelper::getChsUserId).thenReturn(USER_ID);
         service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, exemptUserService,
-                accountService, individualUserService, logger);
+                accountService, individualUserService, logger, new FormTypeGuard(formGroupFormTypeBiMap));
     }
 
     @AfterEach
     void tearDown() {
         requestHelperMock.close();
-        service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, exemptUserService,
-                accountService, individualUserService, logger);
     }
 
     @Test
@@ -89,7 +96,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP));
     }
 
     @Test
@@ -100,7 +107,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICER_EMPLOYEE)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICER_EMPLOYEE));
     }
 
     @Test
@@ -111,7 +118,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICER_EMPLOYEE)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICER_EMPLOYEE));
     }
 
     @ParameterizedTest(name = "should exclude ACSP when ACSP status is {0}")
@@ -122,18 +129,18 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICER_EMPLOYEE)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICER_EMPLOYEE));
     }
 
     @Test
     @DisplayName("should exclude ACSP when the membership has no statuses")
     void shouldExcludeAcspWhenMembershipStatusesMissing() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.ACSP));
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.ACSP, PresenterType.OFFICER_EMPLOYEE));
         givenMembership(new AcspMembership());
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICER_EMPLOYEE));
     }
 
     @Test
@@ -143,7 +150,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF)));
+        assertFoundResult(result, EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
         verifyNoInteractions(acspUserService);
     }
 
@@ -154,7 +161,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
         verifyNoInteractions(acspUserService);
     }
 
@@ -172,13 +179,30 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
-    @DisplayName("should throw FormTypeNotFoundException when form type is unknown")
-    void shouldThrowFormTypeNotFoundExceptionWhenFormTypeUnknown() {
-        final var exception = assertThrows(FormTypeNotFoundException.class,
-            () -> service.getPresenterTypes(USER_ID, "UNKNOWN-FORM", PASSTHROUGH_TOKEN));
+    @DisplayName("should reject an unknown form type")
+    void shouldRejectUnknownFormType() {
+        final var result = service.getPresenterTypes(USER_ID, "UNKNOWN-FORM", PASSTHROUGH_TOKEN);
 
-        assertThat(exception.getMessage(), is("Form Type: UNKNOWN-FORM"));
-        verifyNoInteractions(presenterTypeMatrixService, acspUserService, individualUserService);
+        assertThat(result.getStatus(), is(ServiceResultStatus.VALIDATION_ERROR));
+        assertThat(result.getErrors().size(), is(1));
+        assertThat(result.getErrors().containsError(RequestParamErrors.formTypeInvalid("UNKNOWN-FORM")), is(true));
+        verifyNoInteractions(formGroupFormTypeBiMap, presenterTypeMatrixService, acspUserService,
+            individualUserService, accountService, exemptUserService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = FormGroup.class, names = {"UNMARKED", "EXEMPT_FORM"})
+    void shouldRejectFormTypeWhenFormGroupIsUnsupported(final FormGroup group) {
+        when(formGroupFormTypeBiMap.formGroupFor(FormType.AA01)).thenReturn(group);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result.getStatus(), is(ServiceResultStatus.VALIDATION_ERROR));
+        assertThat(result.getErrors().size(), is(1));
+        assertThat(result.getErrors().containsError(
+            RequestParamErrors.formTypeNotSupported(FORM_TYPE_CODE, group.code())), is(true));
+        verifyNoInteractions(presenterTypeMatrixService, acspUserService, individualUserService,
+            accountService, exemptUserService);
     }
 
     @ParameterizedTest
@@ -190,7 +214,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(presenterType)));
+        assertFoundResult(result, EnumSet.of(presenterType));
         verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
     }
 
@@ -205,7 +229,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(presenterTypes));
+        assertFoundResult(result, presenterTypes);
         verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
     }
 
@@ -220,7 +244,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(presenterTypes));
+        assertFoundResult(result, presenterTypes);
         verifyNoInteractions(individualUserService);
     }
 
@@ -270,7 +294,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
     }
 
     @ParameterizedTest
@@ -289,7 +313,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.ACSP, PresenterType.OFFICIAL_RECEIVER)));
+        assertFoundResult(result, EnumSet.of(PresenterType.ACSP, PresenterType.OFFICIAL_RECEIVER));
         assertThat("Matrix data should be left intact", matrixPresenterTypes, is(EnumSet.allOf(PresenterType.class)));
     }
 
@@ -302,7 +326,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICIAL_RECEIVER)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
     }
 
     @Test
@@ -334,8 +358,9 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.of(PresenterType.OFFICIAL_RECEIVER)));
+        assertFoundResult(result, EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
     }
+
     @Test
     @DisplayName("should not return OFFICIAL_RECEIVER when user is not exempt")
     void shouldNotReturnOfficialReceiverWhenUserIsNotExempt() throws Exception {
@@ -345,7 +370,7 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
     }
 
     @Test
@@ -357,10 +382,11 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
+        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
     }
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) throws URIValidationException {
+        when(formGroupFormTypeBiMap.formGroupFor(FormType.AA01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(presenterTypeMatrixService.presenterTypesFor(FormType.find(FORM_TYPE_CODE).orElseThrow()))
             .thenReturn(presenterTypes);
         if (presenterTypes.stream().anyMatch(presenterType ->
@@ -379,4 +405,11 @@ class PresenterTypesServiceImplTest {
         final AcspStatusEnum acspStatus) {
         return new AcspMembership().membershipStatus(membershipStatus).acspStatus(acspStatus);
     }
+
+    private static void assertFoundResult(final ServiceResult<EnumSet<PresenterType>> result,
+        final EnumSet<PresenterType> expectedPresenterTypes) {
+        assertThat(result.getStatus(), is(ServiceResultStatus.FOUND));
+        assertThat(result.getData(), is(expectedPresenterTypes));
+    }
+
 }

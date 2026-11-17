@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service;
 
 import java.util.EnumSet;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.service.ServiceResult;
 
 public interface PresenterTypesService {
 
@@ -14,8 +15,8 @@ public interface PresenterTypesService {
      * @param userId           the userId
      * @param formType         the form type code
      * @param passthroughToken the ERIC passthrough token identifying the user to downstream APIs
-     * @return the available presenter types
-     * @throws uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException if the form type is unknown
+     * @return the available presenter types, a validation error if the form type is missing, unknown or belongs to
+     *     an unsupported form group, or an unprocessable result if no presenter types remain
      */
-    EnumSet<PresenterType> getPresenterTypes(String userId, String formType, String passthroughToken);
+    ServiceResult<EnumSet<PresenterType>> getPresenterTypes(String userId, String formType, String passthroughToken);
 }

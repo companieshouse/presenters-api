@@ -26,7 +26,7 @@ public final class RequestBodyErrors {
      * @return an error for a missing form type, with no rejected value
      */
     public static Err formTypeRequired() {
-        return bodyError(FORM_TYPE_LOCATION, "Form type is required");
+        return bodyError(FORM_TYPE_LOCATION, ErrorMessages.FORM_TYPE_REQUIRED);
     }
 
     /**
@@ -34,7 +34,7 @@ public final class RequestBodyErrors {
      * @return an error for an unknown form type, carrying the rejected value
      */
     public static Err formTypeInvalid(final String rejected) {
-        return GuardErrors.invalid(ErrorLocation.BODY, FORM_TYPE_LOCATION, "Form type is invalid",
+        return GuardErrors.invalid(ErrorLocation.BODY, FORM_TYPE_LOCATION, ErrorMessages.FORM_TYPE_INVALID,
                                         Map.of(REJECTED_KEY, rejected));
     }
 
@@ -45,7 +45,7 @@ public final class RequestBodyErrors {
      */
     public static Err formTypeNotSupported(final String formType, final String formGroup) {
         return GuardErrors.invalid(ErrorLocation.BODY, FORM_TYPE_LOCATION,
-            "Form " + formType + " not supported because it belongs to the form group " + formGroup,
+                                   ErrorMessages.FORM_TYPE_NOT_SUPPORTED.formatted(formType, formGroup),
             Map.of(REJECTED_KEY, formType, FORM_GROUP_KEY, formGroup));
     }
 
@@ -53,7 +53,7 @@ public final class RequestBodyErrors {
      * @return an error for a null or empty list of statement types
      */
     public static Err statementTypesMissing() {
-        return bodyError(STATEMENT_IDS_LOCATION, "No Statement Types have been supplied");
+        return bodyError(STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_REQUIRED);
     }
 
     /**
@@ -62,7 +62,7 @@ public final class RequestBodyErrors {
      */
     public static Err statementTypesNotValid(final String rejected) {
         return GuardErrors.invalid(ErrorLocation.BODY, STATEMENT_IDS_LOCATION,
-            "One or more of the statements are not valid", Map.of(REJECTED_KEY, rejected));
+            ErrorMessages.STATEMENT_IDS_NOT_VALID, Map.of(REJECTED_KEY, rejected));
     }
 
     /**
@@ -71,14 +71,14 @@ public final class RequestBodyErrors {
      */
     public static Err statementTypesDuplicated(final String rejected) {
         return GuardErrors.invalid(ErrorLocation.BODY, STATEMENT_IDS_LOCATION,
-            "Duplicate Statement Types have been supplied", Map.of(REJECTED_KEY, rejected));
+            ErrorMessages.STATEMENT_IDS_DUPLICATE, Map.of(REJECTED_KEY, rejected));
     }
 
     /**
      * @return an error for a null or empty list of data object types
      */
     public static Err dataObjectTypesMissing() {
-        return bodyError(DATA_TYPES_LOCATION, "No Data Object Types have been supplied");
+        return bodyError(DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_REQUIRED);
     }
 
     /**
@@ -87,7 +87,7 @@ public final class RequestBodyErrors {
      */
     public static Err dataObjectTypesNotValid(final String rejected) {
         return GuardErrors.invalid(ErrorLocation.BODY, DATA_TYPES_LOCATION,
-            "One or more of the data object types are not valid", Map.of(REJECTED_KEY, rejected));
+            ErrorMessages.DATA_OBJECTS_NOT_VALID, Map.of(REJECTED_KEY, rejected));
     }
 
     /**
@@ -96,7 +96,7 @@ public final class RequestBodyErrors {
      */
     public static Err dataObjectTypesDuplicated(final String rejected) {
         return GuardErrors.invalid(ErrorLocation.BODY, DATA_TYPES_LOCATION,
-            "Duplicate Data Object Types have been supplied", Map.of(REJECTED_KEY, rejected));
+            ErrorMessages.DATA_OBJECTS_DUPLICATE, Map.of(REJECTED_KEY, rejected));
     }
 
     private static Err bodyError(final String location, final String message) {

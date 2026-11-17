@@ -16,7 +16,7 @@ class RequestParamErrorsTest {
         assertThat(err.getLocation(), is("form_type"));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_QUERY));
         assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
-        assertThat(err.getError(), is("Form type is required"));
+        assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_REQUIRED));
         assertThat(err.getErrorValues(), is(Map.of()));
     }
 
@@ -27,8 +27,19 @@ class RequestParamErrorsTest {
         assertThat(err.getLocation(), is("form_type"));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_QUERY));
         assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
-        assertThat(err.getError(), is("Form type is invalid"));
+        assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_INVALID));
         assertThat(err.getErrorValues(), is(Map.of("rejected", "NOPE")));
+    }
+
+    @Test
+    void shouldCarryFormAndGroupAtQueryParameterWhenFormTypeNotSupported() {
+        final var err = RequestParamErrors.formTypeNotSupported("WU12", "exempt-form");
+
+        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_QUERY));
+        assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
+        assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_NOT_SUPPORTED.formatted("WU12", "exempt-form")));
+        assertThat(err.getErrorValues(), is(Map.of("rejected", "WU12", "form_group", "exempt-form")));
     }
 
     @Test

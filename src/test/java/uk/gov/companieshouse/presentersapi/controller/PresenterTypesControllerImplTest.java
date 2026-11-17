@@ -1,5 +1,9 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,8 +26,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
-import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.error.RequestParamErrors;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.err.Err;
+import uk.gov.companieshouse.service.rest.err.Errors;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,22 +73,11 @@ class PresenterTypesControllerImplTest {
     }
 
     @Test
-    @DisplayName("should throw FormTypeNotFoundException when formType is formTypeNotFound")
-    void shouldThrowFormTypeNotFoundException() {
-        final var exception = assertThrows(
-            FormTypeNotFoundException.class,
-            () -> controller.getPresenterTypes("formTypeNotFound"));
-
-        assertEquals("Form Type: formTypeNotFound", exception.getMessage());
-        verifyNoInteractions(presenterTypesService);
-    }
-
-    @Test
     @DisplayName("should return presenter types when applyMockScenarios has no match")
     void shouldReturnPresenterTypesWhenNoMockScenarioMatches() {
         final var serviceResponse = EnumSet.allOf(PresenterType.class);
         when(presenterTypesService.getPresenterTypes("user123", "AD01", PASSTHROUGH_TOKEN))
-            .thenReturn(serviceResponse);
+            .thenReturn(ServiceResult.found(EnumSet.allOf(PresenterType.class)));
 
         final var response = controller.getPresenterTypes("AD01");
 
@@ -91,6 +87,33 @@ class PresenterTypesControllerImplTest {
         final var expectedTypes = serviceResponse.stream().map(PresenterType::code).toList();
         assertEquals(expectedTypes, response.getBody().getSuccessBody().getTypes());
         verify(presenterTypesService).getPresenterTypes("user123", "AD01", PASSTHROUGH_TOKEN);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenFormTypeIsUnsupported() {
+        final var errors = new Errors(RequestParamErrors.formTypeNotSupported("WU12", "exempt-form"));
+        when(presenterTypesService.getPresenterTypes(DEFAULT_USER_ID, "WU12", PASSTHROUGH_TOKEN))
+            .thenReturn(ServiceResult.invalid(errors));
+
+        final var response = controller.getPresenterTypes("WU12");
+
+        assertThat(response.getStatusCode(), is(HttpStatus.BAD_REQUEST));
+        assertThat(response.getBody(), is(notNullValue()));
+        assertThat(response.getBody().getErrorBody(), is(sameInstance(errors)));
+    }
+
+    @Test
+    void shouldPreserveUnprocessableResultWhenNoPresenterTypesAreAvailable() {
+        final var errors = new Errors(Err.invalidQueryParameterBuilderWithLocation("user_id")
+            .withError("User is not a valid ACSP member").build());
+        when(presenterTypesService.getPresenterTypes(DEFAULT_USER_ID, "AD01", PASSTHROUGH_TOKEN))
+            .thenReturn(ServiceResult.unprocessable(errors));
+
+        final var response = controller.getPresenterTypes("AD01");
+
+        assertThat(response.getStatusCode(), is(HttpStatus.UNPROCESSABLE_CONTENT));
+        assertThat(response.getBody(), is(notNullValue()));
+        assertThat(response.getBody().getErrorBody(), is(sameInstance(errors)));
     }
 
     @Test
