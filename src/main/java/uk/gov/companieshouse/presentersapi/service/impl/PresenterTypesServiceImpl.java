@@ -100,7 +100,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         try {
             email = accountService.getUserEmailByUserId(userId);
         } catch (final URIValidationException exception) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Account service URI exception", exception);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid exempt user URI", exception);
         }
 
         try {
