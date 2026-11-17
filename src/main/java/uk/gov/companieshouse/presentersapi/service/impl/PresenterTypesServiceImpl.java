@@ -10,20 +10,22 @@ import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStat
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.MembershipStatusEnum;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
-import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
+import uk.gov.companieshouse.presentersapi.guard.Guarded;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
+import uk.gov.companieshouse.service.ServiceResult;
 
 @Service
 public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     private final PresenterTypeMatrixService presenterTypeMatrixService;
+    private final FormTypeGuard formTypeGuard;
     private final AcspUserService acspUserService;
     private final ExemptUserService exemptUserService;
     private final AccountService accountService;
@@ -36,22 +38,27 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private static final EnumSet<PresenterType> EXEMPT_USER_PRESENTER_TYPES = EnumSet.of(PresenterType.OFFICIAL_RECEIVER);
 
     public PresenterTypesServiceImpl(final PresenterTypeMatrixService presenterTypeMatrixService,
-									 final AcspUserService acspUserService, final ExemptUserService exemptUserService, AccountService accountService,
-                                     final IndividualUserService individualUserService, final Logger logger) {
+                                     final AcspUserService acspUserService, final ExemptUserService exemptUserService, final AccountService accountService,
+                                     final IndividualUserService individualUserService, final Logger logger,
+                                     final FormTypeGuard formTypeGuard) {
         this.presenterTypeMatrixService = presenterTypeMatrixService;
+        this.formTypeGuard = formTypeGuard;
         this.acspUserService = acspUserService;
         this.exemptUserService = exemptUserService;
-		this.accountService = accountService;
+        this.accountService = accountService;
         this.individualUserService = individualUserService;
         this.logger = logger;
     }
 
     @Override
-    public EnumSet<PresenterType> getPresenterTypes(final String userId, final String formType,
+    public ServiceResult<EnumSet<PresenterType>> getPresenterTypes(final String userId, final String formType,
         final String passthroughToken) {
 
-        final var formTypeEnum = toFormType(formType);
-        final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum));
+        final var formTypeEnum = formTypeGuard.fromQuery(formType);
+        if (!formTypeEnum.isValid()) {
+            return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
+        }
+        final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum.value()));
 
         final Map<String, Object> logMap = Map.of(
             USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
@@ -76,11 +83,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
         logger.debugContext(userId, "Resolved possible presenter types for form type and user", logMap);
 
-        return presenterTypes;
-    }
-
-    private static FormType toFormType(final String formType) {
-        return FormType.find(formType).orElseThrow(() -> new FormTypeNotFoundException("Form Type: " + formType));
+        return ServiceResult.found(presenterTypes);
     }
 
     private boolean isValidAcsp(final String userId, final String passthroughToken) {

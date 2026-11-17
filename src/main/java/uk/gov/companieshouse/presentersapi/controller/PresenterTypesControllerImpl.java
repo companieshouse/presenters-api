@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterTypesRequestApi;
 import uk.gov.companieshouse.api.presenters.model.PresenterTypes;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
-import uk.gov.companieshouse.presentersapi.exception.FormTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.ServiceResultStatus;
 import uk.gov.companieshouse.service.rest.response.ChResponseBody;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
@@ -32,23 +32,20 @@ public class PresenterTypesControllerImpl implements PresenterTypesRequestApi {
         final var userId = RequestHelper.getChsUserId();
         final var passthroughToken = RequestHelper.requirePassthroughToken();
 
-        // Mock scenarios to be removed
-        applyMockScenarios(formType);
+        final var serviceResult = presenterTypesService.getPresenterTypes(userId, formType, passthroughToken);
 
-        final var presenterTypes = new PresenterTypes();
-
-        presenterTypes.setTypes(presenterTypesService
-                                    .getPresenterTypes(userId, formType, passthroughToken)
-                                    .stream()
-                                    .map(PresenterType::code)
-                                    .toList());
-        return responseEntityFactory.createResponse(ServiceResult.found(presenterTypes)); // Only sunny day response for now.
-    }
-
-    private static void applyMockScenarios(final String formType) {
-
-        if ("formTypeNotFound".equals(formType)) {
-            throw new FormTypeNotFoundException("Form Type: %s".formatted(formType));
+        if (ServiceResultStatus.FOUND == serviceResult.getStatus()) {
+            final var presenterCodes = new PresenterTypes(serviceResult
+                                                              .getData()
+                                                              .stream()
+                                                              .map(PresenterType::code)
+                                                              .toList());
+            return responseEntityFactory.createResponse(ServiceResult.found(presenterCodes));
         }
+        else {
+            // convert the 'error' result to a response entity with the same status and errors
+            return responseEntityFactory.createResponse(new ServiceResult<>(serviceResult.getStatus(), serviceResult.getErrors()));
+        }
+
     }
 }

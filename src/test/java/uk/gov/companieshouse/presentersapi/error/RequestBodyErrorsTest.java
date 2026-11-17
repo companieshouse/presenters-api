@@ -17,17 +17,17 @@ class RequestBodyErrorsTest {
     static Stream<Arguments> listErrors() {
         return Stream.of(
             listCase("statement types missing", RequestBodyErrors::statementTypesMissing,
-                     "statement_ids", "No Statement Types have been supplied"),
+                     "statement_ids", ErrorMessages.STATEMENT_IDS_REQUIRED),
             listCase("statement types not valid", () -> RequestBodyErrors.statementTypesNotValid("NOPE"),
-                     "statement_ids", "One or more of the statements are not valid"),
+                     "statement_ids", ErrorMessages.STATEMENT_IDS_NOT_VALID),
             listCase("statement types duplicated", () -> RequestBodyErrors.statementTypesDuplicated("NOPE"),
-                     "statement_ids", "Duplicate Statement Types have been supplied"),
+                     "statement_ids", ErrorMessages.STATEMENT_IDS_DUPLICATE),
             listCase("data object types missing", RequestBodyErrors::dataObjectTypesMissing,
-                     "data_types", "No Data Object Types have been supplied"),
+                     "data_types", ErrorMessages.DATA_OBJECTS_REQUIRED),
             listCase("data object types not valid", () -> RequestBodyErrors.dataObjectTypesNotValid("NOPE"),
-                     "data_types", "One or more of the data object types are not valid"),
+                     "data_types", ErrorMessages.DATA_OBJECTS_NOT_VALID),
             listCase("data object types duplicated", () -> RequestBodyErrors.dataObjectTypesDuplicated("NOPE"),
-                     "data_types", "Duplicate Data Object Types have been supplied"));
+                     "data_types", ErrorMessages.DATA_OBJECTS_DUPLICATE));
     }
 
     private static Arguments listCase(final String name, final Supplier<Err> error, final String location,
@@ -54,7 +54,7 @@ class RequestBodyErrorsTest {
 
         assertThat(err.getLocation(), is("form_type"));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
-        assertThat(err.getError(), is("Form type is required"));
+        assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_REQUIRED));
         assertThat(err.getErrorValues(), is(Map.of()));
     }
 
@@ -64,7 +64,7 @@ class RequestBodyErrorsTest {
 
         assertThat(err.getLocation(), is("form_type"));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
-        assertThat(err.getError(), is("Form type is invalid"));
+        assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_INVALID));
         assertThat(err.getErrorValues(), is(Map.of("rejected", "NOPE")));
     }
 
@@ -73,8 +73,10 @@ class RequestBodyErrorsTest {
         final var err = RequestBodyErrors.formTypeNotSupported("WU12", "exempt-form");
 
         assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
+        assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
         assertThat(err.getError(),
-            is("Form WU12 not supported because it belongs to the form group exempt-form"));
+            is(ErrorMessages.FORM_TYPE_NOT_SUPPORTED.formatted("WU12", "exempt-form")));
         assertThat(err.getErrorValues(), is(Map.of("rejected", "WU12", "form_group", "exempt-form")));
     }
 }
