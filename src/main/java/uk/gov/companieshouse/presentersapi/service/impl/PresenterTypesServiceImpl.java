@@ -96,8 +96,14 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     private boolean isExemptUser(final String userId) {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
+        final String email;
         try {
-            final String email = accountService.getUserEmailByUserId(userId);
+            email = accountService.getUserEmailByUserId(userId);
+        } catch (final URIValidationException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid exempt user URI", exception);
+        }
+
+        try {
             return exemptUserService.isExemptUserByEmail(email);
         } catch (final ResponseStatusException exception) {
             if( exception.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
@@ -105,9 +111,6 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
                 return false;
             }
             throw exception;
-        }
-        catch (final URIValidationException exception) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid exempt user URI", exception);
         }
     }
 

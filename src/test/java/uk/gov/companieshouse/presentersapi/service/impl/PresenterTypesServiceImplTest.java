@@ -363,6 +363,19 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
+    @DisplayName("should propagate NOT_FOUND when account lookup fails")
+    void shouldPropagateNotFoundWhenAccountLookupFails() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        final var cause = new ResponseStatusException(HttpStatus.NOT_FOUND, "No account record found");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
+
+        assertThat(exception, is(cause));
+    }
+
+    @Test
     @DisplayName("should throw an INTERNAL_SERVER_ERROR when exempt lookup fails with an unexpected error")
     void shouldThrowAnInternalServerErrorWhenExemptLookupFails() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
