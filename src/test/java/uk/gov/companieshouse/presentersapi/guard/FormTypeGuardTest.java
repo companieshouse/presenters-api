@@ -2,7 +2,6 @@ package uk.gov.companieshouse.presentersapi.guard;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -73,12 +72,15 @@ class FormTypeGuardTest {
 
     @ParameterizedTest
     @EnumSource(FormGuard.class)
-    void shouldFailExplicitlyWhenKnownFormTypeHasNoConfiguredGroup(final FormGuard formGuard) {
+    void shouldResolveKnownFormTypeWhenNoGroupIsMapped(final FormGuard formGuard) {
         final var guard = new FormTypeGuard(formGroupFormTypeBiMap);
+        when(formGroupFormTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
 
-        final var exception = assertThrows(NullPointerException.class, () -> formGuard.guard.apply(guard, "AD01"));
+        final var result = formGuard.guard.apply(guard, "WU15");
 
-        assertThat(exception.getMessage(), is("No form group configured for form type AD01"));
+        assertThat(result.isValid(), is(true));
+        assertThat(result.value(), is(FormType.WU15));
+        assertThat(result.errors(), is(List.of()));
     }
 
     @ParameterizedTest

@@ -166,6 +166,18 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
+    void shouldReturnEmptySetWhenKnownFormTypeHasNoGroupMapping() {
+        when(formGroupFormTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
+        when(presenterTypeMatrixService.presenterTypesFor(FormType.WU15))
+            .thenReturn(EnumSet.noneOf(PresenterType.class));
+
+        final var result = service.getPresenterTypes(USER_ID, "WU15", PASSTHROUGH_TOKEN);
+
+        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
+        verifyNoInteractions(acspUserService, individualUserService);
+    }
+
+    @Test
     @DisplayName("should not modify the set returned by the statement matrix")
     void shouldNotModifyMatrixPresenterTypes() throws URIValidationException {
         final var matrixPresenterTypes = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP);
