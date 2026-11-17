@@ -376,6 +376,21 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
+    @DisplayName("should return INTERNAL_SERVER_ERROR when account URI is invalid for exempt lookup")
+    void shouldReturnInternalServerErrorWhenAccountUriIsInvalidForExemptLookup() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        final var cause = new URIValidationException("Invalid URI");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getReason(), is("Invalid exempt user URI"));
+        assertThat(exception.getCause(), is(cause));
+    }
+
+    @Test
     @DisplayName("should throw an INTERNAL_SERVER_ERROR when exempt lookup fails with an unexpected error")
     void shouldThrowAnInternalServerErrorWhenExemptLookupFails() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
