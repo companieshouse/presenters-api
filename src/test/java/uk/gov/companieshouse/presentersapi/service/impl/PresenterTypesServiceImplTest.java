@@ -354,6 +354,9 @@ class PresenterTypesServiceImplTest {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
         when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
 
+        when(exemptUserService.isExemptUserByEmail(USER_EMAIL))
+            .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "No exempt user record found"));
+
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
         assertThat(result, is(EnumSet.noneOf(PresenterType.class)));
