@@ -57,7 +57,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
         // Call out to ExemptUser service
-        // TODO: Exempt users currently get OFFICIAL_RECEIVER for all form types; revisit if this changes.
+        // NOTE : Exempt users currently get OFFICIAL_RECEIVER for all form types; revisit if this changes.
         if (isExemptUser(userId)) {
             presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
         }
