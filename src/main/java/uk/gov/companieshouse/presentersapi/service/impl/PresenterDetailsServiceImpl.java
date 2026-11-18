@@ -34,7 +34,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
     private final StatementTypeMatrixService statementTypeMatrixService;
     private final IndividualUserService individualUserService;
     private final PresenterTypeMatrixService presenterTypeMatrixService;
-    private FormTypeGuard formTypeGuard;
+    private final FormTypeGuard formTypeGuard;
 
     public PresenterDetailsServiceImpl(final StatementTypeMatrixService statementTypeMatrixService,
                                        final IndividualUserService individualUserService,

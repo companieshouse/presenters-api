@@ -39,14 +39,7 @@ public class PresenterDetailsControllerImpl implements PresenterDetailsRequestAp
 
         final var serviceResult = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
 
-        if (ServiceResultStatus.FOUND == serviceResult.getStatus()) {
-            final var presenterDetails = serviceResult.getData();
-            return responseEntityFactory.createResponse(ServiceResult.found(presenterDetails));
-        }
-        else {
-            // convert the 'error' result to a response entity with the same status and errors
-            return responseEntityFactory.createResponse(new ServiceResult<>(serviceResult.getStatus(), serviceResult.getErrors()));
-        }
+        return responseEntityFactory.createResponse(serviceResult);
     }
 
     private static void applyMockScenarios(final String presenterType) {

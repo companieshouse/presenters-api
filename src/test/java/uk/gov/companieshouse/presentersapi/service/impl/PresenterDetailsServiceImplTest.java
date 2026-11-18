@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,6 @@ import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
-import uk.gov.companieshouse.service.ServiceResult;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PresenterDetailsServiceImpl tests")
@@ -83,6 +83,7 @@ class PresenterDetailsServiceImplTest {
 
         assertThat(result.getUserId(), is(USER_ID));
         assertThat(result.getStatements(), is(List.of("verified-statement")));
+        assert result.getIndividual() != null;
         assertThat(result.getIndividual().getPersonalCode(), is(PERSONAL_CODE));
         assertThat(result.getIndividual().getVerificationId(), is(IDENTITY_ID));
         assertThat(result.getIndividual().getName().getForenames(), is(List.of("Ada", "Grace")));
