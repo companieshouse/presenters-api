@@ -27,7 +27,7 @@ class StatementTypeMatrixServiceImplIT {
 
     @Test
     void shouldCombinePresenterTypeAndFormGroupDeliveryStatements() {
-        final var statements = service.statementTypesFor(PresenterType.OFFICER_EMPLOYEE,
+        final var statements = service.statementTypesAllowedFor(PresenterType.OFFICER_EMPLOYEE,
                                                          FormType.MR01);
 
         assertThat(statements.associationStatements(),
@@ -39,7 +39,7 @@ class StatementTypeMatrixServiceImplIT {
 
     @Test
     void shouldResolveDeliveryStatementsFromFormGroupForMultiDeliveryForm() {
-        final var statements = service.statementTypesFor(PresenterType.ACSP, FormType.MR01);
+        final var statements = service.statementTypesAllowedFor(PresenterType.ACSP, FormType.MR01);
 
         assertThat(statements.associationStatements(), is(EnumSet.of(AssociationStatementType.ACSP_STATEMENT)));
         assertThat(statements.deliveryStatements(), is(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM,
@@ -49,7 +49,7 @@ class StatementTypeMatrixServiceImplIT {
 
     @Test
     void shouldReturnNoDeliveryStatementsForIndividualFilingForSelf() {
-        final var statements = service.statementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF,
+        final var statements = service.statementTypesAllowedFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF,
                                                          FormType.MR01);
 
         assertThat(statements.associationStatements(), is(empty()));
@@ -59,7 +59,7 @@ class StatementTypeMatrixServiceImplIT {
 
     @Test
     void shouldRejectNullFormTypeWhenResolvingFormGroupDeliveryStatements() {
-        assertThrows(NullPointerException.class, () -> service.statementTypesFor(
+        assertThrows(NullPointerException.class, () -> service.statementTypesAllowedFor(
             PresenterType.INDIVIDUAL_REPRESENTING, null));
     }
 }

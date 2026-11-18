@@ -28,7 +28,7 @@ public class PresenterTypeMatrixServiceImpl implements PresenterTypeMatrixServic
      * @throws NullPointerException if formType is null
      */
     @Override
-    public EnumSet<PresenterType> presenterTypesFor(final FormType formType) {
+    public EnumSet<PresenterType> presenterTypesAllowedFor(final FormType formType) {
         final var formGroup = formGroupFormTypeBiMap.formGroupFor(formType);
         return formGroup == null ? EnumSet.noneOf(PresenterType.class)
                    : formGroupPresenterTypeBiMap.presenterTypesFor(formGroup);

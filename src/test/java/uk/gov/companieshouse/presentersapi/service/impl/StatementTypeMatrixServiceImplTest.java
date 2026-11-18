@@ -66,7 +66,7 @@ class StatementTypeMatrixServiceImplTest {
             .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM));
         stubFormGroup(FormType.AD01, FormGroup.FIRM_DELIVERY, DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM);
 
-        final var statements = service.statementTypesFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
+        final var statements = service.statementTypesAllowedFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM));
@@ -82,7 +82,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.ACSP);
         stubFormGroup(formType, formGroup, deliveryStatement);
 
-        final var statements = service.statementTypesFor(PresenterType.ACSP, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.ACSP, formType);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.ACSP_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(deliveryStatement));
@@ -99,7 +99,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.OFFICIAL_RECEIVER);
         stubFormGroup(formType, formGroup, deliveryStatement);
 
-        final var statements = service.statementTypesFor(PresenterType.OFFICIAL_RECEIVER, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.OFFICIAL_RECEIVER, formType);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(deliveryStatement));
@@ -127,7 +127,7 @@ class StatementTypeMatrixServiceImplTest {
             .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM,
                 DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL));
 
-        final var statements = service.statementTypesFor(presenterType, FormType.MR01);
+        final var statements = service.statementTypesAllowedFor(presenterType, FormType.MR01);
 
         assertThat(statements.associationStatements(), contains(associationStatement));
         assertThat(statements.deliveryStatements(), containsInAnyOrder(
@@ -144,7 +144,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.ACSP);
         when(formTypeBiMap.formGroupFor(null)).thenThrow(new NullPointerException("value"));
 
-        assertThrows(NullPointerException.class, () -> service.statementTypesFor(PresenterType.ACSP, null));
+        assertThrows(NullPointerException.class, () -> service.statementTypesAllowedFor(PresenterType.ACSP, null));
         verifyNoInteractions(formGroupDeliveryStatementBiMap);
     }
 
@@ -156,7 +156,7 @@ class StatementTypeMatrixServiceImplTest {
         when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF))
             .thenReturn(EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT));
 
-        final var statements = service.statementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF, formType);
 
         assertThat(statements.associationStatements(), empty());
         assertThat(statements.deliveryStatements(), empty());

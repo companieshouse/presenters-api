@@ -23,12 +23,12 @@ class DataObjectTypeMatrixServiceImplIT {
 
     @Test
     void shouldResolveDataObjectTypesForOfficialReceiver() {
-        assertThat(service.dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER),
+        assertThat(service.dataObjectTypesAllowedFor(PresenterType.OFFICIAL_RECEIVER),
             is(EnumSet.of(DataObjectType.EMAIL)));
     }
 
     @Test
     void shouldRejectNullPresenterType() {
-        assertThrows(NullPointerException.class, () -> service.dataObjectTypesFor(null));
+        assertThrows(NullPointerException.class, () -> service.dataObjectTypesAllowedFor(null));
     }
 }

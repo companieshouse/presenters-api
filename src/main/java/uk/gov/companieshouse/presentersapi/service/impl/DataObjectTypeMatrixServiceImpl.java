@@ -20,7 +20,7 @@ public class DataObjectTypeMatrixServiceImpl implements DataObjectTypeMatrixServ
      * @return the DataObjectType constants mapped to the presenter type, or an empty set if it has no mapping
      */
     @Override
-    public EnumSet<DataObjectType> dataObjectTypesFor(final PresenterType presenterType) {
+    public EnumSet<DataObjectType> dataObjectTypesAllowedFor(final PresenterType presenterType) {
         return presenterTypeDataObjectTypeBiMap.dataObjectTypesFor(presenterType);
     }
 }

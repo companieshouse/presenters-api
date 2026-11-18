@@ -35,7 +35,7 @@ class DataObjectTypeMatrixServiceImplTest {
         when(presenterTypeDataObjectTypeBiMap.dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER))
             .thenReturn(expected);
 
-        assertThat(service.dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER), is(expected));
+        assertThat(service.dataObjectTypesAllowedFor(PresenterType.OFFICIAL_RECEIVER), is(expected));
         verify(presenterTypeDataObjectTypeBiMap).dataObjectTypesFor(PresenterType.OFFICIAL_RECEIVER);
     }
 
@@ -44,7 +44,7 @@ class DataObjectTypeMatrixServiceImplTest {
         when(presenterTypeDataObjectTypeBiMap.dataObjectTypesFor(null))
             .thenThrow(new NullPointerException("key"));
 
-        assertThrows(NullPointerException.class, () -> service.dataObjectTypesFor(null));
+        assertThrows(NullPointerException.class, () -> service.dataObjectTypesAllowedFor(null));
         verify(presenterTypeDataObjectTypeBiMap).dataObjectTypesFor(null);
     }
 }

@@ -42,7 +42,7 @@ public class StatementTypeMatrixServiceImpl implements StatementTypeMatrixServic
      *     {@link PresenterType#INDIVIDUAL_FILING_FOR_SELF}
      */
     @Override
-    public PresenterStatements statementTypesFor(final PresenterType presenterType, final FormType formType) {
+    public PresenterStatements statementTypesAllowedFor(final PresenterType presenterType, final FormType formType) {
         final var associationStatements = presenterTypeAssociationStatementTypeBiMap.associationStatementTypesFor(
             presenterType);
         final var verificationStatements = presenterTypeVerificationStatementTypeBiMap.verificationStatementTypesFor(
