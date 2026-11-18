@@ -389,12 +389,56 @@ class PresenterTypesServiceImplTest {
     @DisplayName("should not return OFFICIAL_RECEIVER when exempt lookup fails")
     void shouldNotReturnOfficialReceiverWhenExemptLookupFails() throws Exception {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
-        when(accountService.getUserEmailByUserId(USER_ID))
-                .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Downstream unavailable"));
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+
+        when(exemptUserService.isExemptUserByEmail(USER_EMAIL))
+            .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "No exempt user record found"));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
         assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
+    }
+
+    @Test
+    @DisplayName("should propagate NOT_FOUND when account lookup fails")
+    void shouldPropagateNotFoundWhenAccountLookupFails() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        final var cause = new ResponseStatusException(HttpStatus.NOT_FOUND, "No account record found");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
+
+        assertThat(exception, is(cause));
+    }
+
+    @Test
+    @DisplayName("should return INTERNAL_SERVER_ERROR when account URI is invalid for exempt lookup")
+    void shouldReturnInternalServerErrorWhenAccountUriIsInvalidForExemptLookup() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        final var cause = new URIValidationException("Invalid URI");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getReason(), is("Invalid exempt user URI"));
+        assertThat(exception.getCause(), is(cause));
+    }
+
+    @Test
+    @DisplayName("should throw an INTERNAL_SERVER_ERROR when exempt lookup fails with an unexpected error")
+    void shouldThrowAnInternalServerErrorWhenExemptLookupFails() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+        when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenThrow(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error"));
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getReason(), is("Unexpected error"));
     }
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) throws URIValidationException {
