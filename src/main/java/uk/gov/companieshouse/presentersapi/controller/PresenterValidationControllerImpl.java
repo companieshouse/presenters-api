@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
 import jakarta.validation.Valid;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +46,9 @@ public class PresenterValidationControllerImpl implements PresenterValidationReq
         final var errors = Guarded.combinedErrors(formType, statements, dataTypes);
 
         if (errors.hasErrors()) {
+            logger.debugContext("PresenterValidationControllerImpl",
+                                "Validation errors found",
+                                Map.of("body", validationRequest, "errors", errors));
             return responseEntityFactory.createResponse(ServiceResult.invalid(errors));
         }
 
