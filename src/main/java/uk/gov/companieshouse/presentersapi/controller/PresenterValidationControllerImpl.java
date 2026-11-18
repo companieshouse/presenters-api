@@ -7,9 +7,13 @@ import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterValidationRequestApi;
 import uk.gov.companieshouse.api.presenters.model.ValidationRequest;
 import uk.gov.companieshouse.api.presenters.model.ValidationResponse;
+import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterValidationException;
 import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
+import uk.gov.companieshouse.presentersapi.guard.Guarded;
+import uk.gov.companieshouse.presentersapi.guard.RequestListGuard;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
 import uk.gov.companieshouse.service.ServiceResult;
 import uk.gov.companieshouse.service.rest.response.ChResponseBody;
@@ -21,14 +25,28 @@ public class PresenterValidationControllerImpl implements PresenterValidationReq
 
     private final PresenterValidationService presenterValidationService;
     private final PluggableResponseEntityFactory responseEntityFactory;
+    private final FormTypeGuard formTypeGuard;
+    private final Logger logger;
 
-    public PresenterValidationControllerImpl(final PresenterValidationService presenterValidationService, final PluggableResponseEntityFactory responseEntityFactory) {
+    public PresenterValidationControllerImpl(final PresenterValidationService presenterValidationService,
+        final PluggableResponseEntityFactory responseEntityFactory, final FormTypeGuard formTypeGuard, final Logger logger) {
         this.presenterValidationService = presenterValidationService;
         this.responseEntityFactory = responseEntityFactory;
+        this.formTypeGuard = formTypeGuard;
+        this.logger = logger;
     }
 
     @Override
     public ResponseEntity<ChResponseBody<ValidationResponse>> validatePresenterDetails(@Valid final ValidationRequest validationRequest) {
+
+        final var formType = formTypeGuard.fromBody(validationRequest.getFormType());
+        final var statements = RequestListGuard.guardStatements(validationRequest.getStatementIds());
+        final var dataTypes = RequestListGuard.guardDataObjectTypes(validationRequest.getDataTypes());
+        final var errors = Guarded.combinedErrors(formType, statements, dataTypes);
+
+        if (errors.hasErrors()) {
+            return responseEntityFactory.createResponse(ServiceResult.invalid(errors));
+        }
 
         // Mock scenarios to be removed
         applyMockScenarios(validationRequest);

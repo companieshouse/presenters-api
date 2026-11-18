@@ -24,7 +24,10 @@ import org.springframework.core.io.support.ResourcePropertySource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
+import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
@@ -41,6 +44,12 @@ class PresenterApiFeatureFlagTest {
     @Mock
     private PresenterValidationService presenterValidationService;
 
+    @Mock
+    private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
+
+    @Mock
+    private Logger logger;
+
     // Create a WebApplicationContextRunner to test the application context with different configurations.
     // Spring will create the controller beans if the feature flag is set to true, otherwise they will not be created.
     // This ensures that the @ConditionalOnProperty annotation on the controller classes is genuinely tested.
@@ -48,7 +57,9 @@ class PresenterApiFeatureFlagTest {
         .withUserConfiguration(ControllerConfiguration.class)
         .withBean(PresenterDetailsService.class, () -> presenterDetailsService)
         .withBean(PresenterTypesService.class, () -> presenterTypesService)
-        .withBean(PresenterValidationService.class, () -> presenterValidationService);
+        .withBean(PresenterValidationService.class, () -> presenterValidationService)
+        .withBean(FormGroupFormTypeBiMap.class, () -> formGroupFormTypeBiMap)
+        .withBean(Logger.class, () -> logger);
 
     @Test
     void shouldRegisterPresenterEndpointsWhenEnvironmentFlagIsTrue() throws IOException {
@@ -116,7 +127,7 @@ class PresenterApiFeatureFlagTest {
     @TestConfiguration(proxyBeanMethods = false)
     @EnableWebMvc
     @Import({PresenterDetailsControllerImpl.class, PresenterTypesControllerImpl.class,
-        PresenterValidationControllerImpl.class, ResponseEntityFactoryConfig.class})
+        PresenterValidationControllerImpl.class, ResponseEntityFactoryConfig.class, FormTypeGuard.class})
     static class ControllerConfiguration {
     }
 }

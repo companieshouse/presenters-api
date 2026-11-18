@@ -2,14 +2,14 @@ package uk.gov.companieshouse.presentersapi.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,10 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import uk.gov.companieshouse.api.presenters.model.ValidationRequest;
 import uk.gov.companieshouse.api.presenters.model.ValidationResponse;
+import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
-import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterValidationException;
-import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
+import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
+import uk.gov.companieshouse.presentersapi.data.enums.AssociationStatementType;
+import uk.gov.companieshouse.presentersapi.data.enums.DataObjectType;
+import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
+import uk.gov.companieshouse.presentersapi.data.enums.FormType;
+import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
@@ -32,8 +36,11 @@ class PresenterValidationControllerImplTest {
 
     @Mock
     private PresenterValidationService presenterValidationService;
+    @Mock
+    private Logger logger;
 
     private PresenterValidationControllerImpl controller;
+    private FormTypeGuard formTypeGuard;
 
     private ValidationRequest testValidationRequest;
     private ValidationResponse testValidationResponse;
@@ -44,70 +51,126 @@ class PresenterValidationControllerImplTest {
     @BeforeEach
     void setUp() {
         testValidationRequest = new ValidationRequest();
-        testValidationRequest.setStatementIds(List.of("statement-ok"));
+        testValidationRequest.setFormType("AD01");
+        testValidationRequest.setStatementIds(List.of(AssociationStatementType.ACSP_STATEMENT.code()));
+        testValidationRequest.setDataTypes(List.of(DataObjectType.PERSONAL_CODE.code()));
         testValidationResponse = new ValidationResponse();
         testValidationResponse.setResult(ValidationResponse.ResultEnum.VALID);
-        controller = new PresenterValidationControllerImpl(presenterValidationService, responseEntityFactory);
+        final var formTypesByGroup = Map.of(FormGroup.EXEMPT_FORM, Set.of(FormType.LIQ04));
+        formTypeGuard = new FormTypeGuard(new FormGroupFormTypeBiMap(formTypesByGroup));
+        controller = new PresenterValidationControllerImpl(
+            presenterValidationService, responseEntityFactory, formTypeGuard, logger);
     }
 
     @Test
-    @DisplayName("should return validation response with HTTP  200")
-    void testValidatePresenterDetailsSuccess() {
+    @DisplayName("should return validation response with HTTP 200")
+    void shouldReturnValidationResponseWhenRequestIsValid() {
         when(presenterValidationService.validatePresenterDetails(testValidationRequest))
             .thenReturn(testValidationResponse);
 
-        final var response =
-            controller.validatePresenterDetails(testValidationRequest);
+        final var response = controller.validatePresenterDetails(testValidationRequest);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(ValidationResponse.ResultEnum.VALID, response.getBody().getSuccessBody().getResult());
 
-        verify(presenterValidationService, times(1))
-            .validatePresenterDetails(testValidationRequest);
+        verify(presenterValidationService).validatePresenterDetails(testValidationRequest);
         verifyNoMoreInteractions(presenterValidationService);
     }
 
     @Test
-    @DisplayName("should throw StatementNotFoundException when mock statement id is present")
-    void testValidatePresenterDetailsStatementNotFound() {
-        final var request = new ValidationRequest();
-        request.setStatementIds(List.of("statementNotFound"));
+    @DisplayName("should return HTTP 400 when a statement id is invalid")
+    void shouldReturnBadRequestWhenStatementIdIsInvalid() {
+        testValidationRequest.setStatementIds(List.of("statementNotFound"));
 
-        final var exception = assertThrows(
-            StatementNotFoundException.class,
-            () -> controller.validatePresenterDetails(request));
+        final var response = controller.validatePresenterDetails(testValidationRequest);
 
-        assertEquals("Statement not valid statement", exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
         verifyNoInteractions(presenterValidationService);
     }
 
     @Test
-    @DisplayName("should throw PresenterValidationException when mock input validation fails")
-    void testValidatePresenterDetails() {
-        final var request = new ValidationRequest();
-        request.setStatementIds(List.of("presenterValidation"));
+    @DisplayName("should return HTTP 400 when statement ids are duplicated")
+    void shouldReturnBadRequestWhenStatementIdsAreDuplicated() {
+        testValidationRequest.setStatementIds(List.of(
+            AssociationStatementType.ACSP_STATEMENT.code(),
+            AssociationStatementType.ACSP_STATEMENT.code()));
 
-        final var exception = assertThrows(
-            PresenterValidationException.class,
-            () -> controller.validatePresenterDetails(request));
+        final var response = controller.validatePresenterDetails(testValidationRequest);
 
-        assertEquals("Input validation fails", exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
         verifyNoInteractions(presenterValidationService);
     }
 
     @Test
-    @DisplayName("should throw PresenterNotExemptException when mock details not exempt")
-    void testValidatePresenterDetailsNotExempt() {
-        final var request = new ValidationRequest();
-        request.setStatementIds(List.of("presenterNotExempt"));
+    @DisplayName("should return HTTP 400 when a data type is invalid")
+    void shouldReturnBadRequestWhenDataTypeIsInvalid() {
+        testValidationRequest.setDataTypes(List.of("unknown-data-type"));
 
-        final var exception = assertThrows(
-            PresenterNotExemptException.class,
-            () -> controller.validatePresenterDetails(request));
+        final var response = controller.validatePresenterDetails(testValidationRequest);
 
-        assertEquals("Presenter is not on the exemption list but the exempt statement has been given.", exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verifyNoInteractions(presenterValidationService);
+    }
+
+    @Test
+    @DisplayName("should return HTTP 400 when data types are duplicated")
+    void shouldReturnBadRequestWhenDataTypesAreDuplicated() {
+        testValidationRequest.setDataTypes(List.of(
+            DataObjectType.PERSONAL_CODE.code(),
+            DataObjectType.PERSONAL_CODE.code()));
+
+        final var response = controller.validatePresenterDetails(testValidationRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verifyNoInteractions(presenterValidationService);
+    }
+
+    @Test
+    @DisplayName("should return HTTP 400 when form type is invalid")
+    void shouldReturnBadRequestWhenFormTypeIsInvalid() {
+        testValidationRequest.setFormType("unknown-form");
+
+        final var response = controller.validatePresenterDetails(testValidationRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verifyNoInteractions(presenterValidationService);
+    }
+
+    @Test
+    @DisplayName("should return HTTP 400 when form type is in the exempt-form group")
+    void shouldReturnBadRequestWhenFormTypeIsInExemptFormGroup() {
+        testValidationRequest.setFormType("LIQ04");
+
+        final var response = controller.validatePresenterDetails(testValidationRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verifyNoInteractions(presenterValidationService);
+    }
+
+    @Test
+    @DisplayName("should report form type, statement id and data type violations together")
+    void shouldReportAllRequestViolationsTogether() {
+        testValidationRequest.setFormType("unknown-form");
+        testValidationRequest.setStatementIds(List.of(
+            AssociationStatementType.ACSP_STATEMENT.code(),
+            AssociationStatementType.ACSP_STATEMENT.code()));
+        testValidationRequest.setDataTypes(List.of(
+            DataObjectType.PERSONAL_CODE.code(),
+            DataObjectType.PERSONAL_CODE.code()));
+
+        final var response = controller.validatePresenterDetails(testValidationRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(3, response.getBody().getErrorBody().size());
         verifyNoInteractions(presenterValidationService);
     }
 }
