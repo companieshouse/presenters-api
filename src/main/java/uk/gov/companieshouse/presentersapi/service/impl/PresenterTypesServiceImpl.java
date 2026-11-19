@@ -66,6 +66,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
         // Call out to ExemptUser service
+        // NOTE : Exempt users currently get OFFICIAL_RECEIVER for all form types; revisit if this changes.
         if (isExemptUser(userId)) {
             presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
         }
@@ -100,13 +101,21 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     private boolean isExemptUser(final String userId) {
         final Map<String, Object> logMap = Map.of(USER_ID, userId);
+        final String email;
         try {
-            final String email = accountService.getUserEmailByUserId(userId);
+            email = accountService.getUserEmailByUserId(userId);
+        } catch (final URIValidationException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid exempt user URI", exception);
+        }
+
+        try {
             return exemptUserService.isExemptUserByEmail(email);
-        } catch (final ResponseStatusException | URIValidationException exception) {
-            logger.errorContext(userId, "Failed to resolve exempt user status; defaulting to non-exempt",
-                    exception, logMap);
-            return false;
+        } catch (final ResponseStatusException exception) {
+            if( exception.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
+                logger.debugContext(userId, "No exempt user record found for user", logMap);
+                return false;
+            }
+            throw exception;
         }
     }
 
