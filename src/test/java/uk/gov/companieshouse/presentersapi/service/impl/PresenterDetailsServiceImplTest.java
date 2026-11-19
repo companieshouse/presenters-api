@@ -11,13 +11,16 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -179,17 +182,73 @@ class PresenterDetailsServiceImplTest {
         assertThat(exception.getCause(), is(cause));
     }
 
-    @Test
-    void shouldReturnBadGatewayWhenIdentityDetailsAreIncomplete() throws URIValidationException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("incompleteIdentities")
+    void shouldReturnBadGatewayWhenIdentityDetailsAreIncomplete(final String scenario, final Identity identity)
+        throws URIValidationException {
         givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
         givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
-        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(new Identity());
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(identity);
 
         final var exception = assertThrows(ResponseStatusException.class,
             () -> service.getPresenterDetails(
                 USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
 
-        assertThat(exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
+        assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
+        assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("incompleteUvids")
+    void shouldReturnBadGatewayWhenUvidIsIncomplete(final String scenario, final Uvid uvid)
+        throws URIValidationException {
+        givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
+        givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(validIdentity());
+        when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenReturn(uvid);
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(
+                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+
+        assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
+        assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
+    }
+
+    private static Stream<Arguments> incompleteIdentities() {
+        return Stream.of(
+            Arguments.of("Missing identity", null),
+            Arguments.of("Empty identity", new Identity()),
+            Arguments.of("Missing identity ID", validIdentity().id(null)),
+            Arguments.of("Empty identity ID", validIdentity().id("")),
+            Arguments.of("Blank identity ID", validIdentity().id(" ")),
+            Arguments.of("Missing date of birth", validIdentity().dateOfBirth(null)),
+            Arguments.of("Missing current name", validIdentity().currentName(null)),
+            Arguments.of("Missing forenames",
+                validIdentity().currentName(new CurrentName().forenames(null).surname("Lovelace"))),
+            Arguments.of("Empty forenames",
+                validIdentity().currentName(new CurrentName().forenames(List.of()).surname("Lovelace"))),
+            Arguments.of("Missing surname",
+                validIdentity().currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname(null))),
+            Arguments.of("Empty surname",
+                validIdentity().currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname(""))),
+            Arguments.of("Blank surname",
+                validIdentity().currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname(" "))));
+    }
+
+    private static Stream<Arguments> incompleteUvids() {
+        return Stream.of(
+            Arguments.of("Missing UVID", null),
+            Arguments.of("Missing personal code", new Uvid()),
+            Arguments.of("Empty personal code", new Uvid().uvid("")),
+            Arguments.of("Blank personal code", new Uvid().uvid(" ")));
+    }
+
+    private static Identity validIdentity() {
+        return new Identity()
+            .id(IDENTITY_ID)
+            .currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname("Lovelace"))
+            .dateOfBirth(LocalDate.of(1815, 12, 10));
     }
 
     private void givenPresenterTypes(final PresenterType... presenterTypes) {
@@ -198,11 +257,7 @@ class PresenterDetailsServiceImplTest {
     }
 
     private void givenIdentityDetails() throws URIValidationException {
-        final var identity = new Identity()
-            .id(IDENTITY_ID)
-            .currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname("Lovelace"))
-            .dateOfBirth(LocalDate.of(1815, 12, 10));
-        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(identity);
+        when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(validIdentity());
         when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID))
             .thenReturn(new Uvid().uvid(PERSONAL_CODE));
     }

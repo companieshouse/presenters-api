@@ -1,14 +1,11 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
-import java.time.LocalDate;
-import java.util.EnumSet;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
-import uk.gov.companieshouse.api.identityverification.model.CurrentName;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.api.presenters.model.Acsp;
@@ -31,6 +28,9 @@ import uk.gov.companieshouse.service.ServiceResult;
 @Service
 public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
+    private static final String INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE =
+        "Identity-verification returned incomplete individual details";
+
     private final StatementTypeMatrixService statementTypeMatrixService;
     private final IndividualUserService individualUserService;
     private final PresenterTypeMatrixService presenterTypeMatrixService;
@@ -52,7 +52,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         if (!formTypeEnum.isValid()) {
             return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
         }
-        final var presenterTypesForForm = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum.value()));
+        final var presenterTypesForForm = presenterTypeMatrixService.presenterTypesFor(formTypeEnum.value());
 
         final var presenterTypeEnum = PresenterType.find(presenterType)
             .orElseThrow(() -> new PresenterTypeNotFoundException("Presenter Type: " + presenterType));
@@ -92,40 +92,43 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
     private Individual getIndividual(final String userId) {
         try {
-            final Identity identity = individualUserService.getIdentityByUserId(userId);
+            final var identity = individualUserService.getIdentityByUserId(userId);
             validateIdentityDetails(identity);
-            final Uvid uvid = individualUserService.getActiveUvidByIdentityId(identity.getId());
+            final var uvid = individualUserService.getActiveUvidByIdentityId(identity.getId());
             validateUvid(uvid);
 
-            final CurrentName currentName = identity.getCurrentName();
-            final LocalDate dateOfBirth = identity.getDateOfBirth();
-            final var individual = new Individual();
-            individual.setPersonalCode(uvid.getUvid());
-            individual.setVerificationId(identity.getId());
-            individual.setName(new PersonName(List.copyOf(currentName.getForenames()), currentName.getSurname()));
-            individual.setDateOfBirth(new DateOfBirth(
-                dateOfBirth.getDayOfMonth(), dateOfBirth.getMonthValue(), dateOfBirth.getYear()));
-            return individual;
+            return mapIndividual(identity, uvid);
         } catch (final URIValidationException exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Invalid identity-verification URI", exception);
         }
     }
 
+    private static Individual mapIndividual(final Identity identity, final Uvid uvid) {
+        final var currentName = identity.getCurrentName();
+        final var dateOfBirth = identity.getDateOfBirth();
+        final var individual = new Individual();
+        individual.setPersonalCode(uvid.getUvid());
+        individual.setVerificationId(identity.getId());
+        individual.setName(new PersonName(List.copyOf(currentName.getForenames()), currentName.getSurname()));
+        individual.setDateOfBirth(new DateOfBirth(
+            dateOfBirth.getDayOfMonth(), dateOfBirth.getMonthValue(), dateOfBirth.getYear()));
+        return individual;
+    }
+
     private static void validateIdentityDetails(final Identity identity) {
+        final var currentName = identity == null ? null : identity.getCurrentName();
         if (identity == null || identity.getId() == null || identity.getId().isBlank()
-            || identity.getDateOfBirth() == null || identity.getCurrentName() == null
-            || identity.getCurrentName().getForenames() == null || identity.getCurrentName().getForenames().isEmpty()
-            || identity.getCurrentName().getSurname() == null || identity.getCurrentName().getSurname().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                "Identity-verification returned incomplete individual details");
+            || identity.getDateOfBirth() == null || currentName == null
+            || currentName.getForenames() == null || currentName.getForenames().isEmpty()
+            || currentName.getSurname() == null || currentName.getSurname().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE);
         }
     }
 
     private static void validateUvid(final Uvid uvid) {
         if (uvid == null || uvid.getUvid() == null || uvid.getUvid().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                "Identity-verification returned incomplete individual details");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE);
         }
     }
 }

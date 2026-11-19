@@ -12,8 +12,6 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundExcept
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
-import uk.gov.companieshouse.service.ServiceResult;
-import uk.gov.companieshouse.service.ServiceResultStatus;
 import uk.gov.companieshouse.service.rest.response.ChResponseBody;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
