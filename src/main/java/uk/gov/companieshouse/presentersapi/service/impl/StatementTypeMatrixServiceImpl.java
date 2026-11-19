@@ -38,8 +38,9 @@ public class StatementTypeMatrixServiceImpl implements StatementTypeMatrixServic
 
     /**
      * Returns the union of applicable statement types in one value, merging presenter-specific and form-group
-     * delivery statements. This is distinct from {@link #validStatementCombinationsFor(PresenterType, FormType)},
-     * which returns alternatives separately for exact matching.
+     * delivery statements, except that individuals filing for themselves have no delivery statements.
+     * This is distinct from {@link #validStatementCombinationsFor(PresenterType, FormType)}, which returns
+     * alternatives separately for exact matching.
      *
      * @param presenterType the non-null PresenterType constant to look up
      * @param formType the non-null FormType constant to look up
