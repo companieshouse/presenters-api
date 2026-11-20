@@ -16,7 +16,6 @@ import uk.gov.companieshouse.presentersapi.guard.Guarded;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
-import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.service.ServiceResult;
@@ -29,7 +28,6 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private final AcspUserService acspUserService;
     private final ExemptUserService exemptUserService;
     private final AccountService accountService;
-    private final IndividualUserService individualUserService;
     private final Logger logger;
 
     private static final String USER_ID = "user_id";
@@ -39,14 +37,12 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
     public PresenterTypesServiceImpl(final PresenterTypeMatrixService presenterTypeMatrixService,
                                      final AcspUserService acspUserService, final ExemptUserService exemptUserService, final AccountService accountService,
-                                     final IndividualUserService individualUserService, final Logger logger,
-                                     final FormTypeGuard formTypeGuard) {
+                                     final Logger logger, final FormTypeGuard formTypeGuard) {
         this.presenterTypeMatrixService = presenterTypeMatrixService;
         this.formTypeGuard = formTypeGuard;
         this.acspUserService = acspUserService;
         this.exemptUserService = exemptUserService;
         this.accountService = accountService;
-        this.individualUserService = individualUserService;
         this.logger = logger;
     }
 
@@ -74,13 +70,6 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
             presenterTypes.remove(PresenterType.ACSP);
-        }
-
-        // Check verification only if individual presenter types are present; retain only ACSP and official receiver if unverified.
-        if (presenterTypes.stream().anyMatch(presenterType ->
-            presenterType != PresenterType.OFFICIAL_RECEIVER && presenterType != PresenterType.ACSP)
-            && !isVerifiedIndividual(userId)) {
-            presenterTypes.retainAll(EnumSet.of(PresenterType.ACSP, PresenterType.OFFICIAL_RECEIVER));
         }
 
         logger.debugContext(userId, "Resolved possible presenter types for form type and user", logMap);
@@ -116,23 +105,6 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
                 return false;
             }
             throw exception;
-        }
-    }
-
-    private boolean isVerifiedIndividual(final String userId) {
-        try {
-            final var identity = individualUserService.getIdentityByUserId(userId);
-            individualUserService.getActiveUvidByIdentityId(identity.getId());
-            return true;
-        } catch (final ResponseStatusException exception) {
-            if (exception.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
-                logger.debugContext(userId, "No verified identity or active UVID found for user", Map.of(USER_ID, userId));
-                return false;
-            }
-            throw exception;
-        } catch (final URIValidationException exception) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Invalid identity-verification URI", exception);
         }
     }
 

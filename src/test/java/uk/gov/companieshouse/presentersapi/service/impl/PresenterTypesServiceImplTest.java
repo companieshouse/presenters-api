@@ -4,13 +4,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,8 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +25,6 @@ import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStatusEnum;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.MembershipStatusEnum;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
-import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
 import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
@@ -40,7 +35,6 @@ import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
-import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
@@ -52,7 +46,6 @@ class PresenterTypesServiceImplTest {
 
     private static final String USER_ID = "user123";
     private static final String USER_EMAIL = "user@example.com";
-    private static final String IDENTITY_ID = "identity123";
     private static final String PASSTHROUGH_TOKEN = "passthrough-token";
     private static final String FORM_TYPE_CODE = "AA01";
 
@@ -67,8 +60,6 @@ class PresenterTypesServiceImplTest {
     @Mock
     private AccountService accountService;
     @Mock
-    private IndividualUserService individualUserService;
-    @Mock
     private Logger logger;
 
     private MockedStatic<RequestHelper> requestHelperMock;
@@ -80,7 +71,7 @@ class PresenterTypesServiceImplTest {
         requestHelperMock = mockStatic(RequestHelper.class);
         requestHelperMock.when(RequestHelper::getChsUserId).thenReturn(USER_ID);
         service = new PresenterTypesServiceImpl(presenterTypeMatrixService, acspUserService, exemptUserService,
-                accountService, individualUserService, logger, new FormTypeGuard(formGroupFormTypeBiMap));
+                accountService, logger, new FormTypeGuard(formGroupFormTypeBiMap));
     }
 
     @AfterEach
@@ -174,7 +165,7 @@ class PresenterTypesServiceImplTest {
         final var result = service.getPresenterTypes(USER_ID, "WU15", PASSTHROUGH_TOKEN);
 
         assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
-        verifyNoInteractions(acspUserService, individualUserService);
+        verifyNoInteractions(acspUserService);
     }
 
     @Test
@@ -199,7 +190,7 @@ class PresenterTypesServiceImplTest {
         assertThat(result.getErrors().size(), is(1));
         assertThat(result.getErrors().containsError(RequestParamErrors.formTypeInvalid("UNKNOWN-FORM")), is(true));
         verifyNoInteractions(formGroupFormTypeBiMap, presenterTypeMatrixService, acspUserService,
-            individualUserService, accountService, exemptUserService);
+            accountService, exemptUserService);
     }
 
     @ParameterizedTest
@@ -213,152 +204,19 @@ class PresenterTypesServiceImplTest {
         assertThat(result.getErrors().size(), is(1));
         assertThat(result.getErrors().containsError(
             RequestParamErrors.formTypeNotSupported(FORM_TYPE_CODE, group.code())), is(true));
-        verifyNoInteractions(presenterTypeMatrixService, acspUserService, individualUserService,
-            accountService, exemptUserService);
+        verifyNoInteractions(presenterTypeMatrixService, acspUserService, accountService, exemptUserService);
     }
 
     @ParameterizedTest
     @EnumSource(value = PresenterType.class, names = {"OFFICIAL_RECEIVER", "ACSP"},
         mode = EnumSource.Mode.EXCLUDE)
-    void shouldLookUpIdentityWhenOtherPresenterTypeIsPresent(final PresenterType presenterType)
+    void shouldReturnPresenterTypeAllowedByMatrix(final PresenterType presenterType)
         throws URIValidationException {
         givenMatrixPresenterTypes(EnumSet.of(presenterType));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
         assertFoundResult(result, EnumSet.of(presenterType));
-        verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = PresenterType.class, names = {"OFFICIAL_RECEIVER", "ACSP"},
-        mode = EnumSource.Mode.EXCLUDE)
-    void shouldLookUpIdentityWhenOtherPresenterTypeIsMixedWithExcludedTypes(final PresenterType presenterType)
-        throws URIValidationException {
-        final var presenterTypes = EnumSet.of(presenterType, PresenterType.OFFICIAL_RECEIVER, PresenterType.ACSP);
-        givenMatrixPresenterTypes(presenterTypes);
-        givenMembership(membership(MembershipStatusEnum.ACTIVE, AcspStatusEnum.ACTIVE));
-
-        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
-
-        assertFoundResult(result, presenterTypes);
-        verify(individualUserService).getActiveUvidByIdentityId(IDENTITY_ID);
-    }
-
-    @ParameterizedTest
-    @MethodSource("presenterTypesWithoutOtherTypes")
-    void shouldSkipIdentityLookupWhenNoOtherPresenterTypeIsPresent(final EnumSet<PresenterType> presenterTypes)
-        throws URIValidationException {
-        givenMatrixPresenterTypes(presenterTypes);
-        if (presenterTypes.contains(PresenterType.ACSP)) {
-            givenMembership(membership(MembershipStatusEnum.ACTIVE, AcspStatusEnum.ACTIVE));
-        }
-
-        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
-
-        assertFoundResult(result, presenterTypes);
-        verifyNoInteractions(individualUserService);
-    }
-
-    @Test
-    void shouldReturnInternalServerErrorWhenIdentityLookupUriIsInvalid() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
-        final var cause = new URIValidationException("Invalid URI");
-        when(individualUserService.getIdentityByUserId(USER_ID)).thenThrow(cause);
-
-        final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
-
-        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThat(exception.getCause(), is(cause));
-    }
-
-    @Test
-    void shouldPropagateIdentityLookupFailure() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
-        final var cause = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Identity-verification API is unavailable");
-        when(individualUserService.getIdentityByUserId(USER_ID)).thenThrow(cause);
-
-        final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
-
-        assertThat(exception, is(cause));
-    }
-
-    @Test
-    void shouldReturnInternalServerErrorWhenActiveUvidLookupUriIsInvalid() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
-        final var cause = new URIValidationException("Invalid URI");
-        when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenThrow(cause);
-
-        final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
-
-        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThat(exception.getCause(), is(cause));
-    }
-
-    @Test
-    void shouldRemoveOtherPresenterTypesWhenNoActiveUvidIsFound() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
-        final var cause = new ResponseStatusException(HttpStatus.NOT_FOUND, "No active UVID was found for the identity");
-        when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenThrow(cause);
-
-        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
-
-        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void shouldPreserveAcspAndOfficialReceiverWhenIndividualIsNotVerified(final boolean identityMissing)
-        throws URIValidationException {
-        final var matrixPresenterTypes = EnumSet.allOf(PresenterType.class);
-        givenMatrixPresenterTypes(matrixPresenterTypes);
-        givenMembership(membership(MembershipStatusEnum.ACTIVE, AcspStatusEnum.ACTIVE));
-        final var cause = new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found");
-        if (identityMissing) {
-            when(individualUserService.getIdentityByUserId(USER_ID)).thenThrow(cause);
-        } else {
-            when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenThrow(cause);
-        }
-
-        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
-
-        assertFoundResult(result, EnumSet.of(PresenterType.ACSP, PresenterType.OFFICIAL_RECEIVER));
-        assertThat("Matrix data should be left intact", matrixPresenterTypes, is(EnumSet.allOf(PresenterType.class)));
-    }
-
-    @Test
-    void shouldNotRestoreAcspWhenNeitherAcspNorIndividualIsVerified() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.allOf(PresenterType.class));
-        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
-        when(individualUserService.getIdentityByUserId(USER_ID))
-            .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Identity not found"));
-
-        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
-
-        assertFoundResult(result, EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
-    }
-
-    @Test
-    void shouldPropagateActiveUvidLookupFailure() throws URIValidationException {
-        givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
-        final var cause = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Identity-verification API is unavailable");
-        when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenThrow(cause);
-
-        final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN));
-
-        assertThat(exception, is(cause));
-    }
-
-    private static Stream<EnumSet<PresenterType>> presenterTypesWithoutOtherTypes() {
-        return Stream.of(
-            EnumSet.noneOf(PresenterType.class),
-            EnumSet.of(PresenterType.OFFICIAL_RECEIVER),
-            EnumSet.of(PresenterType.ACSP),
-            EnumSet.of(PresenterType.OFFICIAL_RECEIVER, PresenterType.ACSP));
     }
 
     @Test
@@ -441,16 +299,10 @@ class PresenterTypesServiceImplTest {
         assertThat(exception.getReason(), is("Unexpected error"));
     }
 
-    private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) throws URIValidationException {
+    private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AA01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(presenterTypeMatrixService.presenterTypesAllowedFor(FormType.find(FORM_TYPE_CODE).orElseThrow()))
             .thenReturn(presenterTypes);
-        if (presenterTypes.stream().anyMatch(presenterType ->
-            presenterType != PresenterType.OFFICIAL_RECEIVER && presenterType != PresenterType.ACSP)) {
-            final var identity = new Identity();
-            identity.setId(IDENTITY_ID);
-            when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(identity);
-        }
     }
 
     private void givenMembership(final AcspMembership membership) {
