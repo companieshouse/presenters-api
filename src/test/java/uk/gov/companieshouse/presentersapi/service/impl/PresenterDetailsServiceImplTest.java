@@ -252,7 +252,7 @@ class PresenterDetailsServiceImplTest {
     }
 
     private void givenPresenterTypes(final PresenterType... presenterTypes) {
-        when(presenterTypeMatrixService.presenterTypesFor(FormType.AD01))
+        when(presenterTypeMatrixService.presenterTypesAllowedFor(FormType.AD01))
             .thenReturn(EnumSet.of(presenterTypes[0], presenterTypes));
     }
 
@@ -263,7 +263,7 @@ class PresenterDetailsServiceImplTest {
     }
 
     private void givenStatements(final PresenterType presenterType, final PresenterStatements statements) {
-        when(statementTypeMatrixService.statementTypesFor(presenterType, FormType.AD01)).thenReturn(statements);
+        when(statementTypeMatrixService.statementTypesAllowedFor(presenterType, FormType.AD01)).thenReturn(statements);
     }
 
     private static PresenterStatements emptyStatements() {
