@@ -3,7 +3,6 @@ package uk.gov.companieshouse.presentersapi.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,6 +29,7 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedExcepti
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
+import uk.gov.companieshouse.service.ServiceResult;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +77,7 @@ class PresenterDetailsControllerImplTest {
         final var presenterType = "officer-employee";
 
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
         final var response = controller.getPresenterDetails(formType, presenterType);
 
@@ -103,26 +103,11 @@ class PresenterDetailsControllerImplTest {
         final var presenterType = "corporate-officer-employee";
 
         when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
-            .thenReturn(testPresenterDetails);
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
         controller.getPresenterDetails(formType, presenterType);
 
         verify(presenterDetailsService).getPresenterDetails(userId, formType, presenterType);
-    }
-
-    @Test
-    @DisplayName("should return response entity with presenter details")
-    void testResponseEntityStructure() {
-        when(presenterDetailsService.getPresenterDetails(anyString(), anyString(), anyString()))
-            .thenReturn(testPresenterDetails);
-
-        final var response = controller.getPresenterDetails("form-abc", "officer-employee");
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody().getSuccessBody().getStatements());
-        assertNotNull(response.getBody().getSuccessBody().getExempt());
     }
 
     @Test

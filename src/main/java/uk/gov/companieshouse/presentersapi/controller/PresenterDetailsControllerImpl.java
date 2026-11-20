@@ -12,7 +12,6 @@ import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundExcept
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
-import uk.gov.companieshouse.service.ServiceResult;
 import uk.gov.companieshouse.service.rest.response.ChResponseBody;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
@@ -36,9 +35,9 @@ public class PresenterDetailsControllerImpl implements PresenterDetailsRequestAp
         // Mock scenarios to be removed
         applyMockScenarios(presenterType);
 
-        final var presenterDetails = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
+        final var serviceResult = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
 
-        return responseEntityFactory.createResponse(ServiceResult.found(presenterDetails));
+        return responseEntityFactory.createResponse(serviceResult);
     }
 
     private static void applyMockScenarios(final String presenterType) {
