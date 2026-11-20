@@ -220,6 +220,25 @@ class PresenterValidationServiceImplTest {
         assertEquals(ValidationResponse.ResultEnum.VALID, result.getData().getResult());
     }
 
+    @Test
+    void shouldAcceptOfficialReceiverWithOneMultiDeliveryAlternative() {
+        validationRequest.setFormType("MR01");
+        validationRequest.setDataTypes(List.of("email"));
+        validationRequest.setStatementIds(List.of(
+            "official-receiver-statement", "delivery-on-behalf-of-individual"));
+        givenPresenters(PresenterType.OFFICIAL_RECEIVER);
+        givenDataTypes(PresenterType.OFFICIAL_RECEIVER, DataObjectType.EMAIL);
+        givenStatementCombinations(PresenterType.OFFICIAL_RECEIVER, Set.of(
+            officialReceiverStatements(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM),
+            officialReceiverStatements(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL)));
+
+        final var result = service.validatePresenterDetails(validationRequest);
+
+        assertEquals(ServiceResultStatus.FOUND, result.getStatus());
+        assertNotNull(result.getData());
+        assertEquals(ValidationResponse.ResultEnum.VALID, result.getData().getResult());
+    }
+
     private void givenPresenters(final PresenterType... presenterTypes) {
         final var presenters = EnumSet.noneOf(PresenterType.class);
         presenters.addAll(List.of(presenterTypes));
@@ -250,6 +269,13 @@ class PresenterValidationServiceImplTest {
     private static PresenterStatements acspStatements(final DeliveryStatementType deliveryType) {
         return new PresenterStatements(
             EnumSet.of(AssociationStatementType.ACSP_STATEMENT),
+            EnumSet.of(deliveryType),
+            EnumSet.noneOf(VerificationStatementType.class));
+    }
+
+    private static PresenterStatements officialReceiverStatements(final DeliveryStatementType deliveryType) {
+        return new PresenterStatements(
+            EnumSet.of(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT),
             EnumSet.of(deliveryType),
             EnumSet.noneOf(VerificationStatementType.class));
     }

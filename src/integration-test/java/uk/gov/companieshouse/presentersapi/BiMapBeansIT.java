@@ -62,11 +62,18 @@ class BiMapBeansIT {
             containsInAnyOrder(PresenterType.find("acsp").orElseThrow()));
         assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.find("unmarked").orElseThrow()),
             is(empty()));
-        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.find("official-receiver").orElseThrow()), is(empty()));
+        assertThat(formGroupPresenterType.formGroupsFor(PresenterType.find("official-receiver").orElseThrow()),
+            containsInAnyOrder(
+                FormGroup.find("firm-delivery").orElseThrow(),
+                FormGroup.find("individual-delivery").orElseThrow(),
+                FormGroup.find("multi-delivery").orElseThrow(),
+                FormGroup.find("rec-five").orElseThrow(),
+                FormGroup.find("wu-sub-forms").orElseThrow()));
         assertThat(formGroupPresenterType.presenterTypesFor(FormGroup.find("wu-sub-forms").orElseThrow()),
             containsInAnyOrder(PresenterType.find("officer-employee").orElseThrow(), PresenterType.find("corporate-officer-employee").orElseThrow(),
                 PresenterType.find("judicial-factor").orElseThrow(), PresenterType.find("officer-employee-same-group").orElseThrow(),
-                PresenterType.find("acsp").orElseThrow(), PresenterType.find("individual-representing").orElseThrow()));
+                PresenterType.find("acsp").orElseThrow(), PresenterType.find("individual-representing").orElseThrow(),
+                PresenterType.find("official-receiver").orElseThrow()));
     }
 
     @Test

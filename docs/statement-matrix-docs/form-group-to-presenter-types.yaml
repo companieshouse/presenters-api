@@ -4,10 +4,12 @@ firm-delivery:
   - judicial-factor
   - officer-employee-same-group
   - acsp
+  - official-receiver
 individual-delivery:
   - acsp
   - individual-filing-for-self
   - individual-representing
+  - official-receiver
 multi-delivery:
   - officer-employee
   - corporate-officer-employee
@@ -16,6 +18,7 @@ multi-delivery:
   - acsp
   - individual-filing-for-self
   - individual-representing
+  - official-receiver
 acsp-only:
   - acsp
 self-delivery:
@@ -31,6 +34,7 @@ incorporation:
 rec-five:
   - acsp
   - individual-representing
+  - official-receiver
 wu-sub-forms:
   - officer-employee
   - corporate-officer-employee
@@ -38,3 +42,4 @@ wu-sub-forms:
   - officer-employee-same-group
   - acsp
   - individual-representing
+  - official-receiver

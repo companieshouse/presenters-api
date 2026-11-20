@@ -1,0 +1,92 @@
+[
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\"],\"statement_ids\":[\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"DS01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"name\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\",\"email\"],\"statement_ids\":[\"officer-employee-statement\",\"delivery-on-behalf-of-firm\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"email\",\"name\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"officer-employee-statement\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"officer-employee-statement\",\"delivery-on-behalf-of-individual\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"officer-employee-statement\",\"judicial-factor-statement\",\"delivery-on-behalf-of-firm\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-firm\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"acsp-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"officer-employee-statement\",\"delivery-on-behalf-of-firm\",\"delivery-on-behalf-of-individual\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"DS01\",\"data_types\":[\"personal-code\",\"name\"],\"statement_ids\":[\"delivery-on-behalf-of-individual\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"officer-employee-statement\",\"delivery-on-behalf-of-firm\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-firm\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"officer-employee-statement\",\"delivery-on-behalf-of-firm\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"judicial-factor-statement\",\"delivery-on-behalf-of-firm\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"acsp-code\",\"acsp-name\",\"email\",\"name\"],\"statement_ids\":[\"acsp-statement\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"DS01\",\"data_types\":[\"personal-code\",\"name\"],\"statement_ids\":[\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AM01\",\"data_types\":[\"personal-code\",\"name\",\"date-of-birth\"],\"statement_ids\":[\"delivery-on-behalf-of-individual\",\"verified-statement\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AD01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"AM01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"MR01\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"REC5\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-individual\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"WU02\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-firm\"]}"
+  },
+  {
+    "payload": "{\"form_type\":\"WU02\",\"data_types\":[\"email\"],\"statement_ids\":[\"official-receiver-statement\",\"delivery-on-behalf-of-individual\"]}"
+  }
+]
