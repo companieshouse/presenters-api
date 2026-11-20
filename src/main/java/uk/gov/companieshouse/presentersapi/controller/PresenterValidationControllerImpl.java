@@ -1,17 +1,12 @@
 package uk.gov.companieshouse.presentersapi.controller;
 
 import jakarta.validation.Valid;
-import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterValidationRequestApi;
 import uk.gov.companieshouse.api.presenters.model.ValidationRequest;
 import uk.gov.companieshouse.api.presenters.model.ValidationResponse;
-import uk.gov.companieshouse.logging.Logger;
-import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
-import uk.gov.companieshouse.presentersapi.exception.PresenterValidationException;
-import uk.gov.companieshouse.presentersapi.exception.StatementNotFoundException;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.guard.Guarded;
 import uk.gov.companieshouse.presentersapi.guard.RequestListGuard;
@@ -27,14 +22,12 @@ public class PresenterValidationControllerImpl implements PresenterValidationReq
     private final PresenterValidationService presenterValidationService;
     private final PluggableResponseEntityFactory responseEntityFactory;
     private final FormTypeGuard formTypeGuard;
-    private final Logger logger;
 
     public PresenterValidationControllerImpl(final PresenterValidationService presenterValidationService,
-        final PluggableResponseEntityFactory responseEntityFactory, final FormTypeGuard formTypeGuard, final Logger logger) {
+        final PluggableResponseEntityFactory responseEntityFactory, final FormTypeGuard formTypeGuard) {
         this.presenterValidationService = presenterValidationService;
         this.responseEntityFactory = responseEntityFactory;
         this.formTypeGuard = formTypeGuard;
-        this.logger = logger;
     }
 
     @Override
@@ -46,28 +39,12 @@ public class PresenterValidationControllerImpl implements PresenterValidationReq
         final var errors = Guarded.combinedErrors(formType, statements, dataTypes);
 
         if (errors.hasErrors()) {
-            logger.debugContext("PresenterValidationControllerImpl",
-                                "Validation errors found",
-                                Map.of("body", validationRequest, "errors", errors));
             return responseEntityFactory.createResponse(ServiceResult.invalid(errors));
         }
 
-        // Mock scenarios to be removed
-        applyMockScenarios(validationRequest);
+        final var validationResult = presenterValidationService.validatePresenterDetails(validationRequest);
 
-        final var validationResponse = presenterValidationService.validatePresenterDetails(validationRequest);
-
-        return responseEntityFactory.createResponse(ServiceResult.found(validationResponse));
+        return responseEntityFactory.createResponse(validationResult);
     }
 
-    private static void applyMockScenarios(final ValidationRequest validationRequest) {
-
-        if (validationRequest.getStatementIds().contains("statementNotFound")) {
-            throw new StatementNotFoundException("Statement not valid statement");
-        } else if (validationRequest.getStatementIds().contains("presenterValidation")) {
-            throw new PresenterValidationException("Input validation fails");
-        } else if (validationRequest.getStatementIds().contains("presenterNotExempt")) {
-            throw new PresenterNotExemptException("Presenter is not on the exemption list but the exempt statement has been given.");
-        }
-    }
 }

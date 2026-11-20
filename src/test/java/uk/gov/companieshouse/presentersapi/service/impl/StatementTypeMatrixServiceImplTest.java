@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
+import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
 
 @ExtendWith(MockitoExtension.class)
 class StatementTypeMatrixServiceImplTest {
@@ -66,7 +68,7 @@ class StatementTypeMatrixServiceImplTest {
             .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM));
         stubFormGroup(FormType.AD01, FormGroup.FIRM_DELIVERY, DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM);
 
-        final var statements = service.statementTypesFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
+        final var statements = service.statementTypesAllowedFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM));
@@ -82,7 +84,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.ACSP);
         stubFormGroup(formType, formGroup, deliveryStatement);
 
-        final var statements = service.statementTypesFor(PresenterType.ACSP, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.ACSP, formType);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.ACSP_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(deliveryStatement));
@@ -99,7 +101,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.OFFICIAL_RECEIVER);
         stubFormGroup(formType, formGroup, deliveryStatement);
 
-        final var statements = service.statementTypesFor(PresenterType.OFFICIAL_RECEIVER, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.OFFICIAL_RECEIVER, formType);
 
         assertThat(statements.associationStatements(), contains(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT));
         assertThat(statements.deliveryStatements(), contains(deliveryStatement));
@@ -127,7 +129,7 @@ class StatementTypeMatrixServiceImplTest {
             .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM,
                 DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL));
 
-        final var statements = service.statementTypesFor(presenterType, FormType.MR01);
+        final var statements = service.statementTypesAllowedFor(presenterType, FormType.MR01);
 
         assertThat(statements.associationStatements(), contains(associationStatement));
         assertThat(statements.deliveryStatements(), containsInAnyOrder(
@@ -137,6 +139,86 @@ class StatementTypeMatrixServiceImplTest {
         assertThat(statements.statementCodes(), is(expectedCodes));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = PresenterType.class, names = {"ACSP", "OFFICIAL_RECEIVER"})
+    void shouldReturnOneCombinationPerFormGroupDeliveryAlternative(final PresenterType presenterType) {
+        final var associationStatement = presenterType == PresenterType.ACSP
+            ? AssociationStatementType.ACSP_STATEMENT
+            : AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT;
+        when(associationStatementBiMap.associationStatementTypesFor(presenterType))
+            .thenReturn(EnumSet.of(associationStatement));
+        when(verificationStatementBiMap.verificationStatementTypesFor(presenterType))
+            .thenReturn(EnumSet.noneOf(VerificationStatementType.class));
+        when(formTypeBiMap.formGroupFor(FormType.MR01)).thenReturn(FormGroup.MULTI_DELIVERY);
+        when(formGroupDeliveryStatementBiMap.deliveryStatementTypesFor(FormGroup.MULTI_DELIVERY))
+            .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM,
+                DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL));
+
+        final var combinations = service.validStatementCombinationsFor(presenterType, FormType.MR01);
+
+        assertThat(combinations, is(Set.of(
+            new PresenterStatements(EnumSet.of(associationStatement),
+                EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM),
+                EnumSet.noneOf(VerificationStatementType.class)),
+            new PresenterStatements(EnumSet.of(associationStatement),
+                EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL),
+                EnumSet.noneOf(VerificationStatementType.class)))));
+        assertThrows(UnsupportedOperationException.class, combinations::clear);
+        verifyNoInteractions(deliveryStatementBiMap);
+    }
+
+    @Test
+    void shouldUsePresenterDeliveryMappingWithoutMergingFormGroupAlternatives() {
+        when(associationStatementBiMap.associationStatementTypesFor(PresenterType.OFFICER_EMPLOYEE))
+            .thenReturn(EnumSet.of(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT));
+        when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.OFFICER_EMPLOYEE))
+            .thenReturn(EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT));
+        when(deliveryStatementBiMap.deliveryStatementTypesFor(PresenterType.OFFICER_EMPLOYEE))
+            .thenReturn(EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM));
+
+        final var combinations = service.validStatementCombinationsFor(PresenterType.OFFICER_EMPLOYEE, FormType.WU02);
+
+        assertThat(combinations, is(Set.of(new PresenterStatements(
+            EnumSet.of(AssociationStatementType.OFFICER_EMPLOYEE_STATEMENT),
+            EnumSet.of(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM),
+            EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT)))));
+        verifyNoInteractions(formTypeBiMap, formGroupDeliveryStatementBiMap);
+    }
+
+    @Test
+    void shouldReturnOneCombinationWithEmptyDeliveryWhenNoDeliveryApplies() {
+        when(associationStatementBiMap.associationStatementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF))
+            .thenReturn(EnumSet.noneOf(AssociationStatementType.class));
+        when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF))
+            .thenReturn(EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT));
+
+        final var combinations = service.validStatementCombinationsFor(
+            PresenterType.INDIVIDUAL_FILING_FOR_SELF, FormType.MR01);
+
+        assertThat(combinations, is(Set.of(new PresenterStatements(
+            EnumSet.noneOf(AssociationStatementType.class),
+            EnumSet.noneOf(DeliveryStatementType.class),
+            EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT)))));
+        verifyNoInteractions(deliveryStatementBiMap, formTypeBiMap, formGroupDeliveryStatementBiMap);
+    }
+
+    @Test
+    void shouldReturnOneEmptyDeliveryCombinationWhenAcspHasNoFormGroupDelivery() {
+        when(associationStatementBiMap.associationStatementTypesFor(PresenterType.ACSP))
+            .thenReturn(EnumSet.of(AssociationStatementType.ACSP_STATEMENT));
+        when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.ACSP))
+            .thenReturn(EnumSet.noneOf(VerificationStatementType.class));
+        when(formTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
+
+        final var combinations = service.validStatementCombinationsFor(PresenterType.ACSP, FormType.WU15);
+
+        assertThat(combinations, is(Set.of(new PresenterStatements(
+            EnumSet.of(AssociationStatementType.ACSP_STATEMENT),
+            EnumSet.noneOf(DeliveryStatementType.class),
+            EnumSet.noneOf(VerificationStatementType.class)))));
+        verifyNoInteractions(deliveryStatementBiMap, formGroupDeliveryStatementBiMap);
+    }
+
     @Test
     void shouldRejectNullFormType() {
         when(associationStatementBiMap.associationStatementTypesFor(PresenterType.ACSP))
@@ -144,7 +226,7 @@ class StatementTypeMatrixServiceImplTest {
         stubEmptyDeliveryAndVerification(PresenterType.ACSP);
         when(formTypeBiMap.formGroupFor(null)).thenThrow(new NullPointerException("value"));
 
-        assertThrows(NullPointerException.class, () -> service.statementTypesFor(PresenterType.ACSP, null));
+        assertThrows(NullPointerException.class, () -> service.statementTypesAllowedFor(PresenterType.ACSP, null));
         verifyNoInteractions(formGroupDeliveryStatementBiMap);
     }
 
@@ -156,7 +238,7 @@ class StatementTypeMatrixServiceImplTest {
         when(verificationStatementBiMap.verificationStatementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF))
             .thenReturn(EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT));
 
-        final var statements = service.statementTypesFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF, formType);
+        final var statements = service.statementTypesAllowedFor(PresenterType.INDIVIDUAL_FILING_FOR_SELF, formType);
 
         assertThat(statements.associationStatements(), empty());
         assertThat(statements.deliveryStatements(), empty());

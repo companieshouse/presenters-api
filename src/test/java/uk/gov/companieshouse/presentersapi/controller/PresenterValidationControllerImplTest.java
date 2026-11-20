@@ -28,6 +28,9 @@ import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
+import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.err.Err;
+import uk.gov.companieshouse.service.rest.err.Errors;
 import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactory;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,8 +39,6 @@ class PresenterValidationControllerImplTest {
 
     @Mock
     private PresenterValidationService presenterValidationService;
-    @Mock
-    private Logger logger;
 
     private PresenterValidationControllerImpl controller;
     private FormTypeGuard formTypeGuard;
@@ -59,14 +60,14 @@ class PresenterValidationControllerImplTest {
         final var formTypesByGroup = Map.of(FormGroup.EXEMPT_FORM, Set.of(FormType.LIQ04));
         formTypeGuard = new FormTypeGuard(new FormGroupFormTypeBiMap(formTypesByGroup));
         controller = new PresenterValidationControllerImpl(
-            presenterValidationService, responseEntityFactory, formTypeGuard, logger);
+            presenterValidationService, responseEntityFactory, formTypeGuard);
     }
 
     @Test
     @DisplayName("should return validation response with HTTP 200")
     void shouldReturnValidationResponseWhenRequestIsValid() {
         when(presenterValidationService.validatePresenterDetails(testValidationRequest))
-            .thenReturn(testValidationResponse);
+            .thenReturn(ServiceResult.found(testValidationResponse));
 
         final var response = controller.validatePresenterDetails(testValidationRequest);
 
@@ -75,6 +76,21 @@ class PresenterValidationControllerImplTest {
         assertNotNull(response.getBody());
         assertEquals(ValidationResponse.ResultEnum.VALID, response.getBody().getSuccessBody().getResult());
 
+        verify(presenterValidationService).validatePresenterDetails(testValidationRequest);
+        verifyNoMoreInteractions(presenterValidationService);
+    }
+
+    @Test
+    @DisplayName("should return HTTP 422 when presenter validation is unprocessable")
+    void shouldReturnUnprocessableWhenPresenterValidationFails() {
+        final var errors = new Errors(Err.serviceErrBuilder().withError("Statement mismatch").build());
+        when(presenterValidationService.validatePresenterDetails(testValidationRequest))
+            .thenReturn(ServiceResult.unprocessable(errors));
+
+        final var response = controller.validatePresenterDetails(testValidationRequest);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, response.getStatusCode());
+        assertNotNull(response.getBody());
         verify(presenterValidationService).validatePresenterDetails(testValidationRequest);
         verifyNoMoreInteractions(presenterValidationService);
     }

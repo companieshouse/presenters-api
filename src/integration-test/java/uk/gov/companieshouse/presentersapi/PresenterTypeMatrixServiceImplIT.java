@@ -24,18 +24,18 @@ class PresenterTypeMatrixServiceImplIT {
 
     @Test
     void shouldResolvePresenterTypesForFormTypeWithMappedPresenters() {
-        assertThat(service.presenterTypesFor(FormType.AD01),
+        assertThat(service.presenterTypesAllowedFor(FormType.AD01),
                 containsInAnyOrder(PresenterType.OFFICER_EMPLOYEE, PresenterType.CORPORATE_OFFICER_EMPLOYEE,
                         PresenterType.JUDICIAL_FACTOR, PresenterType.OFFICER_EMPLOYEE_SAME_GROUP, PresenterType.ACSP));
     }
 
     @Test
     void shouldReturnEmptySetForFormTypeWhoseFormGroupHasNoPresenterTypes() {
-        assertThat(service.presenterTypesFor(FormType.WU15), is(empty()));
+        assertThat(service.presenterTypesAllowedFor(FormType.WU15), is(empty()));
     }
 
     @Test
     void shouldRejectNullFormType() {
-        assertThrows(NullPointerException.class, () -> service.presenterTypesFor(null));
+        assertThrows(NullPointerException.class, () -> service.presenterTypesAllowedFor(null));
     }
 }

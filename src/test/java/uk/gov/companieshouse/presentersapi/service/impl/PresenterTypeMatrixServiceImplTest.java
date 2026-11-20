@@ -38,32 +38,32 @@ class PresenterTypeMatrixServiceImplTest {
     }
 
     @Test
-    @DisplayName("presenterTypesFor(FormType) resolves the FormGroup, then its PresenterTypes set")
-    void presenterTypesForFormTypeResolvesViaFormGroup() {
+    @DisplayName("presenterTypesAllowedFor(FormType) resolves the FormGroup, then its PresenterTypes set")
+    void presenterTypesAllowedForFormTypeResolvesViaFormGroup() {
         final var expected = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP);
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AD01)).thenReturn(FormGroup.FIRM_DELIVERY);
         when(formGroupPresenterTypeBiMap.presenterTypesFor(FormGroup.FIRM_DELIVERY)).thenReturn(expected);
 
-        assertThat(service.presenterTypesFor(FormType.AD01), is(expected));
+        assertThat(service.presenterTypesAllowedFor(FormType.AD01), is(expected));
         verify(formGroupFormTypeBiMap).formGroupFor(FormType.AD01);
         verify(formGroupPresenterTypeBiMap).presenterTypesFor(FormGroup.FIRM_DELIVERY);
     }
 
     @Test
-    @DisplayName("presenterTypesFor(FormType) returns an empty set when the FormType has no FormGroup")
-    void presenterTypesForFormTypeWithoutFormGroupReturnsEmpty() {
+    @DisplayName("presenterTypesAllowedFor(FormType) returns an empty set when the FormType has no FormGroup")
+    void presenterTypesAllowedForFormTypeWithoutFormGroupReturnsEmpty() {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
 
-        assertThat(service.presenterTypesFor(FormType.WU15), is(empty()));
+        assertThat(service.presenterTypesAllowedFor(FormType.WU15), is(empty()));
         verifyNoInteractions(formGroupPresenterTypeBiMap);
     }
 
     @Test
-    @DisplayName("presenterTypesFor(FormType) rejects a null FormType")
+    @DisplayName("presenterTypesAllowedFor(FormType) rejects a null FormType")
     void shouldRejectNullFormType() {
         when(formGroupFormTypeBiMap.formGroupFor(null)).thenThrow(new NullPointerException("value"));
 
-        assertThrows(NullPointerException.class, () -> service.presenterTypesFor(null));
+        assertThrows(NullPointerException.class, () -> service.presenterTypesAllowedFor(null));
         verifyNoInteractions(formGroupPresenterTypeBiMap);
     }
 }

@@ -168,7 +168,7 @@ class PresenterTypesServiceImplTest {
     @Test
     void shouldReturnEmptySetWhenKnownFormTypeHasNoGroupMapping() {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.WU15)).thenReturn(null);
-        when(presenterTypeMatrixService.presenterTypesFor(FormType.WU15))
+        when(presenterTypeMatrixService.presenterTypesAllowedFor(FormType.WU15))
             .thenReturn(EnumSet.noneOf(PresenterType.class));
 
         final var result = service.getPresenterTypes(USER_ID, "WU15", PASSTHROUGH_TOKEN);
@@ -443,7 +443,7 @@ class PresenterTypesServiceImplTest {
 
     private void givenMatrixPresenterTypes(final EnumSet<PresenterType> presenterTypes) throws URIValidationException {
         when(formGroupFormTypeBiMap.formGroupFor(FormType.AA01)).thenReturn(FormGroup.FIRM_DELIVERY);
-        when(presenterTypeMatrixService.presenterTypesFor(FormType.find(FORM_TYPE_CODE).orElseThrow()))
+        when(presenterTypeMatrixService.presenterTypesAllowedFor(FormType.find(FORM_TYPE_CODE).orElseThrow()))
             .thenReturn(presenterTypes);
         if (presenterTypes.stream().anyMatch(presenterType ->
             presenterType != PresenterType.OFFICIAL_RECEIVER && presenterType != PresenterType.ACSP)) {

@@ -58,7 +58,8 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
         if (!formTypeEnum.isValid()) {
             return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
         }
-        final var presenterTypes = EnumSet.copyOf(presenterTypeMatrixService.presenterTypesFor(formTypeEnum.value()));
+        final var presenterTypes = EnumSet.copyOf(
+            presenterTypeMatrixService.presenterTypesAllowedFor(formTypeEnum.value()));
 
         final Map<String, Object> logMap = Map.of(
             USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
