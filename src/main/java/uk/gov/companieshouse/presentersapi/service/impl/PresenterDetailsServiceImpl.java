@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -116,11 +117,15 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         return individual;
     }
 
+    @SuppressWarnings("java:S2589") // SDK @NotNull annotations do not validate API responses.
     private static void validateIdentityDetails(final Identity identity) {
-        final var currentName = identity == null ? null : identity.getCurrentName();
-        if (identity == null || identity.getId() == null || identity.getId().isBlank()
-            || identity.getDateOfBirth() == null || currentName == null
-            || currentName.getForenames() == null || currentName.getForenames().isEmpty()
+        if (identity == null || StringUtils.isBlank(identity.getId())
+            || identity.getDateOfBirth() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE);
+        }
+
+        final var currentName = identity.getCurrentName();
+        if (currentName == null || currentName.getForenames() == null || currentName.getForenames().isEmpty()
             || currentName.getSurname() == null || currentName.getSurname().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE);
         }

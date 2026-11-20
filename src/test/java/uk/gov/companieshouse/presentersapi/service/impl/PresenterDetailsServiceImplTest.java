@@ -148,10 +148,10 @@ class PresenterDetailsServiceImplTest {
     @Test
     void shouldRejectPresenterTypeNotAvailableForForm() {
         givenPresenterTypes(PresenterType.ACSP);
+        final var presenterType = PresenterType.OFFICER_EMPLOYEE.code();
 
         assertThrows(PresenterTypeNotValidException.class,
-            () -> service.getPresenterDetails(
-                USER_ID, FORM_TYPE, PresenterType.OFFICER_EMPLOYEE.code()));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         verifyNoInteractions(individualUserService, statementTypeMatrixService);
     }
@@ -173,10 +173,10 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
         final var cause = new URIValidationException("Invalid URI");
         when(individualUserService.getIdentityByUserId(USER_ID)).thenThrow(cause);
+        final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(
-                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThat(exception.getCause(), is(cause));
@@ -189,10 +189,10 @@ class PresenterDetailsServiceImplTest {
         givenPresenterTypes(PresenterType.INDIVIDUAL_FILING_FOR_SELF);
         givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
         when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(identity);
+        final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(
-                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
@@ -206,10 +206,10 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.INDIVIDUAL_FILING_FOR_SELF, emptyStatements());
         when(individualUserService.getIdentityByUserId(USER_ID)).thenReturn(validIdentity());
         when(individualUserService.getActiveUvidByIdentityId(IDENTITY_ID)).thenReturn(uvid);
+        final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(
-                USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
