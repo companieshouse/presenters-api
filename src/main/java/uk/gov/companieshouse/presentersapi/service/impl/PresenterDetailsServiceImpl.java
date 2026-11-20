@@ -53,7 +53,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         if (!formTypeEnum.isValid()) {
             return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
         }
-        final var presenterTypesForForm = presenterTypeMatrixService.presenterTypesFor(formTypeEnum.value());
+        final var presenterTypesForForm = presenterTypeMatrixService.presenterTypesAllowedFor(formTypeEnum.value());
 
         final var presenterTypeEnum = PresenterType.find(presenterType)
             .orElseThrow(() -> new PresenterTypeNotFoundException("Presenter Type: " + presenterType));
@@ -63,7 +63,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
         final var presenterDetails = new PresenterDetails();
         presenterDetails.setStatements(statementTypeMatrixService
-            .statementTypesFor(presenterTypeEnum, formTypeEnum.value())
+            .statementTypesAllowedFor(presenterTypeEnum, formTypeEnum.value())
             .statementCodes());
 
         switch (presenterTypeEnum) {
