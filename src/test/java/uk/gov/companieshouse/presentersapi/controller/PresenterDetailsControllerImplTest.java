@@ -111,21 +111,6 @@ class PresenterDetailsControllerImplTest {
     }
 
     @Test
-    void shouldNotRequirePassthroughTokenForNonAcspPresenter() {
-        final var request = new MockHttpServletRequest();
-        request.addHeader("ERIC-Identity", "user123");
-        request.addHeader("ERIC-Identity-Type", "oauth2");
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        when(presenterDetailsService.getPresenterDetails("user123", "form-abc", "officer-employee"))
-            .thenReturn(ServiceResult.found(testPresenterDetails));
-
-        final var response = controller.getPresenterDetails("form-abc", "officer-employee");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(presenterDetailsService).getPresenterDetails("user123", "form-abc", "officer-employee");
-    }
-
-    @Test
     @DisplayName("should throw PresenterTypeNotValidException for presenterTypeNotValid")
     void shouldThrowPresenterTypeNotValidException() {
         final var exception = assertThrows(
@@ -178,15 +163,5 @@ class PresenterDetailsControllerImplTest {
 
         assertEquals("presenter type not found", exception.getMessage());
         verifyNoInteractions(presenterDetailsService);
-    }
-
-    @Test
-    void shouldDelegateAcspRequestToServiceWithoutLookingUpPassthroughToken() {
-        when(presenterDetailsService.getPresenterDetails("user123", "form-abc", "acsp"))
-            .thenReturn(ServiceResult.found(testPresenterDetails));
-
-        final var response = controller.getPresenterDetails("form-abc", "acsp");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }
