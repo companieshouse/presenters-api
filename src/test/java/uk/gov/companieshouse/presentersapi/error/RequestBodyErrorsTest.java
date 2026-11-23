@@ -14,20 +14,24 @@ import uk.gov.companieshouse.service.rest.err.Err;
 
 class RequestBodyErrorsTest {
 
+    private static final String FORM_TYPE_LOCATION = "$.form_type";
+    private static final String STATEMENT_IDS_LOCATION = "$.statement_ids";
+    private static final String DATA_TYPES_LOCATION = "$.data_types";
+
     static Stream<Arguments> listErrors() {
         return Stream.of(
             listCase("statement types missing", RequestBodyErrors::statementTypesMissing,
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_REQUIRED),
+                     STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_REQUIRED),
             listCase("statement types not valid", () -> RequestBodyErrors.statementTypesNotValid("NOPE"),
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_NOT_VALID),
+                     STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_NOT_VALID),
             listCase("statement types duplicated", () -> RequestBodyErrors.statementTypesDuplicated("NOPE"),
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_DUPLICATE),
+                     STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_DUPLICATE),
             listCase("data object types missing", RequestBodyErrors::dataObjectTypesMissing,
-                     "data_types", ErrorMessages.DATA_OBJECTS_REQUIRED),
+                     DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_REQUIRED),
             listCase("data object types not valid", () -> RequestBodyErrors.dataObjectTypesNotValid("NOPE"),
-                     "data_types", ErrorMessages.DATA_OBJECTS_NOT_VALID),
+                     DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_NOT_VALID),
             listCase("data object types duplicated", () -> RequestBodyErrors.dataObjectTypesDuplicated("NOPE"),
-                     "data_types", ErrorMessages.DATA_OBJECTS_DUPLICATE));
+                     DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_DUPLICATE));
     }
 
     private static Arguments listCase(final String name, final Supplier<Err> error, final String location,
@@ -52,7 +56,7 @@ class RequestBodyErrorsTest {
     void shouldReturnRequiredMessageWithoutRejectedValueWhenFormTypeMissing() {
         final var err = RequestBodyErrors.formTypeRequired();
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_REQUIRED));
         assertThat(err.getErrorValues(), is(Map.of()));
@@ -62,7 +66,7 @@ class RequestBodyErrorsTest {
     void shouldCarryRejectedValueWhenFormTypeInvalid() {
         final var err = RequestBodyErrors.formTypeInvalid("NOPE");
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_INVALID));
         assertThat(err.getErrorValues(), is(Map.of("rejected", "NOPE")));
@@ -72,7 +76,7 @@ class RequestBodyErrorsTest {
     void shouldCarryFormAndGroupWhenFormTypeNotSupported() {
         final var err = RequestBodyErrors.formTypeNotSupported("WU12", "exempt-form");
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
         assertThat(err.getError(),

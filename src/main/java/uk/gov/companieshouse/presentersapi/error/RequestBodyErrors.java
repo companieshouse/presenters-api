@@ -7,14 +7,14 @@ import uk.gov.companieshouse.service.rest.err.Err;
 
 /**
  * Builds the library {@link Err} instances for request body guard failures, so that the same wording and
- * location apply wherever the request is guarded. All errors are located in the request body, using the
- * JSON property names of the validation request.
+ * location apply wherever the request is guarded. All errors are located in the request body using JSONPath
+ * expressions rooted at the request document.
  */
 public final class RequestBodyErrors {
 
-    static final String FORM_TYPE_LOCATION = "form_type";
-    static final String STATEMENT_IDS_LOCATION = "statement_ids";
-    static final String DATA_TYPES_LOCATION = "data_types";
+    public static final String FORM_TYPE_LOCATION = "$.form_type";
+    public static final String STATEMENT_IDS_LOCATION = "$.statement_ids";
+    public static final String DATA_TYPES_LOCATION = "$.data_types";
 
     static final String REJECTED_KEY = "rejected";
     static final String FORM_GROUP_KEY = "form_group";
