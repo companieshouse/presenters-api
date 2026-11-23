@@ -153,16 +153,9 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         acsp.setAcspCode(membership.getAcspNumber());
         acsp.setAcspName(membership.getAcspName());
         acsp.setAcspEmployeeEmail(membership.getUserEmail());
-        acsp.setPersonName(mapAcspPersonName(membership.getUserDisplayName()));
+        // Temporarily preserve the display name in surname; future story PRES-543 will address structured names.
+        acsp.setPersonName(new PersonName(List.of(), membership.getUserDisplayName()));
         return acsp;
-    }
-
-    private static PersonName mapAcspPersonName(final String displayName) {
-        final var nameParts = displayName.trim().split("\\s+");
-        final var forenames = nameParts.length > 1
-                ? List.of(nameParts).subList(0, nameParts.length - 1)
-                : List.<String>of();
-        return new PersonName(forenames, nameParts[nameParts.length - 1]);
     }
 
     @SuppressWarnings("java:S2589") // SDK @NotNull annotations do not validate API responses.

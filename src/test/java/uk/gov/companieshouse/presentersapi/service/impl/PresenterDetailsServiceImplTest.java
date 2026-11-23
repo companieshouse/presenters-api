@@ -139,8 +139,8 @@ class PresenterDetailsServiceImplTest {
         assertThat(result.getAcsp().getAcspCode(), is("123456-123456"));
         assertThat(result.getAcsp().getAcspName(), is("Example ACSP Ltd"));
         assertThat(result.getAcsp().getAcspEmployeeEmail(), is("ada@example.com"));
-        assertThat(result.getAcsp().getPersonName().getForenames(), is(List.of("Ada", "Grace")));
-        assertThat(result.getAcsp().getPersonName().getSurname(), is("Lovelace"));
+        assertThat(result.getAcsp().getPersonName().getForenames(), is(List.of()));
+        assertThat(result.getAcsp().getPersonName().getSurname(), is("Not Provided"));
         verify(acspUserService).getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN);
         verifyNoInteractions(individualUserService);
     }
@@ -365,7 +365,7 @@ class PresenterDetailsServiceImplTest {
             .acspNumber("123456-123456")
             .acspName("Example ACSP Ltd")
             .userEmail("ada@example.com")
-            .userDisplayName("Ada Grace Lovelace");
+            .userDisplayName("Not Provided");
     }
 
     private void givenPresenterTypes(final PresenterType... presenterTypes) {
