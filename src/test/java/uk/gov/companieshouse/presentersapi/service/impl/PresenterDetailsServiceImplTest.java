@@ -162,8 +162,10 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
                 .thenReturn(Optional.of(activeAcspMembership().acspStatus(acspStatus)));
+        final var presenterType = PresenterType.ACSP.code();
+
         final var exception = assertThrows(PresenterNotValidAcspException.class,
-                () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+                () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
         assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
     }
 
