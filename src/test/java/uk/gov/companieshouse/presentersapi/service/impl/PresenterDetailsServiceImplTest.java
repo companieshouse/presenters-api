@@ -135,22 +135,36 @@ class PresenterDetailsServiceImplTest {
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
+        final var presenterType = PresenterType.ACSP.code();
 
         final var exception = assertThrows(PresenterNotValidAcspException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
     }
 
     @Test
-    void shouldRejectAcspWhenMembershipOrAcspIsInactive() {
+    void shouldRejectAcspWhenMembershipRemoved() {
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
             .thenReturn(Optional.of(activeAcspMembership().membershipStatus(MembershipStatusEnum.REMOVED)));
+        final var presenterType = PresenterType.ACSP.code();
 
         assertThrows(PresenterNotValidAcspException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AcspStatusEnum.class, names = {"SUSPENDED", "CEASED"})
+    void shouldRejectAcspWhenAcspInactive(final AcspStatusEnum acspStatus) {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
+                .thenReturn(Optional.of(activeAcspMembership().acspStatus(acspStatus)));
+        final var exception = assertThrows(PresenterNotValidAcspException.class,
+                () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+        assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
     }
 
     @Test
@@ -159,9 +173,10 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
             .thenReturn(Optional.of(activeAcspMembership().userEmail(null)));
+        final var presenterType = PresenterType.ACSP.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         assertThat(exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("ACSP manage users API returned incomplete membership details"));
