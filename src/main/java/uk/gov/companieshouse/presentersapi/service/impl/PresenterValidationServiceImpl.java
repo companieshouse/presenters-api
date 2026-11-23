@@ -35,11 +35,14 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
     }
 
     /**
-     * Validates exact data and statement requirements, requiring the same permitted presenter to match both.
+     * Determines the {@code permittedPresenterTypes} for the form, then validates exact data and statement
+     * requirements, requiring the same permitted presenter to match both.
      *
      * @param validationRequest the request already checked by the controller's request guards
      * @return a found result containing a VALID response when a presenter matches, or an unprocessable result
-     *     containing errors when no presenters are permitted or no candidate matches the data or statements
+     *     containing an error at {@code $.form_type} when {@code permittedPresenterTypes} is empty, at
+     *     {@code $.data_types} when no permitted presenter matches the data types, or at
+     *     {@code $.statement_ids} when no data-matching presenter matches the statements
      */
     @Override
     public ServiceResult<ValidationResponse> validatePresenterDetails(final ValidationRequest validationRequest) {
@@ -48,21 +51,21 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
         final var submittedStatements = RequestListGuard.guardStatements(validationRequest.getStatementIds()).value();
         final var permittedPresenterTypes = presenterTypeMatrixService.presenterTypesAllowedFor(formType);
 
-        if (permittedPresenterTypes.isEmpty()) {
-            return noPermittedPresentersResult(formType);
+        if (permittedPresenterTypes.isEmpty()) { // defensive check, should not happen if pre-validation is applied
+            return nonValidResult("$.form_type", "No candidate presenter type supports the supplied form type %s.".formatted(formType.code()));
         }
 
         final var dataMatchingPresenters = presentersMatchingDataTypes(permittedPresenterTypes, submittedDataTypes);
         if (dataMatchingPresenters.isEmpty()) {
 
-            return nonValidResult("data_types", "Data types do not match for form %s.".formatted(formType.code()));
+            return nonValidResult("$.data_types", "Data types do not match for form %s.".formatted(formType.code()));
         }
 
         final var statementMatchingPresenters = presentersMatchingStatements(dataMatchingPresenters,
                                                                              formType,
                                                                              submittedStatements);
         if (statementMatchingPresenters.isEmpty()) {
-            return nonValidResult("statement_ids", "Statements do not match for form %s.".formatted(formType.code()));
+            return nonValidResult("$.statement_ids", "Statements do not match for form %s.".formatted(formType.code()));
         }
 
         return validResult();
@@ -78,20 +81,6 @@ public class PresenterValidationServiceImpl implements PresenterValidationServic
                    .find(validationRequest.getFormType())
                    .orElseThrow(() -> new IllegalStateException(
                        "Form type must be validated before presenter validation"));
-    }
-
-    /**
-     * Returns a defensive error when no presenters are permitted, for example if a caller bypasses
-     * pre-validation and supplies an unsupported form. Validated configuration provides presenter mappings
-     * for forms supported by this endpoint.
-     */
-    private ServiceResult<ValidationResponse> noPermittedPresentersResult(final FormType formType) {
-        final var error = Err
-                              .serviceErrBuilder()
-                              .withError("No candidate presenter type supports the supplied form type: %s".formatted(
-                                  formType.code()))
-                              .build();
-        return ServiceResult.unprocessable(new Errors(error));
     }
 
     /**

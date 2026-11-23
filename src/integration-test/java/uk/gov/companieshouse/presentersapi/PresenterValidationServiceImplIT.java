@@ -47,7 +47,7 @@ class PresenterValidationServiceImplIT {
             List.of("officer-employee-statement", "delivery-on-behalf-of-firm",
                 "delivery-on-behalf-of-individual", "verified-statement"));
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form WU02.");
+        assertUnprocessableReason(result, "$.statement_ids", "Statements do not match for form WU02.");
     }
 
     @Test
@@ -56,7 +56,7 @@ class PresenterValidationServiceImplIT {
             List.of("acsp-code", "acsp-name", "email", "name"),
             List.of("acsp-statement", "delivery-on-behalf-of-firm", "delivery-on-behalf-of-individual"));
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form MR01.");
+        assertUnprocessableReason(result, "$.statement_ids", "Statements do not match for form MR01.");
     }
 
     @Test
@@ -65,7 +65,7 @@ class PresenterValidationServiceImplIT {
             List.of("personal-code", "name", "date-of-birth"),
             List.of("verified-statement"));
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form DS01.");
+        assertUnprocessableReason(result, "$.data_types", "Data types do not match for form DS01.");
     }
 
     private ServiceResult<ValidationResponse> validate(
