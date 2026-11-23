@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.presenters.model.Exempt;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
 import uk.gov.companieshouse.presentersapi.config.ResponseEntityFactoryConfig;
@@ -37,8 +36,6 @@ import uk.gov.companieshouse.service.rest.response.PluggableResponseEntityFactor
 @DisplayName("PresenterDetailsControllerImpl tests")
 class PresenterDetailsControllerImplTest {
 
-    private static final String PASSTHROUGH_TOKEN = "passthrough-token";
-
     @Mock
     private PresenterDetailsService presenterDetailsService;
 
@@ -54,7 +51,6 @@ class PresenterDetailsControllerImplTest {
         final var request = new MockHttpServletRequest();
         request.addHeader("ERIC-Identity", "user123");
         request.addHeader("ERIC-Identity-Type", "oauth2");
-        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         final var testExempt = new Exempt();
@@ -80,7 +76,7 @@ class PresenterDetailsControllerImplTest {
         final var formType = "form-abc";
         final var presenterType = "officer-employee";
 
-        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType, null))
+        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
             .thenReturn(ServiceResult.found(testPresenterDetails));
 
         final var response = controller.getPresenterDetails(formType, presenterType);
@@ -92,7 +88,7 @@ class PresenterDetailsControllerImplTest {
         assertNotNull(response.getBody().getSuccessBody().getExempt());
 
         verify(presenterDetailsService, times(1))
-            .getPresenterDetails(userId, formType, presenterType, null);
+            .getPresenterDetails(userId, formType, presenterType);
     }
 
     @Test
@@ -102,17 +98,16 @@ class PresenterDetailsControllerImplTest {
         final var request = new MockHttpServletRequest();
         request.addHeader("ERIC-Identity", userId);
         request.addHeader("ERIC-Identity-Type", "oauth2");
-        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         final var formType = "form-xyz";
         final var presenterType = "corporate-officer-employee";
 
-        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType, null))
+        when(presenterDetailsService.getPresenterDetails(userId, formType, presenterType))
             .thenReturn(ServiceResult.found(testPresenterDetails));
 
         controller.getPresenterDetails(formType, presenterType);
 
-        verify(presenterDetailsService).getPresenterDetails(userId, formType, presenterType, null);
+        verify(presenterDetailsService).getPresenterDetails(userId, formType, presenterType);
     }
 
     @Test
@@ -121,13 +116,13 @@ class PresenterDetailsControllerImplTest {
         request.addHeader("ERIC-Identity", "user123");
         request.addHeader("ERIC-Identity-Type", "oauth2");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        when(presenterDetailsService.getPresenterDetails("user123", "form-abc", "officer-employee", null))
+        when(presenterDetailsService.getPresenterDetails("user123", "form-abc", "officer-employee"))
             .thenReturn(ServiceResult.found(testPresenterDetails));
 
         final var response = controller.getPresenterDetails("form-abc", "officer-employee");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(presenterDetailsService).getPresenterDetails("user123", "form-abc", "officer-employee", null);
+        verify(presenterDetailsService).getPresenterDetails("user123", "form-abc", "officer-employee");
     }
 
     @Test
@@ -186,18 +181,12 @@ class PresenterDetailsControllerImplTest {
     }
 
     @Test
-    @DisplayName("should reject request with HTTP 400 when the ERIC passthrough token is missing")
-    void shouldRejectRequestWhenPassthroughTokenMissing() {
-        final var request = new MockHttpServletRequest();
-        request.addHeader("ERIC-Identity", "user123");
-        request.addHeader("ERIC-Identity-Type", "oauth2");
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    void shouldDelegateAcspRequestToServiceWithoutLookingUpPassthroughToken() {
+        when(presenterDetailsService.getPresenterDetails("user123", "form-abc", "acsp"))
+            .thenReturn(ServiceResult.found(testPresenterDetails));
 
-        final var exception = assertThrows(
-            ResponseStatusException.class,
-            () -> controller.getPresenterDetails("form-abc", "acsp"));
+        final var response = controller.getPresenterDetails("form-abc", "acsp");
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        verifyNoInteractions(presenterDetailsService);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

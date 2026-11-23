@@ -5,7 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.companieshouse.api.presenters.api.PresenterDetailsRequestApi;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
-import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedException;
@@ -32,14 +31,11 @@ public class PresenterDetailsControllerImpl implements PresenterDetailsRequestAp
     public ResponseEntity<ChResponseBody<PresenterDetails>> getPresenterDetails(final String formType, final String presenterType) {
 
         final var userId = RequestHelper.getChsUserId();
-        final var passthroughToken = PresenterType.ACSP.code().equals(presenterType)
-            ? RequestHelper.requirePassthroughToken()
-            : null;
 
         // Mock scenarios to be removed
         applyMockScenarios(presenterType);
 
-        final var serviceResult = presenterDetailsService.getPresenterDetails(userId, formType, presenterType, passthroughToken);
+        final var serviceResult = presenterDetailsService.getPresenterDetails(userId, formType, presenterType);
 
         return responseEntityFactory.createResponse(serviceResult);
     }

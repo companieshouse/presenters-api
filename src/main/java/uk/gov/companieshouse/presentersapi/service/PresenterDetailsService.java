@@ -11,9 +11,8 @@ public interface PresenterDetailsService {
      * @param userId           the userId
      * @param formType         the form type
      * @param presenterType    the presenter type
-     * @param passthroughToken the ERIC passthrough token identifying the user to downstream APIs, required for ACSP
      * @return list of statements and presenter information
      */
     ServiceResult<PresenterDetails> getPresenterDetails(
-        String userId, String formType, String presenterType, String passthroughToken);
+        String userId, String formType, String presenterType);
 }

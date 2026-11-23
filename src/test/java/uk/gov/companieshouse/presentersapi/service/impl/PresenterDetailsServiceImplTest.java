@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,9 +23,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
 import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStatusEnum;
@@ -72,12 +78,20 @@ class PresenterDetailsServiceImplTest {
     private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
 
     private PresenterDetailsServiceImpl service;
+    private MockHttpServletRequest request;
 
     @BeforeEach
     void setUp() {
+        request = new MockHttpServletRequest();
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         final var formTypeGuard = new FormTypeGuard(formGroupFormTypeBiMap);
         service = new PresenterDetailsServiceImpl(
             statementTypeMatrixService, individualUserService, acspUserService, presenterTypeMatrixService, formTypeGuard);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @Test
@@ -91,7 +105,7 @@ class PresenterDetailsServiceImplTest {
                 EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT)));
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code(), PASSTHROUGH_TOKEN).getData();
+            USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()).getData();
 
         assertThat(result.getUserId(), is(USER_ID));
         assertThat(result.getStatements(), is(List.of("verified-statement")));
@@ -111,13 +125,14 @@ class PresenterDetailsServiceImplTest {
 
     @Test
     void shouldMapAcspMembershipToAcspDetailsWithoutLookingUpIdentity() {
+        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
             .thenReturn(Optional.of(activeAcspMembership()));
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN).getData();
+            USER_ID, FORM_TYPE, PresenterType.ACSP.code()).getData();
 
         assertThat(result.getUserId(), is(USER_ID));
         assertThat(result.getStatements(), is(List.of()));
@@ -132,19 +147,21 @@ class PresenterDetailsServiceImplTest {
 
     @Test
     void shouldRejectAcspWhenUserHasNoMembership() {
+        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
         final var presenterType = PresenterType.ACSP.code();
 
         final var exception = assertThrows(PresenterNotValidAcspException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
     }
 
     @Test
     void shouldRejectAcspWhenMembershipRemoved() {
+        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
@@ -152,12 +169,13 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.ACSP.code();
 
         assertThrows(PresenterNotValidAcspException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
     }
 
     @ParameterizedTest
     @EnumSource(value = AcspStatusEnum.class, names = {"SUSPENDED", "CEASED"})
     void shouldRejectAcspWhenAcspInactive(final AcspStatusEnum acspStatus) {
+        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
@@ -165,12 +183,13 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.ACSP.code();
 
         final var exception = assertThrows(PresenterNotValidAcspException.class,
-                () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+                () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
         assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
     }
 
     @Test
     void shouldReturnBadGatewayWhenAcspMembershipDetailsAreIncomplete() {
+        request.addHeader("ERIC-Access-Token", PASSTHROUGH_TOKEN);
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
@@ -178,7 +197,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.ACSP.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("ACSP manage users API returned incomplete membership details"));
@@ -190,7 +209,7 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code(), PASSTHROUGH_TOKEN).getData();
+            USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code()).getData();
 
         assertThat(result.getStatements(), is(List.of()));
         assertThat(result.getExempt().getOrganisationName(), is("Exemption LTD"));
@@ -206,7 +225,7 @@ class PresenterDetailsServiceImplTest {
         givenStatements(presenterType, emptyStatements());
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, presenterType.code(), PASSTHROUGH_TOKEN).getData();
+            USER_ID, FORM_TYPE, presenterType.code()).getData();
 
         assertThat(result.getIndividual().getPersonalCode(), is(PERSONAL_CODE));
         assertThat(result.getIndividual().getVerificationId(), is(IDENTITY_ID));
@@ -220,7 +239,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.OFFICER_EMPLOYEE.code();
 
         assertThrows(PresenterTypeNotValidException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         verifyNoInteractions(individualUserService, statementTypeMatrixService);
     }
@@ -230,7 +249,7 @@ class PresenterDetailsServiceImplTest {
         givenPresenterTypes(PresenterType.ACSP);
 
         final var exception = assertThrows(PresenterTypeNotFoundException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, "unsupported-type", PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, "unsupported-type"));
 
         assertThat(exception.getMessage(), is("Presenter Type: unsupported-type"));
         verifyNoInteractions(individualUserService, statementTypeMatrixService);
@@ -245,7 +264,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThat(exception.getCause(), is(cause));
@@ -261,7 +280,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
@@ -278,10 +297,29 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" "})
+    void shouldRejectAcspWhenPassthroughTokenIsMissingOrBlank(final String passthroughToken) {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
+        if (passthroughToken != null) {
+            request.addHeader("ERIC-Access-Token", passthroughToken);
+        }
+        final var presenterType = PresenterType.ACSP.code();
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.BAD_REQUEST));
+        assertThat(exception.getReason(), is("Missing required header: ERIC-Access-Token"));
+        verifyNoInteractions(acspUserService, individualUserService);
     }
 
     private static Stream<Arguments> incompleteIdentities() {

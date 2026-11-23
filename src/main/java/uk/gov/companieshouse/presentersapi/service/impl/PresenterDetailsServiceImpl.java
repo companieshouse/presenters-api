@@ -29,6 +29,7 @@ import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
+import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
 
 @Service
@@ -59,7 +60,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
     @Override
     public ServiceResult<PresenterDetails> getPresenterDetails(final String userId, final String formType,
-                                                               final String presenterType, final String passthroughToken) {
+                                                               final String presenterType) {
 
         final var formTypeEnum = formTypeGuard.fromQuery(formType);
         if (!formTypeEnum.isValid()) {
@@ -80,6 +81,7 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
         switch (presenterTypeEnum) {
             case ACSP -> {
+                final var passthroughToken = RequestHelper.requirePassthroughToken();
                 final var acsp = getAcspDetails(userId, passthroughToken);
                 presenterDetails.setUserId(userId);
                 presenterDetails.setAcsp(acsp);
