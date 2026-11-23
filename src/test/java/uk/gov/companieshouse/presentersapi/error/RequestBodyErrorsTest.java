@@ -17,17 +17,17 @@ class RequestBodyErrorsTest {
     static Stream<Arguments> listErrors() {
         return Stream.of(
             listCase("statement types missing", RequestBodyErrors::statementTypesMissing,
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_REQUIRED),
+                     RequestBodyErrors.STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_REQUIRED),
             listCase("statement types not valid", () -> RequestBodyErrors.statementTypesNotValid("NOPE"),
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_NOT_VALID),
+                     RequestBodyErrors.STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_NOT_VALID),
             listCase("statement types duplicated", () -> RequestBodyErrors.statementTypesDuplicated("NOPE"),
-                     "statement_ids", ErrorMessages.STATEMENT_IDS_DUPLICATE),
+                     RequestBodyErrors.STATEMENT_IDS_LOCATION, ErrorMessages.STATEMENT_IDS_DUPLICATE),
             listCase("data object types missing", RequestBodyErrors::dataObjectTypesMissing,
-                     "data_types", ErrorMessages.DATA_OBJECTS_REQUIRED),
+                     RequestBodyErrors.DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_REQUIRED),
             listCase("data object types not valid", () -> RequestBodyErrors.dataObjectTypesNotValid("NOPE"),
-                     "data_types", ErrorMessages.DATA_OBJECTS_NOT_VALID),
+                     RequestBodyErrors.DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_NOT_VALID),
             listCase("data object types duplicated", () -> RequestBodyErrors.dataObjectTypesDuplicated("NOPE"),
-                     "data_types", ErrorMessages.DATA_OBJECTS_DUPLICATE));
+                     RequestBodyErrors.DATA_TYPES_LOCATION, ErrorMessages.DATA_OBJECTS_DUPLICATE));
     }
 
     private static Arguments listCase(final String name, final Supplier<Err> error, final String location,
@@ -52,7 +52,7 @@ class RequestBodyErrorsTest {
     void shouldReturnRequiredMessageWithoutRejectedValueWhenFormTypeMissing() {
         final var err = RequestBodyErrors.formTypeRequired();
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(RequestBodyErrors.FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_REQUIRED));
         assertThat(err.getErrorValues(), is(Map.of()));
@@ -62,7 +62,7 @@ class RequestBodyErrorsTest {
     void shouldCarryRejectedValueWhenFormTypeInvalid() {
         final var err = RequestBodyErrors.formTypeInvalid("NOPE");
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(RequestBodyErrors.FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getError(), is(ErrorMessages.FORM_TYPE_INVALID));
         assertThat(err.getErrorValues(), is(Map.of("rejected", "NOPE")));
@@ -72,7 +72,7 @@ class RequestBodyErrorsTest {
     void shouldCarryFormAndGroupWhenFormTypeNotSupported() {
         final var err = RequestBodyErrors.formTypeNotSupported("WU12", "exempt-form");
 
-        assertThat(err.getLocation(), is("form_type"));
+        assertThat(err.getLocation(), is(RequestBodyErrors.FORM_TYPE_LOCATION));
         assertThat(err.getLocationType(), is(Err.LOCATION_TYPE_BODY));
         assertThat(err.getType(), is(Err.ERR_TYPE_VALIDATION));
         assertThat(err.getError(),

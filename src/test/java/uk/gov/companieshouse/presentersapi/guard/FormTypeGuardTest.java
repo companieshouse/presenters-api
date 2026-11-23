@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
 import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
+import uk.gov.companieshouse.presentersapi.error.RequestBodyErrors;
 import uk.gov.companieshouse.service.rest.err.Err;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,15 +27,18 @@ class FormTypeGuardTest {
     private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
 
     private enum FormGuard {
-        BODY(FormTypeGuard::fromBody, Err.LOCATION_TYPE_BODY),
-        QUERY(FormTypeGuard::fromQuery, Err.LOCATION_TYPE_QUERY);
+        BODY(FormTypeGuard::fromBody, Err.LOCATION_TYPE_BODY, RequestBodyErrors.FORM_TYPE_LOCATION),
+        QUERY(FormTypeGuard::fromQuery, Err.LOCATION_TYPE_QUERY, "form_type");
 
         private final BiFunction<FormTypeGuard, String, Guarded<FormType>> guard;
         private final String locationType;
+        private final String location;
 
-        FormGuard(final BiFunction<FormTypeGuard, String, Guarded<FormType>> guard, final String locationType) {
+        FormGuard(final BiFunction<FormTypeGuard, String, Guarded<FormType>> guard, final String locationType,
+            final String location) {
             this.guard = guard;
             this.locationType = locationType;
+            this.location = location;
         }
     }
 
@@ -61,7 +65,7 @@ class FormTypeGuardTest {
             assertThat(result.isValid(), is(false));
             assertThat(result.errors().size(), is(1));
             final var error = result.errors().getFirst();
-            assertThat(error.getLocation(), is("form_type"));
+            assertThat(error.getLocation(), is(formGuard.location));
             assertThat(error.getLocationType(), is(formGuard.locationType));
             assertThat(error.getType(), is(Err.ERR_TYPE_VALIDATION));
             assertThat(error.getError(),
@@ -90,7 +94,7 @@ class FormTypeGuardTest {
             final var result = formGuard.guard.apply(new FormTypeGuard(formGroupFormTypeBiMap), code);
             assertThat(result.errors().size(), is(1));
             final var error = result.errors().getFirst();
-            assertThat(error.getLocation(), is("form_type"));
+            assertThat(error.getLocation(), is(formGuard.location));
             assertThat(error.getLocationType(), is(formGuard.locationType));
             assertThat(error.getType(), is(Err.ERR_TYPE_VALIDATION));
             assertThat(error.getError(), is("Form type is required"));
@@ -106,7 +110,7 @@ class FormTypeGuardTest {
 
         assertThat(result.errors().size(), is(1));
         final var error = result.errors().getFirst();
-        assertThat(error.getLocation(), is("form_type"));
+        assertThat(error.getLocation(), is(formGuard.location));
         assertThat(error.getLocationType(), is(formGuard.locationType));
         assertThat(error.getType(), is(Err.ERR_TYPE_VALIDATION));
         assertThat(error.getError(), is("Form type is invalid"));

@@ -9,8 +9,8 @@ import uk.gov.companieshouse.presentersapi.error.RequestParamErrors;
 import uk.gov.companieshouse.service.rest.err.Err;
 
 /**
- * Resolves a required, supported form type code with errors at its request location.
- * Known form types without a group mapping remain valid.
+ * Resolves a required, supported form type code with errors at its request location. Body errors use JSONPath;
+ * query errors use the query parameter name. Known form types without a group mapping remain valid.
  */
 @Component
 public final class FormTypeGuard {
@@ -23,7 +23,7 @@ public final class FormTypeGuard {
 
     /**
      * @param code the form type code from the request body, may be null
-     * @return the recognised, supported form type or a request body error
+     * @return the recognised, supported form type or a request body error located at {@code $.form_type}
      */
     public Guarded<FormType> fromBody(final String code) {
         return Guards.requiredCode(code, FormType::find,
@@ -33,7 +33,7 @@ public final class FormTypeGuard {
 
     /**
      * @param code the form type code from a query parameter, may be null
-     * @return the recognised, supported form type or a query parameter error
+     * @return the recognised, supported form type or a query parameter error located at {@code form_type}
      */
     public Guarded<FormType> fromQuery(final String code) {
         return Guards.requiredCode(code, FormType::find,

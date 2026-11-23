@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -25,6 +26,7 @@ import uk.gov.companieshouse.presentersapi.data.enums.DeliveryStatementType;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
+import uk.gov.companieshouse.presentersapi.error.RequestBodyErrors;
 import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
 import uk.gov.companieshouse.presentersapi.service.DataObjectTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
@@ -84,7 +86,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
         verify(statementTypeMatrixService, atLeastOnce())
             .validStatementCombinationsFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
         verify(statementTypeMatrixService, never())
@@ -92,15 +95,26 @@ class PresenterValidationServiceImplTest {
     }
 
     @Test
-    void shouldReturnInvalidWhenNoPresenterIsPermittedForForm() {
+    void shouldReportFormTypeErrorWhenNoPresenterIsPermittedForForm() {
         givenPresenters();
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertEquals(ServiceResultStatus.UNPROCESSABLE, result.getStatus());
-        assertTrue(result.getErrors().containsError(Err.serviceErrBuilder()
-            .withError("No candidate presenter type supports the supplied form type: AD01").build()));
+        assertUnprocessableReason(result, RequestBodyErrors.FORM_TYPE_LOCATION,
+            "No candidate presenter type supports the supplied form type AD01.");
         verifyNoInteractions(dataObjectTypeMatrixService, statementTypeMatrixService);
+    }
+
+    @Test
+    void shouldThrowWhenFormTypeHasNotBeenValidated() {
+        validationRequest.setFormType("UNKNOWN");
+
+        final var exception = assertThrows(IllegalStateException.class,
+            () -> service.validatePresenterDetails(validationRequest));
+
+        assertEquals("Form type must be validated before presenter validation", exception.getMessage());
+        verifyNoInteractions(
+            presenterTypeMatrixService, dataObjectTypeMatrixService, statementTypeMatrixService);
     }
 
     @Test
@@ -112,7 +126,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -127,7 +142,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -144,7 +160,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -160,7 +177,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
     }
 
     @Test
@@ -177,7 +195,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form MR01.");
+        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+            "Statements do not match for form MR01.");
     }
 
     @Test
@@ -200,7 +219,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
     }
 
     @Test
