@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import uk.gov.companieshouse.api.presenters.model.ValidationRequest;
 import uk.gov.companieshouse.api.presenters.model.ValidationResponse;
-import uk.gov.companieshouse.presentersapi.error.RequestBodyErrors;
 import uk.gov.companieshouse.presentersapi.service.PresenterValidationService;
 import uk.gov.companieshouse.service.ServiceResult;
 import uk.gov.companieshouse.service.ServiceResultStatus;
@@ -17,6 +16,9 @@ import uk.gov.companieshouse.service.rest.err.Err;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class PresenterValidationServiceImplIT {
+
+    private static final String STATEMENT_IDS_LOCATION = "$.statement_ids";
+    private static final String DATA_TYPES_LOCATION = "$.data_types";
 
     @Autowired
     private PresenterValidationService presenterValidationService;
@@ -48,7 +50,7 @@ class PresenterValidationServiceImplIT {
             List.of("officer-employee-statement", "delivery-on-behalf-of-firm",
                 "delivery-on-behalf-of-individual", "verified-statement"));
 
-        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
             "Statements do not match for form WU02.");
     }
 
@@ -58,7 +60,7 @@ class PresenterValidationServiceImplIT {
             List.of("acsp-code", "acsp-name", "email", "name"),
             List.of("acsp-statement", "delivery-on-behalf-of-firm", "delivery-on-behalf-of-individual"));
 
-        assertUnprocessableReason(result, RequestBodyErrors.STATEMENT_IDS_LOCATION,
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
             "Statements do not match for form MR01.");
     }
 
@@ -68,7 +70,7 @@ class PresenterValidationServiceImplIT {
             List.of("personal-code", "name", "date-of-birth"),
             List.of("verified-statement"));
 
-        assertUnprocessableReason(result, RequestBodyErrors.DATA_TYPES_LOCATION,
+        assertUnprocessableReason(result, DATA_TYPES_LOCATION,
             "Data types do not match for form DS01.");
     }
 

@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.presentersapi.data.bimaps.FormGroupFormTypeBiMap;
 import uk.gov.companieshouse.presentersapi.data.enums.FormGroup;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
-import uk.gov.companieshouse.presentersapi.error.RequestBodyErrors;
 import uk.gov.companieshouse.service.rest.err.Err;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,7 +26,7 @@ class FormTypeGuardTest {
     private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
 
     private enum FormGuard {
-        BODY(FormTypeGuard::fromBody, Err.LOCATION_TYPE_BODY, RequestBodyErrors.FORM_TYPE_LOCATION),
+        BODY(FormTypeGuard::fromBody, Err.LOCATION_TYPE_BODY, "$.form_type"),
         QUERY(FormTypeGuard::fromQuery, Err.LOCATION_TYPE_QUERY, "form_type");
 
         private final BiFunction<FormTypeGuard, String, Guarded<FormType>> guard;
