@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStatusEnum;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.MembershipStatusEnum;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.CurrentName;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
@@ -36,10 +40,12 @@ import uk.gov.companieshouse.presentersapi.data.enums.DeliveryStatementType;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
+import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
@@ -52,11 +58,14 @@ class PresenterDetailsServiceImplTest {
     private static final String FORM_TYPE = "AD01";
     private static final String IDENTITY_ID = "identity-123";
     private static final String PERSONAL_CODE = "123456-123456";
+    private static final String PASSTHROUGH_TOKEN = "passthrough-token";
 
     @Mock
     private StatementTypeMatrixService statementTypeMatrixService;
     @Mock
     private IndividualUserService individualUserService;
+    @Mock
+    private AcspUserService acspUserService;
     @Mock
     private PresenterTypeMatrixService presenterTypeMatrixService;
     @Mock
@@ -68,7 +77,7 @@ class PresenterDetailsServiceImplTest {
     void setUp() {
         final var formTypeGuard = new FormTypeGuard(formGroupFormTypeBiMap);
         service = new PresenterDetailsServiceImpl(
-            statementTypeMatrixService, individualUserService, presenterTypeMatrixService, formTypeGuard);
+            statementTypeMatrixService, individualUserService, acspUserService, presenterTypeMatrixService, formTypeGuard);
     }
 
     @Test
@@ -82,7 +91,7 @@ class PresenterDetailsServiceImplTest {
                 EnumSet.of(VerificationStatementType.VERIFIED_STATEMENT)));
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code()).getData();
+            USER_ID, FORM_TYPE, PresenterType.INDIVIDUAL_FILING_FOR_SELF.code(), PASSTHROUGH_TOKEN).getData();
 
         assertThat(result.getUserId(), is(USER_ID));
         assertThat(result.getStatements(), is(List.of("verified-statement")));
@@ -101,18 +110,61 @@ class PresenterDetailsServiceImplTest {
     }
 
     @Test
-    void shouldReturnAcspDetailsWithoutLookingUpIdentity() {
+    void shouldMapAcspMembershipToAcspDetailsWithoutLookingUpIdentity() {
         givenPresenterTypes(PresenterType.ACSP);
         givenStatements(PresenterType.ACSP, emptyStatements());
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
+            .thenReturn(Optional.of(activeAcspMembership()));
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.ACSP.code()).getData();
+            USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN).getData();
 
         assertThat(result.getUserId(), is(USER_ID));
         assertThat(result.getStatements(), is(List.of()));
         assertThat(result.getAcsp().getAcspCode(), is("123456-123456"));
-        assertThat(result.getAcsp().getAcspName(), is("Mr ACSP Ltd"));
+        assertThat(result.getAcsp().getAcspName(), is("Example ACSP Ltd"));
+        assertThat(result.getAcsp().getAcspEmployeeEmail(), is("ada@example.com"));
+        assertThat(result.getAcsp().getPersonName().getForenames(), is(List.of("Ada", "Grace")));
+        assertThat(result.getAcsp().getPersonName().getSurname(), is("Lovelace"));
+        verify(acspUserService).getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN);
         verifyNoInteractions(individualUserService);
+    }
+
+    @Test
+    void shouldRejectAcspWhenUserHasNoMembership() {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
+
+        final var exception = assertThrows(PresenterNotValidAcspException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+
+        assertThat(exception.getMessage(), is("User is not associated with an ACSP"));
+    }
+
+    @Test
+    void shouldRejectAcspWhenMembershipOrAcspIsInactive() {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
+            .thenReturn(Optional.of(activeAcspMembership().membershipStatus(MembershipStatusEnum.REMOVED)));
+
+        assertThrows(PresenterNotValidAcspException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+    }
+
+    @Test
+    void shouldReturnBadGatewayWhenAcspMembershipDetailsAreIncomplete() {
+        givenPresenterTypes(PresenterType.ACSP);
+        givenStatements(PresenterType.ACSP, emptyStatements());
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN))
+            .thenReturn(Optional.of(activeAcspMembership().userEmail(null)));
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, PresenterType.ACSP.code(), PASSTHROUGH_TOKEN));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
+        assertThat(exception.getReason(), is("ACSP manage users API returned incomplete membership details"));
     }
 
     @Test
@@ -121,7 +173,7 @@ class PresenterDetailsServiceImplTest {
         givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code()).getData();
+            USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code(), PASSTHROUGH_TOKEN).getData();
 
         assertThat(result.getStatements(), is(List.of()));
         assertThat(result.getExempt().getOrganisationName(), is("Exemption LTD"));
@@ -137,7 +189,7 @@ class PresenterDetailsServiceImplTest {
         givenStatements(presenterType, emptyStatements());
 
         final PresenterDetails result = service.getPresenterDetails(
-            USER_ID, FORM_TYPE, presenterType.code()).getData();
+            USER_ID, FORM_TYPE, presenterType.code(), PASSTHROUGH_TOKEN).getData();
 
         assertThat(result.getIndividual().getPersonalCode(), is(PERSONAL_CODE));
         assertThat(result.getIndividual().getVerificationId(), is(IDENTITY_ID));
@@ -151,7 +203,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.OFFICER_EMPLOYEE.code();
 
         assertThrows(PresenterTypeNotValidException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         verifyNoInteractions(individualUserService, statementTypeMatrixService);
     }
@@ -161,7 +213,7 @@ class PresenterDetailsServiceImplTest {
         givenPresenterTypes(PresenterType.ACSP);
 
         final var exception = assertThrows(PresenterTypeNotFoundException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, "unsupported-type"));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, "unsupported-type", PASSTHROUGH_TOKEN));
 
         assertThat(exception.getMessage(), is("Presenter Type: unsupported-type"));
         verifyNoInteractions(individualUserService, statementTypeMatrixService);
@@ -176,7 +228,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThat(exception.getCause(), is(cause));
@@ -192,7 +244,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
@@ -209,7 +261,7 @@ class PresenterDetailsServiceImplTest {
         final var presenterType = PresenterType.INDIVIDUAL_FILING_FOR_SELF.code();
 
         final var exception = assertThrows(ResponseStatusException.class,
-            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType, PASSTHROUGH_TOKEN));
 
         assertThat(scenario, exception.getStatusCode(), is(HttpStatus.BAD_GATEWAY));
         assertThat(exception.getReason(), is("Identity-verification returned incomplete individual details"));
@@ -249,6 +301,16 @@ class PresenterDetailsServiceImplTest {
             .id(IDENTITY_ID)
             .currentName(new CurrentName().forenames(List.of("Ada", "Grace")).surname("Lovelace"))
             .dateOfBirth(LocalDate.of(1815, 12, 10));
+    }
+
+    private static AcspMembership activeAcspMembership() {
+        return new AcspMembership()
+            .membershipStatus(MembershipStatusEnum.ACTIVE)
+            .acspStatus(AcspStatusEnum.ACTIVE)
+            .acspNumber("123456-123456")
+            .acspName("Example ACSP Ltd")
+            .userEmail("ada@example.com")
+            .userDisplayName("Ada Grace Lovelace");
     }
 
     private void givenPresenterTypes(final PresenterType... presenterTypes) {
