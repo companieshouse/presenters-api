@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -19,12 +20,15 @@ import uk.gov.companieshouse.api.presenters.model.Individual;
 import uk.gov.companieshouse.api.presenters.model.PersonName;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.guard.Guarded;
+import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
+import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
@@ -43,17 +47,23 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
     private final StatementTypeMatrixService statementTypeMatrixService;
     private final IndividualUserService individualUserService;
     private final AcspUserService acspUserService;
+    private final AccountService accountService;
+    private final ExemptUserService exemptUserService;
     private final PresenterTypeMatrixService presenterTypeMatrixService;
     private final FormTypeGuard formTypeGuard;
 
     public PresenterDetailsServiceImpl(final StatementTypeMatrixService statementTypeMatrixService,
                                        final IndividualUserService individualUserService,
                                        final AcspUserService acspUserService,
+                                       final AccountService accountService,
+                                       final ExemptUserService exemptUserService,
                                        final PresenterTypeMatrixService presenterTypeMatrixService,
                                        final FormTypeGuard formTypeGuard) {
         this.statementTypeMatrixService = statementTypeMatrixService;
         this.individualUserService = individualUserService;
         this.acspUserService = acspUserService;
+        this.accountService = accountService;
+        this.exemptUserService = exemptUserService;
         this.presenterTypeMatrixService = presenterTypeMatrixService;
         this.formTypeGuard = formTypeGuard;
     }
@@ -86,19 +96,31 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
                 presenterDetails.setUserId(userId);
                 presenterDetails.setAcsp(acsp);
             }
-            case OFFICIAL_RECEIVER -> {
-                final var exempt = new Exempt();
-                exempt.setOrganisationName("Exemption LTD");
-                exempt.setName("Mr Test Exemption");
-                exempt.setEmail("me@iamexempt.co.uk");
-                presenterDetails.setExempt(exempt);
-            }
+            case OFFICIAL_RECEIVER -> presenterDetails.setExempt(getExemptDetails(userId));
             default -> {
                 presenterDetails.setUserId(userId);
                 presenterDetails.setIndividual(getIndividual(userId));
             }
         }
         return ServiceResult.found(presenterDetails);
+    }
+
+    private Exempt getExemptDetails(final String userId) {
+        final String email;
+        try {
+            email = accountService.getUserEmailByUserId(userId);
+        } catch (final URIValidationException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Invalid exempt user URI", exception);
+        }
+
+        final var exemptUser = exemptUserService.getExemptUserByEmail(email)
+            .orElseThrow(() -> new PresenterNotExemptException("User is not exempt"));
+        final var exempt = new Exempt();
+        exempt.setOrganisationName(exemptUser.getOrganisation());
+        exempt.setName(exemptUser.getFullName());
+        exempt.setEmail(exemptUser.getEmail());
+        return exempt;
     }
 
     private Acsp getAcspDetails(final String userId, final String passthroughToken) {
@@ -142,7 +164,8 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         final var individual = new Individual();
         individual.setPersonalCode(uvid.getUvid());
         individual.setVerificationId(identity.getId());
-        individual.setName(new PersonName(List.copyOf(currentName.getForenames()), currentName.getSurname()));
+        individual.setName(new PersonName(
+            List.copyOf(Objects.requireNonNull(currentName.getForenames())), currentName.getSurname()));
         individual.setDateOfBirth(new DateOfBirth(
             dateOfBirth.getDayOfMonth(), dateOfBirth.getMonthValue(), dateOfBirth.getYear()));
         return individual;
