@@ -46,12 +46,16 @@ import uk.gov.companieshouse.presentersapi.data.enums.DeliveryStatementType;
 import uk.gov.companieshouse.presentersapi.data.enums.FormType;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
 import uk.gov.companieshouse.presentersapi.data.enums.VerificationStatementType;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotExemptException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
+import uk.gov.companieshouse.presentersapi.model.dao.ExemptUserDao;
 import uk.gov.companieshouse.presentersapi.model.domain.PresenterStatements;
+import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
+import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
@@ -65,6 +69,7 @@ class PresenterDetailsServiceImplTest {
     private static final String IDENTITY_ID = "identity-123";
     private static final String PERSONAL_CODE = "123456-123456";
     private static final String PASSTHROUGH_TOKEN = "passthrough-token";
+    private static final String USER_EMAIL = "ada@example.com";
 
     @Mock
     private StatementTypeMatrixService statementTypeMatrixService;
@@ -73,9 +78,15 @@ class PresenterDetailsServiceImplTest {
     @Mock
     private AcspUserService acspUserService;
     @Mock
+    private AccountService accountService;
+    @Mock
+    private ExemptUserService exemptUserService;
+    @Mock
     private PresenterTypeMatrixService presenterTypeMatrixService;
     @Mock
     private FormGroupFormTypeBiMap formGroupFormTypeBiMap;
+    @Mock
+    private ExemptUserDao exemptUserDao;
 
     private PresenterDetailsServiceImpl service;
     private MockHttpServletRequest request;
@@ -86,7 +97,8 @@ class PresenterDetailsServiceImplTest {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         final var formTypeGuard = new FormTypeGuard(formGroupFormTypeBiMap);
         service = new PresenterDetailsServiceImpl(
-            statementTypeMatrixService, individualUserService, acspUserService, presenterTypeMatrixService, formTypeGuard);
+            statementTypeMatrixService, individualUserService, acspUserService, accountService, exemptUserService,
+            presenterTypeMatrixService, formTypeGuard);
     }
 
     @AfterEach
@@ -204,16 +216,54 @@ class PresenterDetailsServiceImplTest {
     }
 
     @Test
-    void shouldReturnOfficialReceiverDetailsWithoutLookingUpIdentity() {
+    void shouldReturnOfficialReceiverDetailsFromExemptUserWithoutLookingUpIdentity() throws URIValidationException {
         givenPresenterTypes(PresenterType.OFFICIAL_RECEIVER);
         givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
+        when(exemptUserDao.getOrganisation()).thenReturn("Example Organisation");
+        when(exemptUserDao.getFullName()).thenReturn("Ada Lovelace");
+        when(exemptUserDao.getEmail()).thenReturn(USER_EMAIL);
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+        when(exemptUserService.getExemptUserByEmail(USER_EMAIL)).thenReturn(Optional.of(exemptUserDao));
 
         final PresenterDetails result = service.getPresenterDetails(
             USER_ID, FORM_TYPE, PresenterType.OFFICIAL_RECEIVER.code()).getData();
 
         assertThat(result.getStatements(), is(List.of()));
-        assertThat(result.getExempt().getOrganisationName(), is("Exemption LTD"));
+        assertThat(result.getExempt().getOrganisationName(), is("Example Organisation"));
+        assertThat(result.getExempt().getName(), is("Ada Lovelace"));
+        assertThat(result.getExempt().getEmail(), is(USER_EMAIL));
         verifyNoInteractions(individualUserService);
+    }
+
+    @Test
+    void shouldRejectOfficialReceiverWhenUserIsNotExempt() throws URIValidationException {
+        givenPresenterTypes(PresenterType.OFFICIAL_RECEIVER);
+        givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
+        when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
+        when(exemptUserService.getExemptUserByEmail(USER_EMAIL)).thenReturn(Optional.empty());
+        final var presenterType = PresenterType.OFFICIAL_RECEIVER.code();
+
+        final var exception = assertThrows(PresenterNotExemptException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+
+        assertThat(exception.getMessage(), is("User is not exempt"));
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenExemptUserAccountLookupUriIsInvalid() throws URIValidationException {
+        givenPresenterTypes(PresenterType.OFFICIAL_RECEIVER);
+        givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
+        final var cause = new URIValidationException("Invalid URI");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+        final var presenterType = PresenterType.OFFICIAL_RECEIVER.code();
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getReason(), is("Invalid exempt user URI"));
+        assertThat(exception.getCause(), is(cause));
+        verifyNoInteractions(exemptUserService);
     }
 
     @ParameterizedTest
