@@ -8,10 +8,11 @@ public interface PresenterDetailsService {
     /**
      * Return a list of statements and presenter information.
      *
-     * @param userId        the userId
-     * @param formType      the form type
-     * @param presenterType the presenter type
+     * @param userId           the userId
+     * @param formType         the form type
+     * @param presenterType    the presenter type
      * @return list of statements and presenter information
      */
-    ServiceResult<PresenterDetails> getPresenterDetails(String userId, String formType, String presenterType);
+    ServiceResult<PresenterDetails> getPresenterDetails(
+        String userId, String formType, String presenterType);
 }
