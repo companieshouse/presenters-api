@@ -249,6 +249,23 @@ class PresenterDetailsServiceImplTest {
         assertThat(exception.getMessage(), is("User is not exempt"));
     }
 
+    @Test
+    void shouldReturnInternalServerErrorWhenExemptUserAccountLookupUriIsInvalid() throws URIValidationException {
+        givenPresenterTypes(PresenterType.OFFICIAL_RECEIVER);
+        givenStatements(PresenterType.OFFICIAL_RECEIVER, emptyStatements());
+        final var cause = new URIValidationException("Invalid URI");
+        when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
+        final var presenterType = PresenterType.OFFICIAL_RECEIVER.code();
+
+        final var exception = assertThrows(ResponseStatusException.class,
+            () -> service.getPresenterDetails(USER_ID, FORM_TYPE, presenterType));
+
+        assertThat(exception.getStatusCode(), is(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThat(exception.getReason(), is("Invalid exempt user URI"));
+        assertThat(exception.getCause(), is(cause));
+        verifyNoInteractions(exemptUserService);
+    }
+
     @ParameterizedTest
     @EnumSource(value = PresenterType.class, names = {"OFFICIAL_RECEIVER", "ACSP"}, mode = EnumSource.Mode.EXCLUDE)
     void shouldLookUpIdentityForEveryIndividualPresenterType(final PresenterType presenterType)
