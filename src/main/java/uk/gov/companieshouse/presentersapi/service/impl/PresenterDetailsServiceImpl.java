@@ -6,6 +6,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.AcspStatusEnum;
+import uk.gov.companieshouse.api.acsp_manage_users.model.AcspMembership.MembershipStatusEnum;
 import uk.gov.companieshouse.api.handler.exception.URIValidationException;
 import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
@@ -16,14 +19,17 @@ import uk.gov.companieshouse.api.presenters.model.Individual;
 import uk.gov.companieshouse.api.presenters.model.PersonName;
 import uk.gov.companieshouse.api.presenters.model.PresenterDetails;
 import uk.gov.companieshouse.presentersapi.data.enums.PresenterType;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotValidAcspException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
 import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.guard.Guarded;
+import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterDetailsService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.StatementTypeMatrixService;
+import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
 
 @Service
@@ -31,23 +37,30 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
     private static final String INCOMPLETE_INDIVIDUAL_DETAILS_MESSAGE =
         "Identity-verification returned incomplete individual details";
+    private static final String INCOMPLETE_ACSP_DETAILS_MESSAGE =
+        "ACSP manage users API returned incomplete membership details";
 
     private final StatementTypeMatrixService statementTypeMatrixService;
     private final IndividualUserService individualUserService;
+    private final AcspUserService acspUserService;
     private final PresenterTypeMatrixService presenterTypeMatrixService;
     private final FormTypeGuard formTypeGuard;
 
     public PresenterDetailsServiceImpl(final StatementTypeMatrixService statementTypeMatrixService,
                                        final IndividualUserService individualUserService,
-                                       final PresenterTypeMatrixService presenterTypeMatrixService, FormTypeGuard formTypeGuard) {
+                                       final AcspUserService acspUserService,
+                                       final PresenterTypeMatrixService presenterTypeMatrixService,
+                                       final FormTypeGuard formTypeGuard) {
         this.statementTypeMatrixService = statementTypeMatrixService;
         this.individualUserService = individualUserService;
+        this.acspUserService = acspUserService;
         this.presenterTypeMatrixService = presenterTypeMatrixService;
         this.formTypeGuard = formTypeGuard;
     }
 
     @Override
-    public ServiceResult<PresenterDetails> getPresenterDetails(final String userId, final String formType, final String presenterType) {
+    public ServiceResult<PresenterDetails> getPresenterDetails(final String userId, final String formType,
+                                                               final String presenterType) {
 
         final var formTypeEnum = formTypeGuard.fromQuery(formType);
         if (!formTypeEnum.isValid()) {
@@ -68,11 +81,8 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
 
         switch (presenterTypeEnum) {
             case ACSP -> {
-                final var acsp = new Acsp();
-                acsp.setAcspCode("123456-123456");
-                acsp.setAcspName("Mr ACSP Ltd");
-                acsp.setAcspEmployeeEmail("me@myacsp.co.uk");
-                acsp.setPersonName(new PersonName(List.of("John"), "SmithAcsp"));
+                final var passthroughToken = RequestHelper.requirePassthroughToken();
+                final var acsp = getAcspDetails(userId, passthroughToken);
                 presenterDetails.setUserId(userId);
                 presenterDetails.setAcsp(acsp);
             }
@@ -89,6 +99,27 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
             }
         }
         return ServiceResult.found(presenterDetails);
+    }
+
+    private Acsp getAcspDetails(final String userId, final String passthroughToken) {
+        final var membership = acspUserService.getAcspMembershipForUser(userId, passthroughToken)
+            .filter(PresenterDetailsServiceImpl::isActiveMembershipOfActiveAcsp)
+            .orElseThrow(() -> new PresenterNotValidAcspException("User is not associated with an ACSP"));
+        validateAcspDetails(membership);
+
+        return mapAcsp(membership);
+    }
+
+    private static boolean isActiveMembershipOfActiveAcsp(final AcspMembership membership) {
+        return membership.getMembershipStatus() == MembershipStatusEnum.ACTIVE
+            && membership.getAcspStatus() == AcspStatusEnum.ACTIVE;
+    }
+
+    private static void validateAcspDetails(final AcspMembership membership) {
+        if (StringUtils.isAnyBlank(membership.getAcspNumber(), membership.getAcspName(),
+            membership.getUserEmail(), membership.getUserDisplayName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, INCOMPLETE_ACSP_DETAILS_MESSAGE);
+        }
     }
 
     private Individual getIndividual(final String userId) {
@@ -115,6 +146,16 @@ public class PresenterDetailsServiceImpl implements PresenterDetailsService {
         individual.setDateOfBirth(new DateOfBirth(
             dateOfBirth.getDayOfMonth(), dateOfBirth.getMonthValue(), dateOfBirth.getYear()));
         return individual;
+    }
+
+    private static Acsp mapAcsp(final AcspMembership membership) {
+        final var acsp = new Acsp();
+        acsp.setAcspCode(membership.getAcspNumber());
+        acsp.setAcspName(membership.getAcspName());
+        acsp.setAcspEmployeeEmail(membership.getUserEmail());
+        // Temporarily preserve the display name in surname; future story PRES-543 will address structured names.
+        acsp.setPersonName(new PersonName(List.of(), membership.getUserDisplayName()));
+        return acsp;
     }
 
     @SuppressWarnings("java:S2589") // SDK @NotNull annotations do not validate API responses.
