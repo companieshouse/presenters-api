@@ -42,15 +42,26 @@ public class GlobalExceptionHandler{
 
     @ExceptionHandler({
         PresenterTypeNotValidException.class,
-        PresenterValidationException.class,
         PresenterNotExemptException.class,
         PresenterNotVerifiedException.class,
         PresenterNotValidAcspException.class
     })
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+    @ResponseBody
+    public ApiErrors handleUnprocessableEntityException(final Exception ex,
+                                                         final WebRequest request) {
+        return createValidationErrors(ex, request);
+    }
+
+    @ExceptionHandler(PresenterValidationException.class)
+      @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
     public ApiErrors handleBadRequestException(final Exception ex,
                                                 final WebRequest request) {
+        return createValidationErrors(ex, request);
+    }
+
+    private ApiErrors createValidationErrors(final Exception ex, final WebRequest request) {
         final var error = new ApiError(ex.getMessage(),
             getRequestURI(request),
             LocationType.RESOURCE.getValue(), ErrorType.VALIDATION.getType());
