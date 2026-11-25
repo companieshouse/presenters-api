@@ -79,7 +79,7 @@ public class IndividualUserServiceImpl implements IndividualUserService {
             }
             if (activeUvids.size() > 1) {
                 logger.error("More than one active UVID was found for the identity", logMap);
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                         "More than one active UVID was found for the identity");
             }
 

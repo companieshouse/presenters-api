@@ -34,8 +34,6 @@ import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 class IndividualUserServiceImplTest {
 
     private static final String INTERNAL_API_URL = "http://api.chs.local:4001";
-    private static final String PASSTHROUGH_TOKEN =
-            "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
     private static IndividualUserServiceImpl newService() {
         return new IndividualUserServiceImpl(
@@ -284,7 +282,7 @@ class IndividualUserServiceImplTest {
     @Test
     void returnsInternalServerErrorWhenMultipleActiveUvidsAreFound() throws Exception {
         assertActiveUvidListReturnsStatus(
-                List.of(new Uvid(), new Uvid()), HttpStatus.INTERNAL_SERVER_ERROR);
+                List.of(new Uvid(), new Uvid()), HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
     @Test
