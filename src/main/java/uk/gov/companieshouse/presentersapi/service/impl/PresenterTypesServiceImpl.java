@@ -33,6 +33,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private final Logger logger;
 
     private static final String USER_ID = "user_id";
+    private static final String FORM_TYPE = "form_type";
 
     // Create a list of Exempt User presenter types for more flexibility
     private static final EnumSet<PresenterType> EXEMPT_USER_PRESENTER_TYPES = EnumSet.of(PresenterType.OFFICIAL_RECEIVER);
@@ -62,7 +63,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             presenterTypeMatrixService.presenterTypesAllowedFor(formTypeEnum.value()));
 
         final Map<String, Object> logMap = Map.of(
-            USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
+            USER_ID, userId, FORM_TYPE, formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
@@ -70,7 +71,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
             presenterTypes.remove(PresenterType.ACSP);
 
-            final var error = Err.invalidQueryParameterBuilderWithLocation("form_type")
+            final var error = Err.invalidQueryParameterBuilderWithLocation(FORM_TYPE)
                 .withError("Form can only be filed by a valid ACSP").build();
             errors.addError(error);
         }
@@ -81,7 +82,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
             presenterTypes.removeAll(EXEMPT_USER_PRESENTER_TYPES);
 
-            final var error = Err.invalidQueryParameterBuilderWithLocation("form_type")
+            final var error = Err.invalidQueryParameterBuilderWithLocation(FORM_TYPE)
                 .withError("Form can only be filed by an exempt user").build();
             errors.addError(error);
         }
