@@ -14,12 +14,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.exception.InternalServerError;
 import uk.gov.companieshouse.presentersapi.exception.PresenterNotFoundException;
 import uk.gov.companieshouse.presentersapi.exception.PresenterTypeNotValidException;
+import uk.gov.companieshouse.presentersapi.exception.PresenterValidationException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GlobalExceptionHandler tests")
@@ -36,15 +40,38 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("should handle bad request exceptions")
-    void shouldHandleBadRequestExceptions() {
-        ApiErrors result = handler.handleBadRequestException(
+    @DisplayName("should handle unprocessable entity exceptions")
+    void shouldHandleUnprocessableEntityExceptions() {
+        ApiErrors result = handler.handleUnprocessableEntityException(
             new PresenterTypeNotValidException("invalid presenter type"),
             webRequest("/presenters/validate"));
 
         assertNotNull(result);
         assertEquals(1, result.getErrorCount());
         verify(logger, times(1)).error(anyString(), any(Exception.class), anyMap());
+    }
+
+    @Test
+    @DisplayName("should return HTTP 422 for business rule exceptions")
+    void shouldReturnUnprocessableEntityForBusinessRuleExceptions() throws NoSuchMethodException {
+        final var responseStatus = GlobalExceptionHandler.class
+            .getMethod("handleUnprocessableEntityException", Exception.class, WebRequest.class)
+            .getAnnotation(ResponseStatus.class);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, responseStatus.value());
+    }
+
+    @Test
+    @DisplayName("should retain HTTP 400 for presenter validation exceptions")
+    void shouldRetainBadRequestForPresenterValidationExceptions() throws NoSuchMethodException {
+        final var responseStatus = GlobalExceptionHandler.class
+            .getMethod("handleBadRequestException", Exception.class, WebRequest.class)
+            .getAnnotation(ResponseStatus.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseStatus.value());
+        assertNotNull(handler.handleBadRequestException(
+            new PresenterValidationException("invalid presenter details"),
+            webRequest("/presenters/validate")));
     }
 
     @Test

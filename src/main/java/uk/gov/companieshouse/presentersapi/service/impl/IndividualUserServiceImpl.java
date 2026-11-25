@@ -13,6 +13,7 @@ import uk.gov.companieshouse.api.identityverification.model.Identity;
 import uk.gov.companieshouse.api.identityverification.model.Uvid;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedException;
 import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 
 @Service
@@ -45,6 +46,9 @@ public class IndividualUserServiceImpl implements IndividualUserService {
             throw exception;
         } catch (ApiErrorResponseException exception) {
             logger.errorContext(userId, "Identity-verification API returned an error", exception, logMap);
+            if (exception.getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+                throw new PresenterNotVerifiedException("User has not completed their identity verification");
+            }
             throw new ResponseStatusException(
                     HttpStatusCode.valueOf(exception.getStatusCode()),
                     "Identity-verification API request failed",
@@ -64,14 +68,18 @@ public class IndividualUserServiceImpl implements IndividualUserService {
                     .getData()
                     .getData();
 
-            if (activeUvids == null || activeUvids.isEmpty()) {
-                logger.error("No active UVID was found for the identity", logMap);
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No active UVID was found for the identity");
+            if (activeUvids == null) {
+                logger.error("Identity-verification returned an incomplete personal code response", logMap);
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Identity-verification returned incomplete personal code details");
+            }
+            if (activeUvids.isEmpty()) {
+                logger.error("No active personal code was found for the identity", logMap);
+                throw new PresenterNotVerifiedException("User does not have an active personal code");
             }
             if (activeUvids.size() > 1) {
                 logger.error("More than one active UVID was found for the identity", logMap);
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                         "More than one active UVID was found for the identity");
             }
 
@@ -82,6 +90,9 @@ public class IndividualUserServiceImpl implements IndividualUserService {
             throw exception;
         } catch (ApiErrorResponseException exception) {
             logger.errorContext(identityId, "Identity-verification API returned an error", exception, logMap);
+            if (exception.getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+                throw new PresenterNotVerifiedException("User does not have an active personal code");
+            }
             throw new ResponseStatusException(
                     HttpStatusCode.valueOf(exception.getStatusCode()),
                     "Identity-verification API request failed",

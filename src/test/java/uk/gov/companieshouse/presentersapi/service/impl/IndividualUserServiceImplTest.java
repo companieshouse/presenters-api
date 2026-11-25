@@ -28,13 +28,12 @@ import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.api.model.identityverification.PrivateUvidListApi;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.presentersapi.client.InternalApiClientFactory;
+import uk.gov.companieshouse.presentersapi.exception.PresenterNotVerifiedException;
 import uk.gov.companieshouse.sdk.manager.ApiSdkManager;
 
 class IndividualUserServiceImplTest {
 
     private static final String INTERNAL_API_URL = "http://api.chs.local:4001";
-    private static final String PASSTHROUGH_TOKEN =
-            "{\"token_type\":\"Bearer\",\"access_token\":\"oauth2-token\"}";
 
     private static IndividualUserServiceImpl newService() {
         return new IndividualUserServiceImpl(
@@ -115,6 +114,29 @@ class IndividualUserServiceImplTest {
             assertThatThrownBy(() -> service.getIdentityByUserId("user-123"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                             assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
+        }
+    }
+
+    @Test
+    void treatsMissingIdentityAsUnverified() throws Exception {
+        final var apiClient = mock(InternalApiClient.class);
+        final var handler = mock(PrivateIdentityVerificationResourceHandler.class);
+        final var request = mock(PrivateFindIdentityByUserIdGet.class);
+        final var downstreamException = new ApiErrorResponseException(
+                new HttpResponseException.Builder(404, "Not Found", new HttpHeaders()));
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findIdentityByUserId("/verification/identities", "user-123"))
+                .thenReturn(request);
+        when(request.execute()).thenThrow(downstreamException);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
+            final var service = newService();
+
+            assertThatThrownBy(() -> service.getIdentityByUserId("user-123"))
+                    .isInstanceOf(PresenterNotVerifiedException.class)
+                    .hasMessage("User has not completed their identity verification");
         }
     }
 
@@ -225,19 +247,42 @@ class IndividualUserServiceImplTest {
     }
 
     @Test
-    void returnsNotFoundWhenActiveUvidListIsNull() throws Exception {
-        assertActiveUvidListReturnsStatus(null, HttpStatus.NOT_FOUND);
+    void treatsMissingActiveUvidAsExpiredPersonalCode() throws Exception {
+        final var apiClient = mock(InternalApiClient.class);
+        final var handler = mock(PrivateIdentityVerificationResourceHandler.class);
+        final var request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        final var downstreamException = new ApiErrorResponseException(
+                new HttpResponseException.Builder(404, "Not Found", new HttpHeaders()));
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenThrow(downstreamException);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
+            final var service = newService();
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId("identity-123"))
+                    .isInstanceOf(PresenterNotVerifiedException.class)
+                    .hasMessage("User does not have an active personal code");
+        }
     }
 
     @Test
-    void returnsNotFoundWhenActiveUvidListIsEmpty() throws Exception {
-        assertActiveUvidListReturnsStatus(List.of(), HttpStatus.NOT_FOUND);
+    void returnsBadGatewayWhenActiveUvidListIsNull() throws Exception {
+        assertActiveUvidListReturnsStatus(null, HttpStatus.BAD_GATEWAY);
+    }
+
+    @Test
+    void treatsEmptyActiveUvidListAsExpiredPersonalCode() throws Exception {
+        assertActiveUvidListReturnsUnverified(List.of());
     }
 
     @Test
     void returnsInternalServerErrorWhenMultipleActiveUvidsAreFound() throws Exception {
         assertActiveUvidListReturnsStatus(
-                List.of(new Uvid(), new Uvid()), HttpStatus.INTERNAL_SERVER_ERROR);
+                List.of(new Uvid(), new Uvid()), HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
     @Test
@@ -263,7 +308,7 @@ class IndividualUserServiceImplTest {
         }
     }
 
-    private void assertActiveUvidListReturnsStatus(List<Uvid> activeUvids, HttpStatus expectedStatus)
+    private void assertActiveUvidListReturnsStatus(final List<Uvid> activeUvids, final HttpStatus expectedStatus)
             throws Exception {
         InternalApiClient apiClient = mock(InternalApiClient.class);
         PrivateIdentityVerificationResourceHandler handler =
@@ -287,4 +332,27 @@ class IndividualUserServiceImplTest {
                             assertThat(exception.getStatusCode()).isEqualTo(expectedStatus));
         }
     }
+
+    private void assertActiveUvidListReturnsUnverified(final List<Uvid> activeUvids) throws Exception {
+        final var apiClient = mock(InternalApiClient.class);
+        final var handler = mock(PrivateIdentityVerificationResourceHandler.class);
+        final var request = mock(PrivateFindUvidsByIdentityIdGet.class);
+        final var response = new ApiResponse<>(
+                200, Map.of(), new PrivateUvidListApi(activeUvids));
+
+        when(apiClient.privateIdentityVerificationResourceHandler()).thenReturn(handler);
+        when(handler.findUvidsByIdentityId(
+                "/verification/identities/identity-123/uvids", true)).thenReturn(request);
+        when(request.execute()).thenReturn(response);
+
+        try (MockedStatic<ApiSdkManager> sdkManager = mockStatic(ApiSdkManager.class)) {
+            sdkManager.when(ApiSdkManager::getInternalSDK).thenReturn(apiClient);
+            final var service = newService();
+
+            assertThatThrownBy(() -> service.getActiveUvidByIdentityId("identity-123"))
+                    .isInstanceOf(PresenterNotVerifiedException.class)
+                    .hasMessage("User does not have an active personal code");
+        }
+    }
+
 }
