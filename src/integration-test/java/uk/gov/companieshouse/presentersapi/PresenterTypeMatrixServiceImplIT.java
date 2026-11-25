@@ -25,8 +25,12 @@ class PresenterTypeMatrixServiceImplIT {
     @Test
     void shouldResolvePresenterTypesForFormTypeWithMappedPresenters() {
         assertThat(service.presenterTypesAllowedFor(FormType.AD01),
-                containsInAnyOrder(PresenterType.OFFICER_EMPLOYEE, PresenterType.CORPORATE_OFFICER_EMPLOYEE,
-                        PresenterType.JUDICIAL_FACTOR, PresenterType.OFFICER_EMPLOYEE_SAME_GROUP, PresenterType.ACSP));
+                   containsInAnyOrder(PresenterType.OFFICER_EMPLOYEE,
+                                      PresenterType.CORPORATE_OFFICER_EMPLOYEE,
+                                      PresenterType.JUDICIAL_FACTOR,
+                                      PresenterType.OFFICER_EMPLOYEE_SAME_GROUP,
+                                      PresenterType.ACSP,
+                                      PresenterType.OFFICIAL_RECEIVER));
     }
 
     @Test

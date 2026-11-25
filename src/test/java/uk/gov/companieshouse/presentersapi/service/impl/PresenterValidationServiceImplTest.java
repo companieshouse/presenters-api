@@ -2,6 +2,7 @@ package uk.gov.companieshouse.presentersapi.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -35,6 +36,10 @@ import uk.gov.companieshouse.service.rest.err.Err;
 
 @ExtendWith(MockitoExtension.class)
 class PresenterValidationServiceImplTest {
+
+    private static final String FORM_TYPE_LOCATION = "$.form_type";
+    private static final String STATEMENT_IDS_LOCATION = "$.statement_ids";
+    private static final String DATA_TYPES_LOCATION = "$.data_types";
 
     @Mock
     private PresenterTypeMatrixService presenterTypeMatrixService;
@@ -84,7 +89,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
         verify(statementTypeMatrixService, atLeastOnce())
             .validStatementCombinationsFor(PresenterType.OFFICER_EMPLOYEE, FormType.AD01);
         verify(statementTypeMatrixService, never())
@@ -92,15 +98,26 @@ class PresenterValidationServiceImplTest {
     }
 
     @Test
-    void shouldReturnInvalidWhenNoPresenterIsPermittedForForm() {
+    void shouldReportFormTypeErrorWhenNoPresenterIsPermittedForForm() {
         givenPresenters();
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertEquals(ServiceResultStatus.UNPROCESSABLE, result.getStatus());
-        assertTrue(result.getErrors().containsError(Err.serviceErrBuilder()
-            .withError("No candidate presenter type supports the supplied form type: AD01").build()));
+        assertUnprocessableReason(result, FORM_TYPE_LOCATION,
+            "No candidate presenter type supports the supplied form type AD01.");
         verifyNoInteractions(dataObjectTypeMatrixService, statementTypeMatrixService);
+    }
+
+    @Test
+    void shouldThrowWhenFormTypeHasNotBeenValidated() {
+        validationRequest.setFormType("UNKNOWN");
+
+        final var exception = assertThrows(IllegalStateException.class,
+            () -> service.validatePresenterDetails(validationRequest));
+
+        assertEquals("Form type must be validated before presenter validation", exception.getMessage());
+        verifyNoInteractions(
+            presenterTypeMatrixService, dataObjectTypeMatrixService, statementTypeMatrixService);
     }
 
     @Test
@@ -112,7 +129,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -127,7 +145,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -144,7 +163,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "data_types", "Data types do not match for form AD01.");
+        assertUnprocessableReason(result, DATA_TYPES_LOCATION,
+            "Data types do not match for form AD01.");
         verifyNoInteractions(statementTypeMatrixService);
     }
 
@@ -160,7 +180,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
     }
 
     @Test
@@ -177,7 +198,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form MR01.");
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
+            "Statements do not match for form MR01.");
     }
 
     @Test
@@ -200,7 +222,8 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
-        assertUnprocessableReason(result, "statement_ids", "Statements do not match for form AD01.");
+        assertUnprocessableReason(result, STATEMENT_IDS_LOCATION,
+            "Statements do not match for form AD01.");
     }
 
     @Test
@@ -217,6 +240,25 @@ class PresenterValidationServiceImplTest {
 
         final var result = service.validatePresenterDetails(validationRequest);
 
+        assertEquals(ValidationResponse.ResultEnum.VALID, result.getData().getResult());
+    }
+
+    @Test
+    void shouldAcceptOfficialReceiverWithOneMultiDeliveryAlternative() {
+        validationRequest.setFormType("MR01");
+        validationRequest.setDataTypes(List.of("email"));
+        validationRequest.setStatementIds(List.of(
+            "official-receiver-statement", "delivery-on-behalf-of-individual"));
+        givenPresenters(PresenterType.OFFICIAL_RECEIVER);
+        givenDataTypes(PresenterType.OFFICIAL_RECEIVER, DataObjectType.EMAIL);
+        givenStatementCombinations(PresenterType.OFFICIAL_RECEIVER, Set.of(
+            officialReceiverStatements(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_FIRM),
+            officialReceiverStatements(DeliveryStatementType.DELIVERY_ON_BEHALF_OF_INDIVIDUAL)));
+
+        final var result = service.validatePresenterDetails(validationRequest);
+
+        assertEquals(ServiceResultStatus.FOUND, result.getStatus());
+        assertNotNull(result.getData());
         assertEquals(ValidationResponse.ResultEnum.VALID, result.getData().getResult());
     }
 
@@ -250,6 +292,13 @@ class PresenterValidationServiceImplTest {
     private static PresenterStatements acspStatements(final DeliveryStatementType deliveryType) {
         return new PresenterStatements(
             EnumSet.of(AssociationStatementType.ACSP_STATEMENT),
+            EnumSet.of(deliveryType),
+            EnumSet.noneOf(VerificationStatementType.class));
+    }
+
+    private static PresenterStatements officialReceiverStatements(final DeliveryStatementType deliveryType) {
+        return new PresenterStatements(
+            EnumSet.of(AssociationStatementType.OFFICIAL_RECEIVER_STATEMENT),
             EnumSet.of(deliveryType),
             EnumSet.noneOf(VerificationStatementType.class));
     }
