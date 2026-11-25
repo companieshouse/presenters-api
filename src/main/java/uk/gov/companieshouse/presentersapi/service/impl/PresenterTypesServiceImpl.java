@@ -19,6 +19,8 @@ import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.err.Err;
+import uk.gov.companieshouse.service.rest.err.Errors;
 
 @Service
 public class PresenterTypesServiceImpl implements PresenterTypesService {
@@ -50,6 +52,8 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     public ServiceResult<EnumSet<PresenterType>> getPresenterTypes(final String userId, final String formType,
         final String passthroughToken) {
 
+        Errors errors = new Errors();
+
         final var formTypeEnum = formTypeGuard.fromQuery(formType);
         if (!formTypeEnum.isValid()) {
             return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
@@ -61,15 +65,29 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
 
-        // Call out to ExemptUser service
-        // NOTE : Exempt users currently get OFFICIAL_RECEIVER for all form types; revisit if this changes.
-        if (isExemptUser(userId)) {
-            presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
-        }
-
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
+
             presenterTypes.remove(PresenterType.ACSP);
+
+            final var error = Err.invalidQueryParameterBuilderWithLocation("form_type")
+                .withError("Form can only be filed by a valid ACSP").build();
+            errors.addError(error);
+        }
+
+        // Call out to ExemptUser service
+        // Check for exempt presenter types before looking up the user.
+        if (presenterTypes.stream().anyMatch(EXEMPT_USER_PRESENTER_TYPES::contains) && !isExemptUser(userId)) {
+
+            presenterTypes.removeAll(EXEMPT_USER_PRESENTER_TYPES);
+
+            final var error = Err.invalidQueryParameterBuilderWithLocation("form_type")
+                .withError("Form can only be filed by an exempt user").build();
+            errors.addError(error);
+        }
+
+        if (errors.hasErrors() && presenterTypes.isEmpty()) {
+            return ServiceResult.unprocessable(errors);
         }
 
         logger.debugContext(userId, "Resolved possible presenter types for form type and user", logMap);
@@ -107,5 +125,4 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             throw exception;
         }
     }
-
 }

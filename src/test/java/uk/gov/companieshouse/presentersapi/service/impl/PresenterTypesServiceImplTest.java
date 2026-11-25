@@ -35,6 +35,7 @@ import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
+import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
@@ -60,6 +61,8 @@ class PresenterTypesServiceImplTest {
     @Mock
     private AccountService accountService;
     @Mock
+    private IndividualUserService individualUserService;
+    @Mock
     private Logger logger;
 
     private MockedStatic<RequestHelper> requestHelperMock;
@@ -81,7 +84,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should include ACSP when user is a valid ACSP and form type can be filed by an ACSP")
-    void shouldIncludeAcspWhenUserIsValidAcspAndFormTypeAllowsAcsp() throws URIValidationException {
+    void shouldIncludeAcspWhenUserIsValidAcspAndFormTypeAllowsAcsp() {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP));
         givenMembership(membership(MembershipStatusEnum.ACTIVE, AcspStatusEnum.ACTIVE));
 
@@ -92,7 +95,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should exclude ACSP when user is not an ACSP member")
-    void shouldExcludeAcspWhenUserIsNotAcspMember() throws URIValidationException {
+    void shouldExcludeAcspWhenUserIsNotAcspMember() {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP));
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
 
@@ -102,8 +105,20 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
+    @DisplayName("should reject form type when user is not a valid ACSP and no other presenter type is allowed")
+    void shouldRejectFormTypeWhenAcspIsTheOnlyPresenterTypeAndUserIsNotValidAcsp() {
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.ACSP));
+        when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertThat(result.getStatus(), is(ServiceResultStatus.UNPROCESSABLE));
+        assertThat(result.getErrors().size(), is(1));
+    }
+
+    @Test
     @DisplayName("should exclude ACSP when user's ACSP membership has been removed")
-    void shouldExcludeAcspWhenMembershipRemoved() throws URIValidationException {
+    void shouldExcludeAcspWhenMembershipRemoved() {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP));
         givenMembership(membership(MembershipStatusEnum.REMOVED, AcspStatusEnum.ACTIVE));
 
@@ -114,7 +129,7 @@ class PresenterTypesServiceImplTest {
 
     @ParameterizedTest(name = "should exclude ACSP when ACSP status is {0}")
     @EnumSource(value = AcspStatusEnum.class, names = {"CEASED", "SUSPENDED"})
-    void shouldExcludeAcspWhenAcspIsCeasedOrSuspended(final AcspStatusEnum acspStatus) throws URIValidationException {
+    void shouldExcludeAcspWhenAcspIsCeasedOrSuspended(final AcspStatusEnum acspStatus) {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP));
         givenMembership(membership(MembershipStatusEnum.ACTIVE, acspStatus));
 
@@ -125,7 +140,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should exclude ACSP when the membership has no statuses")
-    void shouldExcludeAcspWhenMembershipStatusesMissing() throws URIValidationException {
+    void shouldExcludeAcspWhenMembershipStatusesMissing() {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.ACSP, PresenterType.OFFICER_EMPLOYEE));
         givenMembership(new AcspMembership());
 
@@ -136,7 +151,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should not include ACSP nor check membership when form type cannot be filed by an ACSP")
-    void shouldNotIncludeAcspWhenFormTypeCannotBeFiledByAcsp() throws URIValidationException {
+    void shouldNotIncludeAcspWhenFormTypeCannotBeFiledByAcsp() {
         givenMatrixPresenterTypes(EnumSet.of(PresenterType.INDIVIDUAL_FILING_FOR_SELF));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
@@ -147,13 +162,14 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should return an empty set when the form type has no presenter types")
-    void shouldReturnEmptySetWhenFormTypeHasNoPresenterTypes() throws URIValidationException {
+    void shouldReturnEmptySetWhenFormTypeHasNoPresenterTypes() {
         givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
         assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
         verifyNoInteractions(acspUserService);
+        verifyNoInteractions(accountService, exemptUserService);
     }
 
     @Test
@@ -170,7 +186,7 @@ class PresenterTypesServiceImplTest {
 
     @Test
     @DisplayName("should not modify the set returned by the statement matrix")
-    void shouldNotModifyMatrixPresenterTypes() throws URIValidationException {
+    void shouldNotModifyMatrixPresenterTypes() {
         final var matrixPresenterTypes = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.ACSP);
         givenMatrixPresenterTypes(matrixPresenterTypes);
         when(acspUserService.getAcspMembershipForUser(USER_ID, PASSTHROUGH_TOKEN)).thenReturn(Optional.empty());
@@ -210,8 +226,7 @@ class PresenterTypesServiceImplTest {
     @ParameterizedTest
     @EnumSource(value = PresenterType.class, names = {"OFFICIAL_RECEIVER", "ACSP"},
         mode = EnumSource.Mode.EXCLUDE)
-    void shouldReturnPresenterTypeAllowedByMatrix(final PresenterType presenterType)
-        throws URIValidationException {
+    void shouldReturnPresenterTypeAllowedByMatrix(final PresenterType presenterType) {
         givenMatrixPresenterTypes(EnumSet.of(presenterType));
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
@@ -220,9 +235,9 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
-    @DisplayName("should return OFFICIAL_RECEIVER when user is exempt")
-    void shouldReturnOfficialReceiverWhenUserIsExempt() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+    @DisplayName("should retain OFFICIAL_RECEIVER when user is exempt")
+    void shouldRetainOfficialReceiverWhenUserIsExempt() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(true);
 
@@ -232,21 +247,22 @@ class PresenterTypesServiceImplTest {
     }
 
     @Test
-    @DisplayName("should not return OFFICIAL_RECEIVER when user is not exempt")
-    void shouldNotReturnOfficialReceiverWhenUserIsNotExempt() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+    @DisplayName("should reject form type when user is not exempt")
+    void shouldRejectFormTypeWhenUserIsNotExempt() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenReturn(false);
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
+        assertThat(result.getStatus(), is(ServiceResultStatus.UNPROCESSABLE));
+        assertThat(result.getErrors().size(), is(1));
     }
 
     @Test
-    @DisplayName("should not return OFFICIAL_RECEIVER when exempt lookup fails")
-    void shouldNotReturnOfficialReceiverWhenExemptLookupFails() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+    @DisplayName("should reject form type when exempt lookup returns not found")
+    void shouldRejectFormTypeWhenExemptLookupReturnsNotFound() throws Exception {
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
 
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL))
@@ -254,13 +270,14 @@ class PresenterTypesServiceImplTest {
 
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
-        assertFoundResult(result, EnumSet.noneOf(PresenterType.class));
+        assertThat(result.getStatus(), is(ServiceResultStatus.UNPROCESSABLE));
+        assertThat(result.getErrors().size(), is(1));
     }
 
     @Test
     @DisplayName("should propagate NOT_FOUND when account lookup fails")
     void shouldPropagateNotFoundWhenAccountLookupFails() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         final var cause = new ResponseStatusException(HttpStatus.NOT_FOUND, "No account record found");
         when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
 
@@ -273,7 +290,7 @@ class PresenterTypesServiceImplTest {
     @Test
     @DisplayName("should return INTERNAL_SERVER_ERROR when account URI is invalid for exempt lookup")
     void shouldReturnInternalServerErrorWhenAccountUriIsInvalidForExemptLookup() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         final var cause = new URIValidationException("Invalid URI");
         when(accountService.getUserEmailByUserId(USER_ID)).thenThrow(cause);
 
@@ -288,7 +305,7 @@ class PresenterTypesServiceImplTest {
     @Test
     @DisplayName("should throw an INTERNAL_SERVER_ERROR when exempt lookup fails with an unexpected error")
     void shouldThrowAnInternalServerErrorWhenExemptLookupFails() throws Exception {
-        givenMatrixPresenterTypes(EnumSet.noneOf(PresenterType.class));
+        givenMatrixPresenterTypes(EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
         when(accountService.getUserEmailByUserId(USER_ID)).thenReturn(USER_EMAIL);
         when(exemptUserService.isExemptUserByEmail(USER_EMAIL)).thenThrow(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error"));
 
