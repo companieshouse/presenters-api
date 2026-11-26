@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,8 @@ import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypesService;
 import uk.gov.companieshouse.service.ServiceResult;
+import uk.gov.companieshouse.service.rest.err.Err;
+import uk.gov.companieshouse.service.rest.err.Errors;
 
 @Service
 public class PresenterTypesServiceImpl implements PresenterTypesService {
@@ -31,6 +34,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     private final Logger logger;
 
     private static final String USER_ID = "user_id";
+    private static final String FORM_TYPE = "form_type";
 
     // Create a list of Exempt User presenter types for more flexibility
     private static final EnumSet<PresenterType> EXEMPT_USER_PRESENTER_TYPES = EnumSet.of(PresenterType.OFFICIAL_RECEIVER);
@@ -50,6 +54,8 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
     public ServiceResult<EnumSet<PresenterType>> getPresenterTypes(final String userId, final String formType,
         final String passthroughToken) {
 
+        Errors errors = new Errors();
+
         final var formTypeEnum = formTypeGuard.fromQuery(formType);
         if (!formTypeEnum.isValid()) {
             return ServiceResult.invalid(Guarded.combinedErrors(formTypeEnum));
@@ -58,18 +64,32 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             presenterTypeMatrixService.presenterTypesAllowedFor(formTypeEnum.value()));
 
         final Map<String, Object> logMap = Map.of(
-            USER_ID, userId, "form_type", formType, "presenter_types", presenterTypes.toString());
+            USER_ID, userId, FORM_TYPE, formType, "presenter_types", presenterTypes.toString());
         logger.debugContext(userId, "Retrieved possible presenter types for form type", logMap);
-
-        // Call out to ExemptUser service
-        // NOTE : Exempt users currently get OFFICIAL_RECEIVER for all form types; revisit if this changes.
-        if (isExemptUser(userId)) {
-            presenterTypes.addAll(EXEMPT_USER_PRESENTER_TYPES);
-        }
 
         // Only call out to the ACSP service if the presenter types include ACSP for this form type
         if (presenterTypes.contains(PresenterType.ACSP) && !isValidAcsp(userId, passthroughToken)) {
+
             presenterTypes.remove(PresenterType.ACSP);
+
+            final var error = Err.invalidQueryParameterBuilderWithLocation(FORM_TYPE)
+                .withError("Form can only be filed by a valid ACSP").build();
+            errors.addError(error);
+        }
+
+        // Call out to ExemptUser service
+        // Check for exempt presenter types before looking up the user.
+        if (!Collections.disjoint(presenterTypes, EXEMPT_USER_PRESENTER_TYPES) && !isExemptUser(userId)) {
+
+            presenterTypes.removeAll(EXEMPT_USER_PRESENTER_TYPES);
+
+            final var error = Err.invalidQueryParameterBuilderWithLocation(FORM_TYPE)
+                .withError("Form can only be filed by an exempt user").build();
+            errors.addError(error);
+        }
+
+        if (errors.hasErrors() && presenterTypes.isEmpty()) {
+            return ServiceResult.unprocessable(errors);
         }
 
         logger.debugContext(userId, "Resolved possible presenter types for form type and user", logMap);
@@ -107,5 +127,4 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
             throw exception;
         }
     }
-
 }
