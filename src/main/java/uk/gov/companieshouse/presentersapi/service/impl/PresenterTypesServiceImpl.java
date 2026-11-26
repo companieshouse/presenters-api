@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.presentersapi.service.impl;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -78,7 +79,7 @@ public class PresenterTypesServiceImpl implements PresenterTypesService {
 
         // Call out to ExemptUser service
         // Check for exempt presenter types before looking up the user.
-        if (presenterTypes.stream().anyMatch(EXEMPT_USER_PRESENTER_TYPES::contains) && !isExemptUser(userId)) {
+        if (!Collections.disjoint(presenterTypes, EXEMPT_USER_PRESENTER_TYPES) && !isExemptUser(userId)) {
 
             presenterTypes.removeAll(EXEMPT_USER_PRESENTER_TYPES);
 

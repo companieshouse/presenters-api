@@ -35,7 +35,6 @@ import uk.gov.companieshouse.presentersapi.guard.FormTypeGuard;
 import uk.gov.companieshouse.presentersapi.service.AccountService;
 import uk.gov.companieshouse.presentersapi.service.AcspUserService;
 import uk.gov.companieshouse.presentersapi.service.ExemptUserService;
-import uk.gov.companieshouse.presentersapi.service.IndividualUserService;
 import uk.gov.companieshouse.presentersapi.service.PresenterTypeMatrixService;
 import uk.gov.companieshouse.presentersapi.utils.RequestHelper;
 import uk.gov.companieshouse.service.ServiceResult;
@@ -60,8 +59,6 @@ class PresenterTypesServiceImplTest {
     private ExemptUserService exemptUserService;
     @Mock
     private AccountService accountService;
-    @Mock
-    private IndividualUserService individualUserService;
     @Mock
     private Logger logger;
 
@@ -244,6 +241,18 @@ class PresenterTypesServiceImplTest {
         final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
 
         assertFoundResult(result, EnumSet.of(PresenterType.OFFICIAL_RECEIVER));
+    }
+
+    @Test
+    @DisplayName("should not look up exempt user when no exempt presenter type is allowed")
+    void shouldNotLookUpExemptUserWhenNoExemptPresenterTypeIsAllowed() {
+        final var presenterTypes = EnumSet.of(PresenterType.OFFICER_EMPLOYEE, PresenterType.INDIVIDUAL_FILING_FOR_SELF);
+        givenMatrixPresenterTypes(presenterTypes);
+
+        final var result = service.getPresenterTypes(USER_ID, FORM_TYPE_CODE, PASSTHROUGH_TOKEN);
+
+        assertFoundResult(result, presenterTypes);
+        verifyNoInteractions(accountService, exemptUserService);
     }
 
     @Test
