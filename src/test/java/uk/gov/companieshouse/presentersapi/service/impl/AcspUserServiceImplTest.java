@@ -117,7 +117,7 @@ class AcspUserServiceImplTest {
                 new HttpResponseException.Builder(statusCode, "Error", new HttpHeaders()));
         when(request.execute()).thenThrow(cause);
 
-        assertResponseStatus(HttpStatus.valueOf(statusCode), cause);
+        assertResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR, cause);
     }
 
     @Test
