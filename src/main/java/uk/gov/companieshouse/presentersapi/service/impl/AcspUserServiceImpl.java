@@ -39,7 +39,7 @@ public class AcspUserServiceImpl implements AcspUserService {
             return memberships.getItems().stream().findFirst();
         } catch (ApiErrorResponseException exception) {
             logger.errorContext(userId, "ACSP manage users API returned an error", exception, logMap);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "ACSP manage users API request failed", exception);
         } catch (URIValidationException exception) {
             logger.errorContext(userId, "Invalid ACSP manage users API URI", exception, logMap);
