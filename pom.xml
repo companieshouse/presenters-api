@@ -25,6 +25,8 @@
         <!-- Spring -->
         <spring-boot-dependencies.version>4.1.1</spring-boot-dependencies.version>
         <spring-core.version>7.0.9</spring-core.version>
+        <opentelemetry.version>2.34.0</opentelemetry.version>
+        <opentelemetry.logback.appender.version>2.34.0-alpha</opentelemetry.logback.appender.version>
         <!-- CH-dependencies -->
         <ch-dependency-bom.version>0.1.40</ch-dependency-bom.version>
         <ch-test-bom.version>0.1.40</ch-test-bom.version>
@@ -50,6 +52,14 @@
     </properties>
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <!-- CH-dependencies -->
             <dependency>
@@ -120,6 +130,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <version>${spring-boot-dependencies.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>${opentelemetry.logback.appender.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
